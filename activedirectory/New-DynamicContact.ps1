@@ -1,6 +1,6 @@
 ################################################################################
 # 
-# $Id: New-DynamicContact.ps1 44 2009-09-19 19:58:15Z seth $
+# $Id$
 #
 # DESCRIPTION: This script will create a new dynamic contact object in
 #              in Active Directory.  Please see 
