@@ -5,11 +5,12 @@
 # $Date$
 # $Rev$
 # 
-# DESCRIPTION: Retrieves information from a remote computer in a variety of ways.
+# DESCRIPTION:  Retrieves information from a remote computer in a variety of ways.
 #
-# USAGE:  ps_GetInfo [-v] -Computer <ComputerName> [-AttributesFile <AttributesFile.xml>]
-# 
-# Copyright (c) 2009 Seth Wright
+# USAGE:
+#   ps_GetInfo [-v] -Computer <ComputerName> [-AttributesFile <AttributesFile.xml>]
+#
+# Copyright (c) 2009 Seth Wright (wrightst@jmu.edu)
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above

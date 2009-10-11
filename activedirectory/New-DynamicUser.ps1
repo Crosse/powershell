@@ -1,6 +1,9 @@
 ################################################################################
 # 
-# $Id$
+# $URL$
+# $Author$
+# $Date$
+# $Rev$
 #
 # DESCRIPTION: This script will create a new dynamic user object in
 #              in Active Directory.  Please see 
