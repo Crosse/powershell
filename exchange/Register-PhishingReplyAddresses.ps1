@@ -5,7 +5,7 @@
 # $Date$
 # $Rev$
 #
-# DESCRIPTION: Imports a phishing_reply_addresses file of the format found at 
+# DESCRIPTION:  Imports a phishing_reply_addresses file of the format found at 
 #               http://aper.svn.sourceforge.net/viewvc/aper/phishing_reply_addresses
 #               into Active Directory.
 #               This script can be paired with the New-DynamicContact script
