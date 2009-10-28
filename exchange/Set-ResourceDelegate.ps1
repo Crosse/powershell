@@ -23,7 +23,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 ################################################################################
 
-param ([string]$Identity, [string]$Owner)
+param ([string]$Identity, [string]$Owner, [switch]$EmailOwner=$true)
 
 if ($Owner -eq '' -or $Identity -eq '') {
     Write-Host "Please specify the Identity and Owner"
@@ -41,11 +41,33 @@ if ($resource -eq $null) {
 
 Write-Host "Setting Calendar Settings: "
 
+# Grant Send-As rights to the owner:
+$resource | Add-ADPermission -ExtendedRights "Send-As" -User $owner `
+            -DomainController $DomainController
+
+# Give the owner Full Access to the resource:
+$resource | Add-MailboxPermission -DomainController $DomainController `
+            -AccessRights FullAccess -User $Owner
+
+# Grant SendOnBehalfOf rights to the owner:
+$sobo = (Get-Mailbox -DomainController $DomainController -Identity $resource).GrantSendOnBehalfTo
+if ( !$sobo.Contains((Get-User $Owner).DistinguishedName) ) {
+    $sobo.Add( (Get-User $Owner).DistinguishedName )
+}
+$resource | Set-Mailbox -DomainController $DomainController `
+            -GrantSendOnBehalfTo $sobo
+
+# Set the ResourceDelegates
+$resourceDelegates = (Get-MailboxCalendarSettings -Identity $resource).ResourceDelegates
+if ( !($resourceDelegates.Contains((Get-User $Owner).DistinguishedName) ) {
+    $resourceDelegates.Add( (Get-User $Owner).DistinguishedName )
+}
+
 foreach ($i in 1..10) {
     $error.Clear()
     $resource | Set-MailboxCalendarSettings -DomainController $DomainController `
                 -AllRequestOutOfPolicy:$True -AutomateProcessing AutoAccept `
-                -BookingWindowInDays 365 -ResourceDelegates $Owner `
+                -BookingWindowInDays 365 -ResourceDelegates $resourceDelegates `
                 -ErrorAction SilentlyContinue
     if (![String]::IsNullOrEmpty($error[0])) {
         Write-Host -NoNewLine "."
@@ -56,13 +78,14 @@ foreach ($i in 1..10) {
     }
 }
 
-$From   = "Seth Wright <wrightst@jmu.edu>"
-$Cc     = "wrightst@jmu.edu, boyledj@jmu.edu, millerca@jmu.edu"
-$Title = "Information about Exchange resource `"$resource`""
-$To = $delegate.PrimarySmtpAddress.ToString()
+if ($EmailOwner) {
+    $From   = "Seth Wright <wrightst@jmu.edu>"
+    $Cc     = "wrightst@jmu.edu, boyledj@jmu.edu, millerca@jmu.edu"
+    $Title = "Information about Exchange resource `"$resource`""
+    $To = $delegate.PrimarySmtpAddress.ToString()
 
-$Body = @"
-You have been identified as the resource owner / delegate for the
+    $Body = @"
+You have been identified as a resource owner / delegate for the
 following Exchange resource:`n
 
     $resource`n
@@ -94,11 +117,12 @@ If you have any questions, please contact the JMU Computing HelpDesk at
 helpdesk@jmu.edu, or by phone at 540-568-3555.
 "@
 
-$SmtpClient = New-Object System.Net.Mail.SmtpClient
-$SmtpClient.Host = "it-exhub.ad.jmu.edu"
-$SmtpClient.Port = 25
-$Message = New-Object System.Net.Mail.MailMessage $From, $To, $Title, $Body
-$Message.Cc.Add($Cc)
-$SmtpClient.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials
-$SmtpClient.Send($message)
-Write-Output "Sent message to $To for resource `"$resource`""
+    $SmtpClient = New-Object System.Net.Mail.SmtpClient
+    $SmtpClient.Host = "it-exhub.ad.jmu.edu"
+    $SmtpClient.Port = 25
+    $Message = New-Object System.Net.Mail.MailMessage $From, $To, $Title, $Body
+    $Message.Cc.Add($Cc)
+    $SmtpClient.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials
+    $SmtpClient.Send($message)
+    Write-Output "Sent message to $To for resource `"$resource`""
+}
