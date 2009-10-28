@@ -59,7 +59,7 @@ $resource | Set-Mailbox -DomainController $DomainController `
 
 # Set the ResourceDelegates
 $resourceDelegates = (Get-MailboxCalendarSettings -Identity $resource).ResourceDelegates
-if ( !($resourceDelegates.Contains((Get-User $Owner).DistinguishedName) ) {
+if ( !($resourceDelegates.Contains((Get-User $Owner).DistinguishedName)) ) {
     $resourceDelegates.Add( (Get-User $Owner).DistinguishedName )
 }
 
