@@ -28,7 +28,8 @@ param ( [string]$DisplayName,
         [switch]$Room,
         [switch]$Equipment,
         [switch]$Shared,
-        [string]$PrimarySmtpAddress = "")
+        [string]$PrimarySmtpAddress = "",
+        [switch]$EmailOwner=$true)
 
 # Change these to suit your environment
 $SmtpServer = "it-exhub.ad.jmu.edu"
@@ -181,18 +182,19 @@ if ($Equipment -or $Room) {
                     -DomainController $DomainController
 }
 
-$Title = "Information about Exchange resource `"$resource`""
-if ( $Shared ) {
-    $Title += " (Shared Mailbox)"
-} elseif ( $Equipment ) {
-    $Title += " (Equipment Resource)"
-} elseif ( $Room ) {
-    $Title += " (Room Resource)"
-}
+if ($EmailOwner) {
+    $Title = "Information about Exchange resource `"$resource`""
+    if ( $Shared ) {
+        $Title += " (Shared Mailbox)"
+    } elseif ( $Equipment ) {
+        $Title += " (Equipment Resource)"
+    } elseif ( $Room ) {
+        $Title += " (Room Resource)"
+    }
 
-$To = "$($owner)@jmu.edu"
+    $To = "$($owner)@jmu.edu"
 
-$Body = @"
+    $Body = @"
 You have been identified as the resource owner / delegate for the
 following Exchange resource:
 
@@ -200,8 +202,8 @@ following Exchange resource:
 
 "@
 
-if ($Equipment -or $Room) {
-    $Body += @"
+    if ($Equipment -or $Room) {
+        $Body += @"
 This email is to inform you about the booking policy for this resource,
 and how you can change it if the defaults do not suit the resource.
 Currently, the resource will automatically accept booking requests
@@ -212,17 +214,17 @@ If you would like to change this behavior, you may do so by using
 Outlook Web Access (OWA).  Open Internet Explorer and navigate to the
 following URL:`n
 "@
-}
+    }
 
-if ( $Shared ) {
-    $Body += @"
+    if ( $Shared ) {
+        $Body += @"
 You may use either Outlook or Outlook Web Acess (OWA) to access this 
 resource.  If you would like to use OWA, open Internet Explorer and
 navigate to the following URL:`n
 "@
 }
 
-$Body += @"
+    $Body += @"
 
     https://$($Fqdn)/owa/$($resource.PrimarySMTPAddress)`n
 
@@ -230,8 +232,8 @@ $Body += @"
 
 "@
 
-if ($Equipment -or $Room) {
-    $Body += @"
+    if ($Equipment -or $Room) {
+        $Body += @"
 Click on the Options link in the upper-right-hand corner, then click the
 "Resource Settings" option in the left-hand column.  Most of the options
 should be self-explanatory.  For instance, if you would like to alter
@@ -244,13 +246,13 @@ a request for manual approval..." to "Everyone".`n
 "@
 }
 
-$Body += @"
+    $Body += @"
 If you have any questions, please contact the JMU Computing HelpDesk at
 helpdesk@jmu.edu, or by phone at 540-568-3555.
 "@
 
-$Message = New-Object System.Net.Mail.MailMessage $From, $To, $Title, $Body
-$Message.Cc.Add($Cc)
-$SmtpClient.Send($message)
-Write-Output "Sent message to $To for resource `"$resource`""
-
+    $Message = New-Object System.Net.Mail.MailMessage $From, $To, $Title, $Body
+    $Message.Cc.Add($Cc)
+    $SmtpClient.Send($message)
+    Write-Output "Sent message to $To for resource `"$resource`""
+}
