@@ -178,6 +178,12 @@ function global:Register-PhishingReplyAddresses([string]$Path='', [string]$Organ
 
                 $objUser.Put("entryTTL", $entryTTL)
                 $objUser.Put("description", "anti-phishing-reply ($line)")
+                # The following line clears the authOrig attribute.
+                # We're doing this so that we can apply transport rules to
+                # the phishing contacts, instead of the sender only receiving
+                # an NDR.
+                # ADS_PROPERTY_DELETE = 1; the '0' is not well explained.
+                $objUser.PutEx(1, "authOrig", 0)
 
                 # Commit the changes to Active Directory.
                 $error.Clear()
@@ -212,8 +218,8 @@ function global:Register-PhishingReplyAddresses([string]$Path='', [string]$Organ
                 $objUser.SetInfo()
                 $ErrorActionPreference = "Continue"
 
-                $objUser.Put("authOrig", @("CN=$($SanitizedAddress),$($OrganizationalUnit)"))
-                $objUser.SetInfo()
+                #$objUser.Put("authOrig", @("CN=$($SanitizedAddress),$($OrganizationalUnit)"))
+                #$objUser.SetInfo()
 
                 if ( !([String]::IsNullOrEmpty($error[0])) ) {
                     Write-Error "Could not create contact: $($error[0])"
@@ -240,7 +246,7 @@ if ($Install -eq $True) {
     exit
 } else {
     $now = Get-Date
-    Start-Transcript anti-phishing-reply_$($now.Year)-$($now.Month)-$($now.Day).log
+    Start-Transcript "anti-phishing-reply_$($now.Year)-$($now.Month)-$($now.Day).log"
     Register-PhishingReplyAddresses -Path $Path -Verbose:$Verbose -OrganizationalUnit $OrganizationalUnit -DomainController $DomainController
     Stop-Transcript
 }
