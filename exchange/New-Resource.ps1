@@ -33,7 +33,7 @@ param ( [string]$DisplayName,
 
 # Change these to suit your environment
 $SmtpServer = "it-exhub.ad.jmu.edu"
-$From       = "Seth Wright <wrightst@jmu.edu>"
+$From       = "wrightst@jmu.edu"
 $Cc         = "wrightst@jmu.edu, boyledj@jmu.edu, millerca@jmu.edu"
 $Fqdn       = "exchange.jmu.edu"
 $DomainController = "jmuadc4.ad.jmu.edu"
@@ -66,6 +66,12 @@ if (($Room -and $Equipment) -or ($Room -and $Shared) -or ($Equipment -and $Share
 
 if ( $Shared -and ($PrimarySmtpAddress -eq "") ) {
     Write-Output "Please specify the PrimarySmtpAddress"
+    return
+}
+
+$Owner = Get-User $Owner
+if ($Owner -eq $null) {
+    Write-Error "Could not find owner"
     return
 }
 
@@ -192,7 +198,7 @@ if ($EmailOwner) {
         $Title += " (Room Resource)"
     }
 
-    $To = "$($owner)@jmu.edu"
+    $To = (Get-Mailbox $Owner).PrimarySmtpAddress.ToString()
 
     $Body = @"
 You have been identified as the resource owner / delegate for the
