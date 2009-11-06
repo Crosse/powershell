@@ -1,9 +1,6 @@
 ################################################################################
 # 
-# $URL$
-# $Author$
-# $Date$
-# $Rev$
+# $Id$
 # 
 # DESCRIPTION:  This script sets the 'EnableOabGenOnThisNode' registry key on 
 #               a CCR node member to the active node in the cluster.
