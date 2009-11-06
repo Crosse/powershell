@@ -1,9 +1,6 @@
 ################################################################################
 # 
-# $URL$
-# $Author$
-# $Date$
-# $Rev$
+# $Id$
 # 
 # DESCRIPTION:  Sends an email with relevant Exchange statistics to various
 #               users.
