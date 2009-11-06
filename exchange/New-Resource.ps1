@@ -1,9 +1,6 @@
 ################################################################################
 # 
-# $URL$
-# $Author$
-# $Date$
-# $Rev$
+# $Id$
 # 
 # DESCRIPTION:  Creates a new resource in accordance with JMU's current naming
 #               policies, etc.
