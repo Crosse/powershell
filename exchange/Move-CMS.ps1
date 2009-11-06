@@ -1,9 +1,6 @@
 ################################################################################
 # 
-# $URL$
-# $Author$
-# $Date$
-# $Rev$
+# $Id$
 #
 # DESCRIPTION:  This script moves a CMS from one node to the other
 #               in an automated fashion, and is suitable to use as a shutdown
