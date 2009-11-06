@@ -6,7 +6,7 @@
 #              in Active Directory.  Please see 
 #              http://www.ietf.org/rfc/rfc2589.txt for more information.             
 #              Note:  The target domain MUST be in a forest operating at the 
-#              Windows 2003 forest functional level!
+#              Windows 2003 forest functional level.
 # 
 #
 # Redistribution and use in source and binary forms, with or without           
