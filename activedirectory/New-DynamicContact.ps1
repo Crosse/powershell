@@ -1,9 +1,6 @@
 ################################################################################
 # 
-# $URL$
-# $Author$
-# $Date$
-# $Rev$
+# $Id$
 #
 # DESCRIPTION: This script will create a new dynamic contact object in
 #              in Active Directory.  Please see 
