@@ -103,13 +103,13 @@ function global:Get-HostEntry(
         foreach ($ipAddress in $entry.AddressList) {
             if ($ipAddress.AddressFamily -eq [System.Net.Sockets.AddressFamily]::InterNetworkV6) {
                 if ($q) {
-                    $ip6Addresses.Add($ipAddress)
+                    $null = $ip6Addresses.Add($ipAddress)
                 } else {
                     Write-Host "$($entry.HostName) has IPv6 address $ipAddress"
                 }
             } else {
                 if ($q) {
-                    $ip4Addresses.Add($ipAddress)
+                    $null = $ip4Addresses.Add($ipAddress)
                 } else {
                     Write-Host "$($entry.HostName) has address $ipAddress"
                 }
