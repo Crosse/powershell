@@ -25,6 +25,7 @@ param ( [string]$DisplayName,
         [switch]$Room,
         [switch]$Equipment,
         [switch]$Shared,
+        [switch]$Calendar,
         [string]$PrimarySmtpAddress = "",
         [switch]$EmailOwner=$true)
 
@@ -52,7 +53,7 @@ Write-Output "-DisplayName and -Owner are required"
 }
 
 if ( !($Room -or $Equipment -or $Shared) ) {
-    Write-Output "Please specify either -Room, -Equipment, or -Shared"
+    Write-Output "Please specify either -Room, -Equipment, -Shared, or -Calendar"
     return
 }
 
@@ -61,7 +62,7 @@ if (($Room -and $Equipment) -or ($Room -and $Shared) -or ($Equipment -and $Share
     return
 }
 
-if ( $Shared -and ($PrimarySmtpAddress -eq "") ) {
+if ( $Shared -and !($Calendar) -and ($PrimarySmtpAddress -eq "") ) {
     Write-Output "Please specify the PrimarySmtpAddress"
     return
 }
@@ -77,8 +78,10 @@ if  ( $Room ) {
     $ou += "/Resources/Rooms"
 } elseif ( $Equipment ) {
     $ou += "/Resources/Equipment"
-} elseif ( $Shared ) {
+} elseif ( $Shared -and !$Calendar) {
     $ou += "/SharedMailboxes"
+} elseif ( $Shared -and $Calendar) {
+    $ou += "/Resources/SharedCalendars"
 }
 
 $Name  = $DisplayName
@@ -87,7 +90,7 @@ $alias = $alias.Replace('Conference Room', 'ConfRoom')
 $alias = $alias.Replace('Lecture Hall', 'LectureHall')
 $alias = $alias.Replace(' Hall', '')
 $alias = $alias.Replace(' ', '_')
-if ($Shared) {
+if ($Shared -and !$Calendar) {
     $alias += "_Mailbox"
 }
 
@@ -168,7 +171,7 @@ if ($Equipment -or $Room) {
         Write-Output "Skipping `"$resource`" because it has no delegates"
         continue
     }
-} elseif ( $Shared ) {
+} elseif ( $Shared -and !$Calendar ) {
         # Set the target mailbox's EmailAddresses property to include the PrimarySMTPAddress
         # specified on the command line.
         $emailAddresses = $resource.EmailAddresses
@@ -187,8 +190,10 @@ if ($Equipment -or $Room) {
 
 if ($EmailOwner) {
     $Title = "Information about Exchange resource `"$resource`""
-    if ( $Shared ) {
+    if ( $Shared -and !$Calendar ) {
         $Title += " (Shared Mailbox)"
+    } elseif ($Shared -and $Calendar ) {
+        $Title += " (Shared Calendar)"
     } elseif ( $Equipment ) {
         $Title += " (Equipment Resource)"
     } elseif ( $Room ) {
@@ -198,7 +203,7 @@ if ($EmailOwner) {
     $To = (Get-Mailbox $Owner).PrimarySmtpAddress.ToString()
 
     $Body = @"
-You have been identified as the resource owner / delegate for the
+You have been identified as a resource owner / delegate for the
 following Exchange resource:
 
     $resource`n
@@ -225,7 +230,7 @@ You may use either Outlook or Outlook Web Acess (OWA) to access this
 resource.  If you would like to use OWA, open Internet Explorer and
 navigate to the following URL:`n
 "@
-}
+    }
 
     $Body += @"
 
