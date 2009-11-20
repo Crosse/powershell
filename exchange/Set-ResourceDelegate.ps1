@@ -23,87 +23,129 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 ################################################################################
 
-param ([string]$Identity, [string]$Owner, [switch]$EmailOwner=$true)
+param ([string]$Identity, [string]$Delegate, [switch]$EmailDelegate=$true)
 
-if ($Owner -eq '' -or $Identity -eq '') {
-    Write-Host "Please specify the Identity and Owner"
+if ($Delegate -eq '' -or $Identity -eq '') {
+    Write-Host "Please specify the Identity and Delegate"
     return
 }
 
+# Change these to suit your environment
+$SmtpServer = "it-exhub.ad.jmu.edu"
+$From       = "wrightst@jmu.edu"
+$Cc         = "wrightst@jmu.edu, boyledj@jmu.edu, millerca@jmu.edu"
+$Fqdn       = "exchange.jmu.edu"
 $DomainController = "jmuadc1.ad.jmu.edu"
+##################################
+
+$SmtpClient = New-Object System.Net.Mail.SmtpClient
+$SmtpClient.Host = $SmtpServer
+$SmtpClient.Port = 25
+$SmtpClient.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials
+
 $resource = Get-Mailbox $Identity
-$delegate = Get-Mailbox $Owner
+$delegate = Get-Mailbox $Delegate
 
 if ($resource -eq $null) {
     Write-Error "Could not find Resource"
     return
 }
 
-Write-Host "Setting Calendar Settings: "
+Write-Host "Setting Permissions: "
 
 # Grant Send-As rights to the owner:
-$resource | Add-ADPermission -ExtendedRights "Send-As" -User $owner `
+$resource | Add-ADPermission -ExtendedRights "Send-As" -User $Delegate `
             -DomainController $DomainController
 
 # Give the owner Full Access to the resource:
 $resource | Add-MailboxPermission -DomainController $DomainController `
-            -AccessRights FullAccess -User $Owner
+            -AccessRights FullAccess -User $Delegate
 
 # Grant SendOnBehalfOf rights to the owner:
 $sobo = (Get-Mailbox -DomainController $DomainController -Identity $resource).GrantSendOnBehalfTo
-if ( !$sobo.Contains((Get-User $Owner).DistinguishedName) ) {
-    $sobo.Add( (Get-User $Owner).DistinguishedName )
+if ( !$sobo.Contains((Get-User $Delegate).DistinguishedName) ) {
+    $sobo.Add( (Get-User $Delegate).DistinguishedName )
 }
 $resource | Set-Mailbox -DomainController $DomainController `
             -GrantSendOnBehalfTo $sobo
 
-# Set the ResourceDelegates
-$resourceDelegates = (Get-MailboxCalendarSettings -Identity $resource).ResourceDelegates
-if ( !($resourceDelegates.Contains((Get-User $Owner).DistinguishedName)) ) {
-    $resourceDelegates.Add( (Get-User $Owner).DistinguishedName )
-}
+if ( ($resource.RecipientTypeDetails -eq 'RoomMailbox') -or ($resource.RecipientTypeDetails -eq 'EquipmentMailbox') ) {
+    # Set the ResourceDelegates
+    $resourceDelegates = (Get-MailboxCalendarSettings -Identity $resource).ResourceDelegates
+    if ( !($resourceDelegates.Contains((Get-User $Delegate).DistinguishedName)) ) {
+        $resourceDelegates.Add( (Get-User $Delegate).DistinguishedName )
+    }
 
-foreach ($i in 1..10) {
-    $error.Clear()
-    $resource | Set-MailboxCalendarSettings -DomainController $DomainController `
-                -AllRequestOutOfPolicy:$True -AutomateProcessing AutoAccept `
-                -BookingWindowInDays 365 -ResourceDelegates $resourceDelegates `
-                -ErrorAction SilentlyContinue
-    if (![String]::IsNullOrEmpty($error[0])) {
-        Write-Host -NoNewLine "."
-        Start-Sleep $i
-    } else {
-        Write-Host "done."
-        break
+    foreach ($i in 1..10) {
+        $error.Clear()
+        $resource | Set-MailboxCalendarSettings -DomainController $DomainController `
+                    -AllRequestOutOfPolicy:$True -AutomateProcessing AutoAccept `
+                    -BookingWindowInDays 365 -ResourceDelegates $resourceDelegates `
+                    -ErrorAction SilentlyContinue
+        if (![String]::IsNullOrEmpty($error[0])) {
+            Write-Host -NoNewLine "."
+            Start-Sleep $i
+        } else {
+            Write-Host "done."
+            break
+        }
     }
 }
 
-if ($EmailOwner) {
-    $From   = "Seth Wright <wrightst@jmu.edu>"
-    $Cc     = "wrightst@jmu.edu, boyledj@jmu.edu, millerca@jmu.edu"
+$resourceType = $resource.RecipientTypeDetails
+
+if ($EmailDelegate) {
     $Title = "Information about Exchange resource `"$resource`""
-    $To = $delegate.PrimarySmtpAddress.ToString()
+    if ( $resourceType -eq 'SharedMailbox' ) {
+        $Title += " (Shared Mailbox)"
+    } elseif ( $resourceType -eq 'EquipmentMailbox' ) {
+        $Title += " (Equipment Resource)"
+    } elseif ( $resourceType -eq 'RoomMailbox' ) {
+        $Title += " (Room Resource)"
+    }
+
+    $To = (Get-Mailbox $Delegate).PrimarySmtpAddress.ToString()
 
     $Body = @"
 You have been identified as a resource owner / delegate for the
-following Exchange resource:`n
+following Exchange resource:
 
     $resource`n
 
+"@
+
+    if (($resourceType -eq 'RoomMailbox') -or ($resourceType -eq 'EquipmentMailbox') ) {
+        $Body += @"
 This email is to inform you about the booking policy for this resource,
 and how you can change it if the defaults do not suit the resource.
-Currently, the resource will automatically accept booking requests
+By default, the resource will automatically accept booking requests
 that do not conflict with other bookings, and will require your approval
-if a request is made that conflicts with another booking.`n
+if a request is made that conflicts with another booking.
 
 If you would like to change this behavior, you may do so by using
-Outlook Web Access.  Open Internet Explorer and navigate to the
+Outlook Web Access (OWA).  Open Internet Explorer and navigate to the
 following URL:`n
+"@
+    }
 
-    https://exchange.jmu.edu/owa/$($resource.PrimarySMTPAddress)`n
+    if ( $resourceType -eq 'SharedMailbox' ) {
+        $Body += @"
+You may use either Outlook or Outlook Web Acess (OWA) to access this 
+resource.  If you would like to use OWA, open Internet Explorer and
+navigate to the following URL:`n
+"@
+    }
+
+    $Body += @"
+
+    https://$($Fqdn)/owa/$($resource.PrimarySMTPAddress)`n
 
 (Log in using your own eID and password.)`n
 
+"@
+
+    if ( ($resourceType -eq 'EquipmentMailbox') -or ($resourceType -eq 'RoomMailbox') ) {
+        $Body += @"
 Click on the Options link in the upper-right-hand corner, then click the
 "Resource Settings" option in the left-hand column.  Most of the options
 should be self-explanatory.  For instance, if you would like to alter
@@ -113,16 +155,16 @@ that start with "These users can schedule automatically..." to "Select
 users and groups" instead of "Everyone", and set "These users can submit
 a request for manual approval..." to "Everyone".`n
 
+"@
+}
+
+    $Body += @"
 If you have any questions, please contact the JMU Computing HelpDesk at
 helpdesk@jmu.edu, or by phone at 540-568-3555.
 "@
 
-    $SmtpClient = New-Object System.Net.Mail.SmtpClient
-    $SmtpClient.Host = "it-exhub.ad.jmu.edu"
-    $SmtpClient.Port = 25
     $Message = New-Object System.Net.Mail.MailMessage $From, $To, $Title, $Body
     $Message.Cc.Add($Cc)
-    $SmtpClient.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials
     $SmtpClient.Send($message)
     Write-Output "Sent message to $To for resource `"$resource`""
 }
