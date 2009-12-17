@@ -33,7 +33,7 @@ if ($Delegate -eq '' -or $Identity -eq '') {
 # Change these to suit your environment
 $SmtpServer = "it-exhub.ad.jmu.edu"
 $From       = "wrightst@jmu.edu"
-$Cc         = "wrightst@jmu.edu, boyledj@jmu.edu, millerca@jmu.edu"
+$Cc         = "wrightst@jmu.edu, boyledj@jmu.edu, millerca@jmu.edu, najdziav@jmu.edu"
 $Fqdn       = "exchange.jmu.edu"
 $DomainController = "jmuadc1.ad.jmu.edu"
 ##################################
@@ -79,9 +79,7 @@ if ( ($resource.RecipientTypeDetails -eq 'RoomMailbox') -or ($resource.Recipient
     foreach ($i in 1..10) {
         $error.Clear()
         $resource | Set-MailboxCalendarSettings -DomainController $DomainController `
-                    -AllRequestOutOfPolicy:$True -AutomateProcessing AutoAccept `
-                    -BookingWindowInDays 365 -ResourceDelegates $resourceDelegates `
-                    -ErrorAction SilentlyContinue
+                    -ResourceDelegates $resourceDelegates -ErrorAction SilentlyContinue
         if (![String]::IsNullOrEmpty($error[0])) {
             Write-Host -NoNewLine "."
             Start-Sleep $i
