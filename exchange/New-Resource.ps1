@@ -32,7 +32,7 @@ param ( [string]$DisplayName,
 # Change these to suit your environment
 $SmtpServer = "it-exhub.ad.jmu.edu"
 $From       = "wrightst@jmu.edu"
-$Cc         = "wrightst@jmu.edu, boyledj@jmu.edu, millerca@jmu.edu"
+$Cc         = "wrightst@jmu.edu, boyledj@jmu.edu, millerca@jmu.edu, najdziav@jmu.edu"
 $Fqdn       = "exchange.jmu.edu"
 $DomainController = "jmuadc4.ad.jmu.edu"
 # TODO: When automatic SG determination is done, rewrite this line to 
