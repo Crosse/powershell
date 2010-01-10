@@ -37,7 +37,7 @@ if ($srv -eq $null) {
     return
 }
 
-$databases = Get-MailboxDatabase -Server $srv
+$databases = Get-MailboxDatabase -Server $srv | Where { $_.Name -notmatch 'Training' }
 if ($databases -eq $null) {
     Write-Error "Could not enumerate databases on server $Server"
     return

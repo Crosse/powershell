@@ -1,6 +1,9 @@
 ################################################################################
 # 
-# $Id$
+# $URL$
+# $Author$
+# $Date$
+# $Rev$
 # 
 # Copyright (c) 2009 Seth Wright (wrightst@jmu.edu)
 #
@@ -21,12 +24,12 @@ $now = Get-Date
 $fileName = "SafeListUpdate_$($now.Year)-$($now.Month)-$($now.Day).log"
 Start-Transcript -Path $fileName
 
-$mailboxes = Get-Mailbox
+$mailboxes = Get-Mailbox -ResultSize Unlimited
 $i = 0
 $j = 0
 
 foreach ($mailbox in $mailboxes) {
-    Update-SafeList -Identity $mailbox -IncludeDomains
+    Update-SafeList -Identity $mailbox
     if ($?) {
         $j++
     } else {

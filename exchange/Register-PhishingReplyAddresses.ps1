@@ -126,7 +126,7 @@ function global:Register-PhishingReplyAddresses([string]$Path='', [string]$Organ
         # Create an ADSI connection.
         $preamble = "LDAP://"
         if ( $DomainController ) {
-            $preamble = $preamble + $DomainController + "/"
+            $preamble += $preamble + $DomainController + "/"
         }
         $ldap = $preamble + $OrganizationalUnit
         $parentOU = [ADSI]$ldap
