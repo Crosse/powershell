@@ -44,6 +44,9 @@ Remove-Variable ou
 
 $dls = (Get-DistributionGroup).Count
 
+$dbs = New-Object System.Text.StringBuilder
+$everything | Group-Object Database | Sort Count,Name -Descending | % { $null = $dbs.AppendFormat("{0,9}`t{1}`n", $_.Count, $_.Name) }
+
 $Body  = @"
 Total Mailbox Count:	$($everything.Count)
      User Mailboxes:	$($users.Count)
@@ -55,6 +58,13 @@ Distribution Groups:	$dls
  HelpDesk Mailboxes:	$helpdesk
 
 Known Phishing Addresses Blacklisted:  $antiphishing
+
+
+Database Utilization:
+
+Mailboxes`tDatabase
+---------`t--------
+$($dbs.ToString())
 "@
 
 $SmtpServer = "it-exhub.ad.jmu.edu"

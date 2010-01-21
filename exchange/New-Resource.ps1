@@ -32,11 +32,10 @@ param ( [string]$DisplayName,
 # Change these to suit your environment
 $SmtpServer = "it-exhub.ad.jmu.edu"
 $From       = "wrightst@jmu.edu"
-$Cc         = "wrightst@jmu.edu, boyledj@jmu.edu, millerca@jmu.edu, najdziav@jmu.edu"
+$Cc         = "wrightst@jmu.edu, boyledj@jmu.edu, millerca@jmu.edu, najdziav@jmu.edu, eckardsl@jmu.edu"
 $Fqdn       = "exchange.jmu.edu"
 $DomainController = "jmuadc4.ad.jmu.edu"
 
-$Database   = .\Get-BestDatabase.ps1 IT-ExMbx1
 $BaseDN     = "ad.jmu.edu/ExchangeObjects"
 
 ##################################
@@ -66,9 +65,16 @@ if ( $Shared -and !($Calendar) -and ($PrimarySmtpAddress -eq "") ) {
     return
 }
 
-$Owner = Get-User $Owner
+$Owner = Get-Mailbox $Owner
 if ($Owner -eq $null) {
     Write-Error "Could not find owner"
+    return
+}
+
+$tempResource = Get-Mailbox $PrimarySMTPAddress
+if ($tempResource -ne $null) {
+    Write-Error "The PrimarySmtpAddress already exists"
+    $tempResource
     return
 }
 
@@ -93,9 +99,12 @@ if ($Shared -and !$Calendar) {
     $alias += "_Mailbox"
 }
 
+$Database   = .\Get-BestDatabase.ps1 IT-ExMbx1
+
 $cmd  = "New-Mailbox -DomainController $DomainController -Database `"$Database`""
 $cmd += "-OrganizationalUnit `"$ou`" -Name `"$Name`" -Alias `"$alias`" -UserPrincipalName "
 $cmd += "`"$($alias)@ad.jmu.edu`" -DisplayName `"$DisplayName`""
+$cmd += "-ManagedFolderMailboxPolicy 'Default Managed Folder Policy' -ManagedFolderMailboxPolicyAllowed:`$true"
 
 $error.Clear()
 

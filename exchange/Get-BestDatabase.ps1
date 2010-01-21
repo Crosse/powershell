@@ -37,14 +37,15 @@ if ($srv -eq $null) {
     return
 }
 
-$databases = Get-MailboxDatabase -Server $srv | Where { $_.Name -notmatch 'Training' }
+$databases = Get-MailboxDatabase -Server $srv -Status | 
+    Where { $_.Mounted -eq $True -and $_.Name -match "^SG" }
 if ($databases -eq $null) {
     Write-Error "Could not enumerate databases on server $Server"
     return
 }
 
 $candidateUserCount = -1
-$candidate = ""
+$candidate = $null
 
 foreach ($database in $databases) {
     $mailboxCount = (Get-Mailbox -Database $database).Count
@@ -53,15 +54,24 @@ foreach ($database in $databases) {
         return
     }
 
-    if ($mailboxCount -lt $candidateUserCount -or $candidateUserCount -eq -1) {
+
+    $maxUsers = 200GB / (Get-MailboxDatabase $database).ProhibitSendReceiveQuota.Value.ToBytes()
+
+    if (($mailboxCount -le $maxUsers) -and ($mailboxCount -lt $candidateUserCount -or $candidateUserCount -eq -1)) {
+        # Found a new candidate,
         Write-Host -NoNewLine "!"
         $candidateUserCount = $mailboxCount
         $candidate = $database
     } else {
+        # We've seen better.
         Write-Host -NoNewLine "."
     }
 
 }
 
-Write-Host "`nCandidate Database: $candidate contains $candidateUserCount mailboxes"
+if ($candidate -ne $null) {
+    Write-Host "`nCandidate Database: $candidate contains $candidateUserCount mailboxes"
+} else { 
+    Write-Host "`nNo candidate database was found!"
+}
 $candidate
