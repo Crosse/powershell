@@ -51,6 +51,7 @@ if ( !($lines) ) {
 }
 
 foreach ( $line in $lines ) {
+    $line = $line.Trim()
     if ($line.Length -gt 0) {
         Write-Host -NoNewLine "Adding $line to the queue: "
         $wc.DownloadString($($i2e) + $line)
