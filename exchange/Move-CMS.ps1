@@ -8,7 +8,8 @@
 #               MoveClusteredMailboxServerScript.ps1 script as seen here:
 #               http://telnetport25.wordpress.com/2008/07/29/powershell-and-moving-ccr-mailbox-server-instances-powershell-script/
 #
-# Copyright (c) 2009 Seth Wright (wrightst@jmu.edu)
+# 
+# Copyright (c) 2009,2010 Seth Wright <wrightst@jmu.edu>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -21,6 +22,7 @@
 # WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#
 ################################################################################
 
 # This is used only in case the script file itself is called with parameters,

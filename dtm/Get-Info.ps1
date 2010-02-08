@@ -10,7 +10,8 @@
 # USAGE:
 #   ps_GetInfo [-v] -Computer <ComputerName> [-AttributesFile <AttributesFile.xml>]
 #
-# Copyright (c) 2009 Seth Wright (wrightst@jmu.edu)
+# 
+# Copyright (c) 2009,2010 Seth Wright <wrightst@jmu.edu>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -23,6 +24,7 @@
 # WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#
 ################################################################################
 
 
