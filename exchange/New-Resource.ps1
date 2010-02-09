@@ -73,13 +73,14 @@ if ($Owner -eq $null) {
     return
 }
 
-$tempResource = Get-Mailbox $PrimarySMTPAddress
-if ($tempResource -ne $null) {
-    Write-Error "The PrimarySmtpAddress already exists"
-    $tempResource
-    return
+if ($Shared) {
+    $tempResource = Get-Mailbox -Anr $PrimarySMTPAddress
+    if ($tempResource -ne $null) {
+        Write-Error "The PrimarySmtpAddress already exists"
+        $tempResource
+        return
+    }
 }
-
 $ou = $BaseDN
 if  ( $Room ) {
     $ou += "/Resources/Rooms"
