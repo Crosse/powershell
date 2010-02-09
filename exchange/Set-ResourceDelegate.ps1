@@ -37,8 +37,13 @@ $SmtpServer = "it-exhub.ad.jmu.edu"
 $From       = "wrightst@jmu.edu"
 $Cc         = "wrightst@jmu.edu, boyledj@jmu.edu, millerca@jmu.edu, najdziav@jmu.edu"
 $Fqdn       = "exchange.jmu.edu"
-$DomainController = "jmuadc1.ad.jmu.edu"
 ##################################
+$DomainController = gc Env:\LOGONSERVER
+if ($DomainController -eq $null) { 
+    Write-Warning "Could not determine the local computer's logon server!"
+    return
+}
+
 
 $SmtpClient = New-Object System.Net.Mail.SmtpClient
 $SmtpClient.Host = $SmtpServer

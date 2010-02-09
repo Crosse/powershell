@@ -39,6 +39,12 @@ param ( $User="", $Server="localhost", [switch]$Verbose=$false, $inputObject=$nu
             return
         }
 
+        $DomainController = gc Env:\LOGONSERVER
+        if ($DomainController -eq $null) { 
+            Write-Warning "Could not determine the local computer's logon server!"
+            return
+        }
+
         $databases = Get-MailboxDatabase -Server $srv -Status | 
         Where { $_.Mounted -eq $True -and $_.Name -match "^SG" }
         if ($databases -eq $null) {
@@ -115,14 +121,28 @@ param ( $User="", $Server="localhost", [switch]$Verbose=$false, $inputObject=$nu
         if ($Verbose) {
             Write-Host "Assigning $($objUser.SamAccountName) to database $candidate"
         }
+
+        # Save this off because Exchange blanks it out...
+        $displayNamePrintable = $objUser.SimpleDisplayName
+
         # Enable the mailbox
         $Error.Clear()
         Enable-Mailbox -Database "$($candidate)" -Identity $objUser `
             -ManagedFolderMailboxPolicy "Default Managed Folder Policy" `
-            -ManagedFolderMailboxPolicyAllowed:$true -ErrorAction SilentlyContinue
+            -ManagedFolderMailboxPolicyAllowed:$true `
+            -DomainController $DomainController -ErrorAction SilentlyContinue
         if ($Error[0] -ne $null) {
             Write-Error $Error[0]
         } else {
+            # No error, so set the SimpleDisplayName now that Exchange has 
+            # helpfully removed it.
+            if ($Verbose) {
+                Write-Host "Resetting $($objUser.SamAccountName)'s " + `
+                           "SimpleDisplayName to `"$(displayNamePrintable)`""
+            }
+            Set-User $objUser -SimpleDisplayName "$($displayNamePrintable)" `
+                -DomainController $DomainController
+
             # Increment the running mailbox total for the candidate database.
             $dbs[$candidate]++
         }

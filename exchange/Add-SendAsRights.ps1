@@ -32,8 +32,13 @@ if ($Delegate -eq '' -or $Identity -eq '') {
     return
 }
 
-$DomainController = "jmuadc1.ad.jmu.edu"
 ##################################
+$DomainController = gc Env:\LOGONSERVER
+if ($DomainController -eq $null) { 
+    Write-Warning "Could not determine the local computer's logon server!"
+    return
+}
+
 
 $resource = Get-Mailbox $Identity
 $delegate = Get-Mailbox $Delegate
