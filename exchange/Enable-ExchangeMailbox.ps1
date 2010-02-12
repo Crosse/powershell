@@ -39,7 +39,7 @@ param ( $User="", $Server="localhost", [switch]$Verbose=$false, $inputObject=$nu
             return
         }
 
-        $DomainController = gc Env:\LOGONSERVER
+        $DomainController = (gc Env:\LOGONSERVER).Replace('\', '')
         if ($DomainController -eq $null) { 
             Write-Warning "Could not determine the local computer's logon server!"
             return

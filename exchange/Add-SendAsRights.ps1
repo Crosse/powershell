@@ -33,7 +33,7 @@ if ($Delegate -eq '' -or $Identity -eq '') {
 }
 
 ##################################
-$DomainController = gc Env:\LOGONSERVER
+$DomainController = (gc Env:\LOGONSERVER).Replace('\', '')
 if ($DomainController -eq $null) { 
     Write-Warning "Could not determine the local computer's logon server!"
     return

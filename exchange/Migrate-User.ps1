@@ -31,7 +31,6 @@ param ( [switch]$Install=$false,
         [string]$Identity=$null,
         [string]$SourceForestDomainController=$null,
         [string]$TargetForestDomainController=$null,
-        [string]$TargetDatabase=$null,
         [switch]$Cleanup=$false,
         $Credential=$null)
 
@@ -44,7 +43,6 @@ function global:Migrate-User( $inputObject=$Null,
         [string]$Identity=$null,
         [string]$SourceForestDomainController=$null,
         [string]$TargetForestDomainController=$null,
-        [string]$TargetDatabase=$null,
         [switch]$Cleanup=$false,
         $Credential=(Get-Credential) ) {
     BEGIN {
@@ -53,11 +51,6 @@ function global:Migrate-User( $inputObject=$Null,
         if ($inputObject) {
             Write-Output $inputObject | &($MyInvocation.InvocationName) -Identity $Identity
             break
-        }
-
-        if ([String]::IsNullOrEmpty($TargetDatabase)) {
-            Write-Error "Please specify the target database (-TargetDatabase)"
-            exit
         }
 
         if ([String]::IsNullOrEmpty($SourceForestDomainController)) {
@@ -76,10 +69,10 @@ function global:Migrate-User( $inputObject=$Null,
             exit
         }
 
-        # First create the user's mailbox in the current forest.
-        if ((Get-Mailbox -Identity $Identity -ErrorAction SilentlyContinue) -eq $null) {
-            Write-Host "Creating Mailbox in target forest for $($Identity)."
-            Enable-Mailbox -Database $TargetDatabase -Identity $Identity -DomainController $TargetForestDomainController
+        $targetmbx = Get-Mailbox -Identity $Identity -DomainController $TargetForestDomainController -ErrorAction SilentlyContinue
+        # First lookup the user's mailbox in the current forest.
+        if ($targetmbx -eq $null) {
+            Write-Error "No mailbox exists for user $Identity in the current forest."
         }
 
         # Next, find the source mailbox and save it.
@@ -88,8 +81,9 @@ function global:Migrate-User( $inputObject=$Null,
 
         # Set the target mailbox's EmailAddresses property to include the PrimarySMTP 
         # address of the source mailbox.
-        $emailAddresses = (Get-Mailbox -Identity $Identity -DomainController $TargetForestDomainController).EmailAddresses
-        $emailAddresses
+        $emailAddresses = $targetmbx.EmailAddresses
+        Write-Host $emailAddresses
+
         if (!($emailAddresses.Contains("smtp:$($sourcembx.PrimarySmtpAddress.ToString())")) ) {
             $emailAddresses.Add("smtp:$($sourcembx.PrimarySmtpAddress.ToString())")
         }
@@ -100,12 +94,11 @@ function global:Migrate-User( $inputObject=$Null,
 
         # Move the mailbox.
         Get-Mailbox -DomainController $SourceForestDomainController -Credential $Credential -Identity $Identity |  
-            Move-Mailbox -TargetDatabase $TargetDatabase -SourceForestGlobalCatalog $SourceForestDomainController `
+            Move-Mailbox -TargetDatabase $targetmbx.Database -SourceForestGlobalCatalog $SourceForestDomainController `
                 -SourceForestCredential $Credential -AllowMerge -IgnorePolicyMatch -DomainController $TargetForestDomainController
 
         # Reset the EmailAddresses to something approaching sanity.
         Set-Mailbox -Identity $Identity -EmailAddressPolicyEnabled:$True -EmailAddresses $emailAddresses `
-            -ManagedFolderMailboxPolicy "Default Managed Folder Policy" -ManagedFolderMailboxPolicyAllowed `
             -DomainController $TargetForestDomainController
 
         Get-Mailbox -Identity $Identity -DomainController $TargetForestDomainController | Select EmailAddresses
@@ -119,6 +112,6 @@ if ($Install -eq $True) {
     exit
 } else {
     Migrate-User -Identity:$Identity -Verbose:$Verbose `
-        -SourceForestDomainController:$SourceForestDomainController -TargetDatabase:$TargetDatabase `
+        -SourceForestDomainController:$SourceForestDomainController `
         -TargetForestDomainController:$TargetForestDomainController -Credential:$Credential -Cleanup:$Cleanup
 }
