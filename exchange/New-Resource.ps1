@@ -33,8 +33,8 @@ param ( [string]$DisplayName,
 
 # Change these to suit your environment
 $SmtpServer = "it-exhub.ad.jmu.edu"
-$From       = "wrightst@jmu.edu"
-$Cc         = "wrightst@jmu.edu, boyledj@jmu.edu, millerca@jmu.edu, najdziav@jmu.edu, eckardsl@jmu.edu"
+$From       = "it-exmaint@jmu.edu"
+$Cc         = "wrightst@jmu.edu, millerca@jmu.edu, najdziav@jmu.edu, eckardsl@jmu.edu"
 $Fqdn       = "exchange.jmu.edu"
 $BaseDN     = "ad.jmu.edu/ExchangeObjects"
 
@@ -147,7 +147,7 @@ foreach ($i in 1..60) {
 }
 
 Write-Host "`ndone.`nSending a message to the resource to initialize the mailbox."
-$Message = New-Object System.Net.Mail.MailMessage "wrightst@jmu.edu", "$($resource.PrimarySMTPAddress)", "disregard", "disregard"
+$Message = New-Object System.Net.Mail.MailMessage "it-exmaint@jmu.edu", "$($resource.PrimarySMTPAddress)", "disregard", "disregard"
 $SmtpClient.Send($message)
 
 # Grant SendOnBehalfOf rights to the owner:
@@ -240,7 +240,7 @@ following URL:`n
 
     if ( $Shared ) {
         $Body += @"
-You may use either Outlook or Outlook Web Acess (OWA) to access this 
+You may use either Outlook or Outlook Web Access (OWA) to access this 
 resource.  If you would like to use OWA, open Internet Explorer and
 navigate to the following URL:`n
 "@
@@ -250,7 +250,7 @@ navigate to the following URL:`n
 
     https://$($Fqdn)/owa/$($resource.PrimarySMTPAddress)`n
 
-(Log in using your own eID and password.)`n
+(Log in using your own e-ID and password.)`n
 
 "@
 
