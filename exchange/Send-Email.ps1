@@ -24,20 +24,28 @@
 param ( [string]$From='', 
         [string]$To='', 
         [string]$Cc='',
+        [string]$Bcc='',
         [string]$Subject,
         [string]$Body='',
         [string]$SmtpServer='',
         [int]$SmtpPort=25,
-        [string]$AttachmentFile)
+        [string]$AttachmentFile,
+        $Credential=[System.Net.CredentialCache]::DefaultNetworkCredentials)
 
-#if ($From -eq [System.String]::Empty) {
-#    Write-Error "Please provide the From: value"
-#}
-if ($To -eq [System.String]::Empty) {
-    Write-Error "Please provide the To: value"
+if ([System.String]::IsNullOrEmpty($From)) {
+    Write-Error "Please provide the From: value"
+    return
 }
-if ($SmtpServer -eq [System.String]::Empty) {
+
+if ([System.String]::IsNullOrEmpty($To) -and 
+        ([System.String]::IsNullOrEmpty($Cc) -and 
+         [System.String]::IsNullOrEmpty($Bcc))) {
+    Write-Error "Please provide the To: value"
+    return
+}
+if ([System.String]::IsNullOrEmpty($SmtpServer)) {
     Write-Error "Please provide an SMTP server"
+    return
 }
 
 if ($Body -eq '') {
@@ -51,19 +59,37 @@ $SmtpClient = New-Object System.Net.Mail.SmtpClient
 $SmtpClient.Host = $SmtpServer
 $SmtpClient.Port = $SmtpPort
 $SmtpClient.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials
-$Message = New-Object System.Net.Mail.MailMessage $From, $To, $Subject, $Body
+$Message = New-Object System.Net.Mail.MailMessage 
+
+$Message.From       = $From
+$Message.Subject    = $Subject
+$Message.Body       = $Body
+
+if (![System.String]::IsNullOrEmpty($To)) {
+    $Message.To.Add($To)
+}
 
 if (($AttachmentFile -ne $null -and $AttachmentFile -ne '') -and (Test-Path "$AttachmentFile")) {
     $Attachment = New-Object Net.Mail.Attachment((Get-Item $AttachmentFile).ToString())
     $Message.Attachments.Add($Attachment)
 }
 
-if ($Cc -ne '') {
+if (![System.String]::IsNullOrEmpty($Cc)) {
     $Message.Cc.Add($Cc)
 }
 
+if (![System.String]::IsNullOrEmpty($Bcc)) {
+    $Message.Bcc.Add($Bcc)
+}
 
+Write-Output "Sending email from $From with subject line `"$Subject`""
+$error.Clear()
 $SmtpClient.Send($message)
+if ([System.String]::IsNullOrEmpty($error[0])) {
+    Write-Output "Message successfully sent."
+} else {
+    Write-Output "Message send failure."
+}
 
 if ($Attachment -ne $null) {
     $Attachment.Dispose()

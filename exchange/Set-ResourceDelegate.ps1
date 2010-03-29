@@ -25,30 +25,27 @@
 #
 ################################################################################
 
-param ([string]$Identity, [string]$Delegate, [switch]$EmailDelegate=$true)
+param ([string]$Identity, [string]$Delegate, [switch]$EmailDelegate=$true) {}
 
 if ($Delegate -eq '' -or $Identity -eq '') {
-    Write-Host "Please specify the Identity and Delegate"
+    Write-Error "Please specify the Identity and Delegate"
     return
 }
 
 # Change these to suit your environment
-$SmtpServer = "it-exhub.ad.jmu.edu"
-$From       = "it-exmaint@jmu.edu"
-$Cc         = "wrightst@jmu.edu, millerca@jmu.edu, najdziav@jmu.edu"
-$Fqdn       = "exchange.jmu.edu"
+$SmtpServer         = "it-exhub.ad.jmu.edu"
+$From               = "it-exmaint@jmu.edu"
+$Bcc                = "wrightst@jmu.edu, millerca@jmu.edu, najdziav@jmu.edu"
+$Fqdn               = "exchange.jmu.edu"
 ##################################
-$DomainController = (gc Env:\LOGONSERVER).Replace('\', '')
+$cwd                = [System.IO.Path]::GetDirectoryName(($MyInvocation.MyCommand).Definition)
+$DomainController   = (gc Env:\LOGONSERVER).Replace('\', '')
+
 if ($DomainController -eq $null) { 
     Write-Warning "Could not determine the local computer's logon server!"
     return
 }
 
-
-$SmtpClient = New-Object System.Net.Mail.SmtpClient
-$SmtpClient.Host = $SmtpServer
-$SmtpClient.Port = 25
-$SmtpClient.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials
 
 $resource = Get-Mailbox $Identity
 $delegate = Get-Mailbox $Delegate
@@ -168,8 +165,6 @@ If you have any questions, please contact the JMU Computing HelpDesk at
 helpdesk@jmu.edu, or by phone at 540-568-3555.
 "@
 
-    $Message = New-Object System.Net.Mail.MailMessage $From, $To, $Title, $Body
-    $Message.Cc.Add($Cc)
-    $SmtpClient.Send($message)
+    & "$cwd\Send-Email.ps1" -From $From -To $To -Bcc $Bcc -Subject $Title -Body $Body -SmtpServer $SmtpServer
     Write-Output "Sent message to $To for resource `"$resource`""
 }

@@ -32,41 +32,37 @@ param ( [string]$DisplayName,
         [switch]$EmailOwner=$true)
 
 # Change these to suit your environment
-$SmtpServer = "it-exhub.ad.jmu.edu"
-$From       = "it-exmaint@jmu.edu"
-$Cc         = "wrightst@jmu.edu, millerca@jmu.edu, najdziav@jmu.edu, eckardsl@jmu.edu"
-$Fqdn       = "exchange.jmu.edu"
-$BaseDN     = "ad.jmu.edu/ExchangeObjects"
+$SmtpServer         = "it-exhub.ad.jmu.edu"
+$From               = "it-exmaint@jmu.edu"
+$Bcc                = "wrightst@jmu.edu, millerca@jmu.edu, najdziav@jmu.edu, eckardsl@jmu.edu"
+$Fqdn               = "exchange.jmu.edu"
+$BaseDN             = "ad.jmu.edu/ExchangeObjects"
 
 ##################################
-$DomainController = (gc Env:\LOGONSERVER).Replace('\', '')
+$cwd                = [System.IO.Path]::GetDirectoryName(($MyInvocation.MyCommand).Definition)
+$DomainController   = (gc Env:\LOGONSERVER).Replace('\', '')
 if ($DomainController -eq $null) { 
     Write-Warning "Could not determine the local computer's logon server!"
     return
 }
 
-$SmtpClient = New-Object System.Net.Mail.SmtpClient
-$SmtpClient.Host = $SmtpServer
-$SmtpClient.Port = 25
-$SmtpClient.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials
-
 if ( $DisplayName -eq '' -or $Owner -eq '') {
-Write-Output "-DisplayName and -Owner are required"
+    Write-Error "-DisplayName and -Owner are required"
     return
 }
 
 if ( !($Room -or $Equipment -or $Shared) ) {
-    Write-Output "Please specify either -Room, -Equipment, -Shared, or -Calendar"
+    Write-Error "Please specify either -Room, -Equipment, -Shared, or -Calendar"
     return
 }
 
 if (($Room -and $Equipment) -or ($Room -and $Shared) -or ($Equipment -and $Shared)) {
-    Write-Output "Please specify only one of -Room, -Equipment, or -Shared"
+    Write-Error "Please specify only one of -Room, -Equipment, or -Shared"
     return
 }
 
 if ( $Shared -and !($Calendar) -and ($PrimarySmtpAddress -eq "") ) {
-    Write-Output "Please specify the PrimarySmtpAddress"
+    Write-Error "Please specify the PrimarySmtpAddress"
     return
 }
 
@@ -105,7 +101,11 @@ if ($Shared -and !$Calendar) {
     $alias += "_Mailbox"
 }
 
-$Database   = .\Get-BestDatabase.ps1 IT-ExMbx1
+$Database = & "$cwd\Get-BestDatabase.ps1" IT-ExMbx1
+if ($Database -eq $null) {
+    Write-Error "Could not find a suitable database!"
+    return
+}
 
 $cmd  = "New-Mailbox -DomainController $DomainController -Database `"$Database`""
 $cmd += "-OrganizationalUnit `"$ou`" -Name `"$Name`" -Alias `"$alias`" -UserPrincipalName "
@@ -131,7 +131,7 @@ if (!([String]::IsNullOrEmpty($error[0]))) {
 $resource = Get-Mailbox -DomainController $DomainController -Identity "$DisplayName"
 
 if ( !$resource) {
-    Write-Output "Could not find $alias in Active Directory."
+    Write-Error "Could not find $alias in Active Directory."
     return
 }
 
@@ -147,8 +147,7 @@ foreach ($i in 1..60) {
 }
 
 Write-Host "`ndone.`nSending a message to the resource to initialize the mailbox."
-$Message = New-Object System.Net.Mail.MailMessage "it-exmaint@jmu.edu", "$($resource.PrimarySMTPAddress)", "disregard", "disregard"
-$SmtpClient.Send($message)
+& "$cwd\Send-Email.ps1" -From $From -To "$($resource.PrimarySMTPAddress)" -Subject "disregard" -Body "disregard" -SmtpServer $SmtpServer
 
 # Grant SendOnBehalfOf rights to the owner:
 $resource | Set-Mailbox -DomainController $DomainController `
@@ -162,7 +161,7 @@ $resource | Add-MailboxPermission -DomainController $DomainController `
 
 if ($Equipment -or $Room) {
     # If this is a Resource mailbox and not a Shared mailbox...
-    # Set the default calendar settings on the resource:
+    # Set the default calendar settings on the resource.
     # Unfortunately, this fails if the mailbox isn't fully created yet, so introduce a wait.
     Write-Host "Setting Calendar Settings: "
 
@@ -179,11 +178,6 @@ if ($Equipment -or $Room) {
             Write-Host "done."
             break
         }
-    }
-
-    if ( !(Get-MailboxCalendarSettings -DomainController $DomainController -Identity $resource).ResourceDelegates ) {
-        Write-Output "Skipping `"$resource`" because it has no delegates"
-        continue
     }
 } elseif ( $Shared -and !$Calendar ) {
         # Set the target mailbox's EmailAddresses property to include the PrimarySMTPAddress
@@ -273,8 +267,6 @@ If you have any questions, please contact the JMU Computing HelpDesk at
 helpdesk@jmu.edu, or by phone at 540-568-3555.
 "@
 
-    $Message = New-Object System.Net.Mail.MailMessage $From, $To, $Title, $Body
-    $Message.Cc.Add($Cc)
-    $SmtpClient.Send($message)
-    Write-Output "Sent message to $To for resource `"$resource`""
+    & "$cwd\Send-Email.ps1" -From $From -To $To -Bcc $Bcc -Subject $Title -Body $Body -SmtpServer $SmtpServer
+    Write-Host "Sent message to $To for resource `"$resource`""
 }
