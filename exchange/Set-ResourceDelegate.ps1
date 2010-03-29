@@ -1,4 +1,4 @@
-################################################################################
+
 # 
 # $URL$
 # $Author$
@@ -34,8 +34,8 @@ if ($Delegate -eq '' -or $Identity -eq '') {
 
 # Change these to suit your environment
 $SmtpServer = "it-exhub.ad.jmu.edu"
-$From       = "wrightst@jmu.edu"
-$Cc         = "wrightst@jmu.edu, boyledj@jmu.edu, millerca@jmu.edu, najdziav@jmu.edu"
+$From       = "it-exmaint@jmu.edu"
+$Cc         = "wrightst@jmu.edu, millerca@jmu.edu, najdziav@jmu.edu"
 $Fqdn       = "exchange.jmu.edu"
 ##################################
 $DomainController = (gc Env:\LOGONSERVER).Replace('\', '')
@@ -135,7 +135,7 @@ following URL:`n
 
     if ( $resourceType -eq 'SharedMailbox' ) {
         $Body += @"
-You may use either Outlook or Outlook Web Acess (OWA) to access this 
+You may use either Outlook or Outlook Web Access (OWA) to access this 
 resource.  If you would like to use OWA, open Internet Explorer and
 navigate to the following URL:`n
 "@
@@ -145,7 +145,7 @@ navigate to the following URL:`n
 
     https://$($Fqdn)/owa/$($resource.PrimarySMTPAddress)`n
 
-(Log in using your own eID and password.)`n
+(Log in using your own e-ID and password.)`n
 
 "@
 

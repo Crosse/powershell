@@ -30,9 +30,9 @@ param ( [string]$From='',
         [int]$SmtpPort=25,
         [string]$AttachmentFile)
 
-if ($From -eq [System.String]::Empty) {
-    Write-Error "Please provide the From: value"
-}
+#if ($From -eq [System.String]::Empty) {
+#    Write-Error "Please provide the From: value"
+#}
 if ($To -eq [System.String]::Empty) {
     Write-Error "Please provide the To: value"
 }

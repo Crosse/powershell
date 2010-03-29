@@ -25,7 +25,7 @@
 #start-transcript exchangeinfo.log
 
 $From = "Exchange System <it-exmaint@jmu.edu>"
-$To = "wrightst@jmu.edu, gumgs@jmu.edu, liskeygn@jmu.edu, stockntl@jmu.edu, boyledj@jmu.edu, millerca@jmu.edu, flynngn@jmu.edu, kingms@jmu.edu, mastrw@jmu.edu, hardbaht@jmu.edu"
+$To = "wrightst@jmu.edu, gumgs@jmu.edu, stockntl@jmu.edu, flynngn@jmu.edu, kingms@jmu.edu, mastrw@jmu.edu, najdziav@jmu.edu"
 $Title = "Exchange User Detail for $(Get-Date -Format d)"
 
 $everything   = Get-Mailbox -Server it-exmbx1 -ResultSize Unlimited

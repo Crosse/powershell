@@ -83,7 +83,6 @@ function global:Migrate-User( $inputObject=$Null,
         # address of the source mailbox.
         $emailAddresses = $targetmbx.EmailAddresses
         Write-Host $emailAddresses
-
         if (!($emailAddresses.Contains("smtp:$($sourcembx.PrimarySmtpAddress.ToString())")) ) {
             $emailAddresses.Add("smtp:$($sourcembx.PrimarySmtpAddress.ToString())")
         }
@@ -99,7 +98,7 @@ function global:Migrate-User( $inputObject=$Null,
 
         # Reset the EmailAddresses to something approaching sanity.
         Set-Mailbox -Identity $Identity -EmailAddressPolicyEnabled:$True -EmailAddresses $emailAddresses `
-            -DomainController $TargetForestDomainController
+            -ManagedFolderMailboxPolicy "Default Managed Folder Policy" -ManagedFolderMailboxPolicyAllowed `            -DomainController $TargetForestDomainController
 
         Get-Mailbox -Identity $Identity -DomainController $TargetForestDomainController | Select EmailAddresses
     }
