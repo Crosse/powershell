@@ -98,7 +98,8 @@ function global:Migrate-User( $inputObject=$Null,
 
         # Reset the EmailAddresses to something approaching sanity.
         Set-Mailbox -Identity $Identity -EmailAddressPolicyEnabled:$True -EmailAddresses $emailAddresses `
-            -ManagedFolderMailboxPolicy "Default Managed Folder Policy" -ManagedFolderMailboxPolicyAllowed `            -DomainController $TargetForestDomainController
+            -ManagedFolderMailboxPolicy "Default Managed Folder Policy" -ManagedFolderMailboxPolicyAllowed `
+            -DomainController $TargetForestDomainController
 
         Get-Mailbox -Identity $Identity -DomainController $TargetForestDomainController | Select EmailAddresses
     }
