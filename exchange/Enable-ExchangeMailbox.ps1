@@ -88,7 +88,7 @@ BEGIN {
 # This section executes for each object in the pipeline.
 PROCESS {
     if ( !($_) -and !($User) ) { 
-        Write-Error "No user given."
+        Write-Output "No user given."
         return
     }
 
@@ -96,17 +96,18 @@ PROCESS {
 
 # Was a username passed to us?  If not, bail.
     if (!($User)) { 
-        Write-Error "USAGE:  Enable-ExchangeMailbox -User `$User"
+        Write-Output "USAGE:  Enable-ExchangeMailbox -User `$User"
     }
 
     $objUser = Get-User $User -ErrorAction SilentlyContinue
 
     if (!($objUser)) {
-        Write-Error "$User is not a valid user in Active Directory."
+        Write-Output "$User is not a valid user in Active Directory."
         return
     } else { 
-        if ($objUser.RecipientTypeDetails -ne 'User') {
-            Write-Error "Cannot operate on a $($objUser.RecipientTypeDetails) object"
+        if ($objUser.RecipientTypeDetails -ne 'User' -and 
+                $objUser.RecipientTypeDetails -ne 'MailUser') {
+            Write-Output "$($objUser): cannot operate on $($objUser.RecipientTypeDetails) objects"
             return
         }
     }
@@ -123,11 +124,24 @@ PROCESS {
     }
 
     if ($Verbose) {
-        Write-Host "Assigning $($objUser.SamAccountName) to database $candidate"
+        Write-Output "Assigning $($objUser.SamAccountName) to database $candidate"
     }
 
 # Save this off because Exchange blanks it out...
     $displayNamePrintable = $objUser.SimpleDisplayName
+
+# If the user is a MailUser already, remove the Exchange bits first
+    if ($objUser.RecipientTypeDetails -match 'MailUser') {
+        if ($Verbose) {
+            Write-Output "User is a MailUser; running Disable-MailUser first"
+        }
+        $error.Clear()
+        Disable-MailUser -Identity $objUser.DistinguishedName -Confirm:$false `
+            -DomainController $DomainController -ErrorAction SilentlyContinue
+        if (![String]::IsNullOrEmpty($error[0])) {
+            Write-Output $error[0]
+        }
+    }
 
 # Enable the mailbox
     $Error.Clear()
@@ -136,16 +150,19 @@ PROCESS {
     -ManagedFolderMailboxPolicyAllowed:$true `
     -DomainController $DomainController -ErrorAction SilentlyContinue
     if ($Error[0] -ne $null) {
-        Write-Error $Error[0]
+        Write-Output $Error[0]
     } else {
 # No error, so set the SimpleDisplayName now that Exchange has 
 # helpfully removed it.
         if ($Verbose) {
-            Write-Host "Resetting $($objUser.SamAccountName)'s " + `
-            "SimpleDisplayName to `"$(displayNamePrintable)`""
+            Write-Output "Resetting $($objUser.SamAccountName)'s SimpleDisplayName to `"$displayNamePrintable`""
         }
+        $error.Clear()
         Set-User $objUser -SimpleDisplayName "$($displayNamePrintable)" `
-        -DomainController $DomainController
+            -DomainController $DomainController -ErrorAction SilentlyContinue
+        if (![String]::IsNullOrEmpty($error[0])) {
+            Write-Output $error[0]
+        }
 
 # Increment the running mailbox total for the candidate database.
         $dbs[$candidate]++
