@@ -24,7 +24,7 @@
 #
 ################################################################################
 
-param ( $User="", [string]$Server="localhost", $inputObject=$null )
+param ( $User="", [string]$Server="localhost", [switch]$Verbose=$false, $inputObject=$null )
 
 # This section executes only once, before the pipeline.
 BEGIN {
@@ -67,19 +67,22 @@ PROCESS {
     $objUser = Get-User $User -ErrorAction SilentlyContinue
 
     if (!($objUser)) {
-        Write-Error "$User is not a valid user in Active Directory."
+        Write-Output "$User`tis not a valid user in Active Directory."
         return
     } else { 
         if ($objUser.RecipientTypeDetails -ne 'User' -and 
                 $objUser.RecipientTypeDetails -ne 'MailUser') {
-            Write-Host "Cannot operate on a $($objUser.RecipientTypeDetails) object"
+            # If the user is already a Mailbox, don't warn on that.
+            if ($objUser.RecipientTypeDetails -notmatch 'Mailbox') {
+                Write-Output "$($objUser.SamAccountName)`tis a $($objUser.RecipientTypeDetails) object, refusing to create mailbox"
+            }
             return
         }
     }
 
 # Don't auto-create mailboxes for users in the Students OU
-    if ($objUser.DistinguishedName -match 'Students') {
-        Write-Error "$User is listed as a student, refusing to create"
+    if ($objUser.DistinguishedName -match 'Student') {
+        Write-Output "$($User)`tis listed as a student, refusing to create mailbox"
         return
     }
 
@@ -89,7 +92,16 @@ PROCESS {
 
 # This section executes only once, after the pipeline.
 END {
+    $now = Get-Date
     if ($Users.Count -gt 0) {
-        $Users | & "$cwd\Enable-ExchangeMailbox.ps1" -Server $Server
+        $Users | & "$cwd\Enable-ExchangeMailbox.ps1" -Server $Server -Verbose:$Verbose | 
+            Out-String |
+            & "$cwd\Send-Email.ps1" -From 'it-exmaint@jmu.edu' -To 'wrightst@jmu.edu' `
+                -Subject "Exchange Provisioning $($now.ToString()) ($($Users.Count) Users)" `
+                -SmtpServer it-exhub.ad.jmu.edu
+    } else {
+        & "$cwd\Send-Email.ps1" -From 'it-exmaint@jmu.edu' -To 'wrightst@jmu.edu' `
+            -Subject "Exchange Provisioning $($now.ToString()) (Nothing to do)" `
+            -Body 'No users to provision.' -SmtpServer it-exhub.ad.jmu.edu
     }
 } # end 'END{}'
