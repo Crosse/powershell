@@ -59,7 +59,7 @@ foreach ($database in $databases) {
 
     $maxUsers = 200GB / (Get-MailboxDatabase $database).ProhibitSendReceiveQuota.Value.ToBytes()
 
-    if (($mailboxCount -le $maxUsers) -and ($mailboxCount -lt $candidateUserCount -or $candidateUserCount -eq -1)) {
+    if ($mailboxCount -lt $candidateUserCount -or $candidateUserCount -eq -1) {
         # Found a new candidate,
         Write-Host -NoNewLine "!"
         $candidateUserCount = $mailboxCount
