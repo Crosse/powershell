@@ -30,68 +30,84 @@ param ( [string]$From='',
         [string]$SmtpServer='',
         [int]$SmtpPort=25,
         [string]$AttachmentFile,
+        $inputObject=$null,
         $Credential=[System.Net.CredentialCache]::DefaultNetworkCredentials)
 
-if ([System.String]::IsNullOrEmpty($From)) {
-    Write-Error "Please provide the From: value"
-    return
-}
+# This section executes only once, before the pipeline.
+BEGIN {
+    if ($inputObject) {
+        Write-Output $inputObject | &($MyInvocation.InvocationName)
+        break
+    }
 
-if ([System.String]::IsNullOrEmpty($To) -and 
-        ([System.String]::IsNullOrEmpty($Cc) -and 
-         [System.String]::IsNullOrEmpty($Bcc))) {
-    Write-Error "Please provide the To: value"
-    return
-}
-if ([System.String]::IsNullOrEmpty($SmtpServer)) {
-    Write-Error "Please provide an SMTP server"
-    return
-}
+} # end 'BEGIN{}'
 
-if ($Body -eq '') {
-    Write-Warning "Sending email with null body!"
+# This section executes for each object in the pipeline.
+PROCESS {
+    if ($_) { $Body = $_ }
+
+# Was a username passed to us?  If not, bail.
+    if (!($Body)) { 
+        Write-Warning "Sending email with null body!"
+    }
+
+    if ([String]::IsNullOrEmpty($From)) {
+        Write-Error "Please provide the From: value"
+        return
+    }
+
+    if ([String]::IsNullOrEmpty($To) -and 
+            ([String]::IsNullOrEmpty($Cc) -and 
+             [String]::IsNullOrEmpty($Bcc))) {
+        Write-Error "Please provide the To: value"
+        return
+    }
+    if ([String]::IsNullOrEmpty($SmtpServer)) {
+        Write-Error "Please provide an SMTP server"
+        return
+    }
+
+    if ($Subject -eq '') {
+        Write-Warning "Sending email with null subject line!"
+    }
+
+    $SmtpClient = New-Object System.Net.Mail.SmtpClient
+    $SmtpClient.Host = $SmtpServer
+    $SmtpClient.Port = $SmtpPort
+    $SmtpClient.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials
+    $Message = New-Object System.Net.Mail.MailMessage 
+
+    $Message.From       = $From
+    $Message.Subject    = $Subject
+    $Message.Body       = $Body
+
+    if (![String]::IsNullOrEmpty($To)) {
+        $Message.To.Add($To)
+    }
+
+    if (($AttachmentFile -ne $null -and $AttachmentFile -ne '') -and (Test-Path "$AttachmentFile")) {
+        $Attachment = New-Object Net.Mail.Attachment((Get-Item $AttachmentFile).ToString())
+        $Message.Attachments.Add($Attachment)
+    }
+
+    if (![String]::IsNullOrEmpty($Cc)) {
+        $Message.Cc.Add($Cc)
+    }
+
+    if (![String]::IsNullOrEmpty($Bcc)) {
+        $Message.Bcc.Add($Bcc)
+    }
+
+    Write-Output "Sending email from $From with subject line `"$Subject`""
+    $error.Clear()
+    $SmtpClient.Send($message)
+    if ([String]::IsNullOrEmpty($error[0])) {
+        Write-Output "Message successfully sent."
+    } else {
+        Write-Output "Message send failure."
+    }
+
+    if ($Attachment -ne $null) {
+        $Attachment.Dispose()
+    }
 }
-if ($Subject -eq '') {
-    Write-Warning "Sending email with null subject line!"
-}
-
-$SmtpClient = New-Object System.Net.Mail.SmtpClient
-$SmtpClient.Host = $SmtpServer
-$SmtpClient.Port = $SmtpPort
-$SmtpClient.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials
-$Message = New-Object System.Net.Mail.MailMessage 
-
-$Message.From       = $From
-$Message.Subject    = $Subject
-$Message.Body       = $Body
-
-if (![System.String]::IsNullOrEmpty($To)) {
-    $Message.To.Add($To)
-}
-
-if (($AttachmentFile -ne $null -and $AttachmentFile -ne '') -and (Test-Path "$AttachmentFile")) {
-    $Attachment = New-Object Net.Mail.Attachment((Get-Item $AttachmentFile).ToString())
-    $Message.Attachments.Add($Attachment)
-}
-
-if (![System.String]::IsNullOrEmpty($Cc)) {
-    $Message.Cc.Add($Cc)
-}
-
-if (![System.String]::IsNullOrEmpty($Bcc)) {
-    $Message.Bcc.Add($Bcc)
-}
-
-Write-Output "Sending email from $From with subject line `"$Subject`""
-$error.Clear()
-$SmtpClient.Send($message)
-if ([System.String]::IsNullOrEmpty($error[0])) {
-    Write-Output "Message successfully sent."
-} else {
-    Write-Output "Message send failure."
-}
-
-if ($Attachment -ne $null) {
-    $Attachment.Dispose()
-}
-
