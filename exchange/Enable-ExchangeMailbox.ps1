@@ -24,7 +24,13 @@
 #
 ################################################################################
 
-param ( $User="", $Server="localhost", [switch]$Verbose=$false, $inputObject=$null )
+param ( $User="",
+        $Server="localhost",
+        [switch]$Automated=$false,
+        [switch]$Force=$false,
+        [switch]$Verbose=$false,
+        [System.Collections.Hashtable]$Databases=$null,
+        $inputObject=$null )
 
 # This section executes only once, before the pipeline.
 BEGIN {
@@ -45,44 +51,19 @@ BEGIN {
         return
     }
 
-    $databases = Get-MailboxDatabase -Server $srv -Status | 
-    Where { $_.Mounted -eq $True -and $_.Name -match "^SG" }
-    if ($databases -eq $null) {
-        Write-Error "Could not enumerate databases on server $Server"
-        return
-    }
+    $cwd = [System.IO.Path]::GetDirectoryName(($MyInvocation.MyCommand).Definition)
 
-    $i = 1
-    $dbs = New-Object System.Collections.Hashtable
-    Write-Host -NoNewLine "["
-    foreach ($database in $databases) {
-        if ($i % 10 -eq 0) {
-            Write-Host -NoNewLine "|"
-        } elseif ($i % 5 -eq 0) {
-            Write-Host -NoNewLine "+"
-        } else {
-            Write-Host -NoNewLine "."
-        }
-        $i++
-
-        $mailboxCount = (Get-Mailbox -Database $database).Count
-        if ($? -eq $False) {
-            Write-Error "Error processing database $database"
+    if ($Databases -eq $null) {
+        $dbs = & "$cwd\Get-BestDatabase.ps1" -Server $Server -Single:$false
+        if ($dbs -eq $null) {
+            Write-Error "Could not enumerate databases!"
             return
         }
-
-        $maxUsers = 200GB / (Get-MailboxDatabase $database).ProhibitSendReceiveQuota.Value.ToBytes()
-
-        if ($mailboxCount -le $maxUsers) {
-            # Normally we'd not add this database
-            # if the mailboxCount was greater than the maximum
-            # number of users allowed for the database,
-            # but we're fudging it for a while.
-        }
-        $dbs.Add($database.Identity.ToString(), $mailboxCount)
+    } else {
+        $dbs = $Databases
     }
-    Write-Host "]"
 
+    $exitCode = 0
 } # end 'BEGIN{}'
 
 # This section executes for each object in the pipeline.
@@ -95,21 +76,40 @@ PROCESS {
     if ($_) { $User = $_ }
 
 # Was a username passed to us?  If not, bail.
-    if (!($User)) { 
-        Write-Output "USAGE:  Enable-ExchangeMailbox -User `$User"
+    if ([String]::IsNullOrEmpty($User)) { 
+        Write-Error "USAGE:  Enable-ExchangeMailbox -User `$User"
+        return
     }
 
     $objUser = Get-User $User -ErrorAction SilentlyContinue
 
     if (!($objUser)) {
-        Write-Output "$User is not a valid user in Active Directory."
+        Write-Output "$User`tis not a valid user in Active Directory."
+        $exitCode += 1
         return
     } else { 
-        if ($objUser.RecipientTypeDetails -ne 'User' -and 
-                $objUser.RecipientTypeDetails -ne 'MailUser') {
-            Write-Output "$($objUser): cannot operate on $($objUser.RecipientTypeDetails) objects"
-            return
+        switch ($objUser.RecipientTypeDetails) {
+            'User' { break }
+            'MailUser' { break }
+            'UserMailbox' {
+                if (!$Automated) {
+                    Write-Output "$($objUser.SamAccountName)`talready has a mailbox"
+                }
+                return
+            }
+            default {
+                Write-Output "$($objUser.SamAccountName)`tis a $($objUser.RecipientTypeDetails) object, refusing to create mailbox"
+                $exitCode += 1
+                return
+            }
         }
+    }
+
+# Don't auto-create mailboxes for users in the Students OU
+    if ($objUser.DistinguishedName -match 'Student') {
+        Write-Output "$($User)`tis listed as a student, refusing to create mailbox"
+        $exitCode += 1
+        return
     }
 
     $candidate = $null
@@ -132,25 +132,25 @@ PROCESS {
 
 # If the user is a MailUser already, remove the Exchange bits first
     if ($objUser.RecipientTypeDetails -match 'MailUser') {
-        if ($Verbose) {
-            Write-Output "User is a MailUser; running Disable-MailUser first"
-        }
-        $error.Clear()
-        Disable-MailUser -Identity $objUser.DistinguishedName -Confirm:$false `
-            -DomainController $DomainController -ErrorAction SilentlyContinue
-        if (![String]::IsNullOrEmpty($error[0])) {
-            Write-Output $error[0]
+        & "$cwd\Deprovision-User.ps1" -User $objUser.DistinguishedName -Confirm:$false
+        if ($LASTEXITCODE -gt 0) {
+            Write-Output "An error occurred; refusing to create mailbox."
+            $exitCode += 1
+            return
         }
     }
 
 # Enable the mailbox
     $Error.Clear()
     Enable-Mailbox -Database "$($candidate)" -Identity $objUser `
-    -ManagedFolderMailboxPolicy "Default Managed Folder Policy" `
-    -ManagedFolderMailboxPolicyAllowed:$true `
-    -DomainController $DomainController -ErrorAction SilentlyContinue
+        -ManagedFolderMailboxPolicy "Default Managed Folder Policy" `
+        -ManagedFolderMailboxPolicyAllowed:$true `
+        -DomainController $DomainController -ErrorAction SilentlyContinue
+
     if ($Error[0] -ne $null) {
+        $exitCode += 1
         Write-Output $Error[0]
+        return
     } else {
 # No error, so set the SimpleDisplayName now that Exchange has 
 # helpfully removed it.
@@ -160,6 +160,7 @@ PROCESS {
         $error.Clear()
         Set-User $objUser -SimpleDisplayName "$($displayNamePrintable)" `
             -DomainController $DomainController -ErrorAction SilentlyContinue
+
         if (![String]::IsNullOrEmpty($error[0])) {
             Write-Output $error[0]
         }
@@ -172,5 +173,6 @@ PROCESS {
 
 # This section executes only once, after the pipeline.
 END {
+    exit $exitCode
 } # end 'END{}'
 
