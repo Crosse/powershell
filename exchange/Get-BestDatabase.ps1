@@ -24,12 +24,7 @@
 #
 ################################################################################
 
-param ([string]$Server)
-
-if ($Server -eq '') {
-    Write-Host "Please specify the Server"
-    return
-}
+param ([string]$Server="localhost", [switch]$Single=$true)
 
 ##################################
 
@@ -39,41 +34,59 @@ if ($srv -eq $null) {
     return
 }
 
+$DomainController = (gc Env:\LOGONSERVER).Replace('\', '')
+if ($DomainController -eq $null) { 
+    Write-Warning "Could not determine the local computer's logon server!"
+    return
+}
+
 $databases = Get-MailboxDatabase -Server $srv -Status | 
-    Where { $_.Mounted -eq $True -and $_.Name -match "^SG" }
+Where { $_.Mounted -eq $True -and $_.Name -match "^SG" }
 if ($databases -eq $null) {
     Write-Error "Could not enumerate databases on server $Server"
     return
 }
 
-$candidateUserCount = -1
-$candidate = $null
-
+$i = 1
+$dbs = New-Object System.Collections.Hashtable
 foreach ($database in $databases) {
+    $percent = $([int]($i/$databases.Count*100))
+    Write-Progress -Activity "Processing Mailbox Databases" `
+        -Status "$percent% Complete" `
+        -PercentComplete $percent -CurrentOperation "Verifying $($database.Identity)"
+    $i++
+
     $mailboxCount = (Get-Mailbox -Database $database).Count
     if ($? -eq $False) {
         Write-Error "Error processing database $database"
         return
     }
 
-
     $maxUsers = 200GB / (Get-MailboxDatabase $database).ProhibitSendReceiveQuota.Value.ToBytes()
 
-    if ($mailboxCount -lt $candidateUserCount -or $candidateUserCount -eq -1) {
-        # Found a new candidate,
-        Write-Host -NoNewLine "!"
-        $candidateUserCount = $mailboxCount
-        $candidate = $database
-    } else {
-        # We've seen better.
-        Write-Host -NoNewLine "."
+    if ($mailboxCount -le $maxUsers) {
+# Normally we'd not add this database
+# if the mailboxCount was greater than the maximum
+# number of users allowed for the database,
+# but we're fudging it for a while.
     }
-
+    $dbs.Add($database.Identity.ToString(), $mailboxCount)
 }
 
-if ($candidate -ne $null) {
-    Write-Host "`nCandidate Database: $candidate contains $candidateUserCount mailboxes"
-} else { 
-    Write-Host "`nNo candidate database was found!"
+Write-Progress -Activity "Processing Mailbox Databases" -Status "100% Complete" -Complete:$true
+
+if ($Single) {
+    $candidate = $null
+    foreach ($db in $dbs.Keys) {
+        if ($candidate -eq $null) {
+            $candidate = $db
+        } else {
+            if ($dbs[$db] -lt $dbs[$candidate]) {
+                $candidate = $db
+            }
+        }
+    }
+    $candidate
+} else {
+    $dbs
 }
-$candidate
