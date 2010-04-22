@@ -90,9 +90,10 @@ function global:Migrate-User( $inputObject=$Null,
         # Add the source mailbox's legacyExchangeDN as an X.500 
         # address to the target mailbox's address collection.
         $sourceLegacyExchangeDN = $sourcembx.LegacyExchangeDN
+        Write-Host $sourceLegacyExchangeDN
 
-        if (![String]::IsNullOrEmpty($sourceLegacyExchangeDN) -and 
-                !($emailAddresses.Contains("X500:$($sourceLegacyExchangeDN)")) {
+        if (![String]::IsNullOrEmpty($sourceLegacyExchangeDN) -and
+                !($emailAddresses.Contains("X500:$($sourceLegacyExchangeDN)"))) {
             $emailAddresses.Add("X500:$($sourceLegacyExchangeDN)")
         }
 
