@@ -5,7 +5,7 @@
 # $Date$
 # $Rev$
 # 
-# DESCRIPTION:  Creates mailboxes in Exchange
+# DESCRIPTION:  Provisions users in Exchange
 # 
 # 
 # Copyright (c) 2009,2010 Seth Wright <wrightst@jmu.edu>
@@ -27,6 +27,8 @@
 param ( $User="",
         $Server="localhost",
         [switch]$Automated=$false,
+        [switch]$Mailbox=$true,
+        [string]$ExternalEmailAddress=$null,
         [switch]$Force=$false,
         [switch]$Verbose=$false,
         [System.Collections.Hashtable]$Databases=$null,
@@ -39,10 +41,12 @@ BEGIN {
         break
     }
 
-    $srv = Get-ExchangeServer $Server
-    if ($srv -eq $null) {
-        Write-Error "Could not find Exchange Server $Server"
-        return
+    if ($Mailbox) {
+        $srv = Get-ExchangeServer $Server -ErrorAction SilentlyContinue
+        if ($srv -eq $null) {
+            Write-Error "Could not find Exchange Server $Server"
+            return
+        }
     }
 
     $DomainController = (gc Env:\LOGONSERVER).Replace('\', '')
@@ -53,14 +57,21 @@ BEGIN {
 
     $cwd = [System.IO.Path]::GetDirectoryName(($MyInvocation.MyCommand).Definition)
 
-    if ($Databases -eq $null) {
-        $dbs = & "$cwd\Get-BestDatabase.ps1" -Server $Server -Single:$false
-        if ($dbs -eq $null) {
-            Write-Error "Could not enumerate databases!"
-            return
+    if ($Mailbox -eq $true) {
+        if ($Databases -eq $null) {
+            $dbs = & "$cwd\Get-BestDatabase.ps1" -Server $Server -Single:$false
+            if ($dbs -eq $null) {
+                Write-Error "Could not enumerate databases!"
+                return
+            }
+        } else {
+            $dbs = $Databases
         }
     } else {
-        $dbs = $Databases
+        if ([String]::IsNullOrEmpty($ExternalEmailAddress)) {
+            Write-Error "No ExternalEmailAddress given, and Mailbox is false"
+            return
+        }
     }
 
     $exitCode = 0
@@ -75,7 +86,7 @@ PROCESS {
 
     if ($_) { $User = $_ }
 
-# Was a username passed to us?  If not, bail.
+    # Was a username passed to us?  If not, bail.
     if ([String]::IsNullOrEmpty($User)) { 
         Write-Error "USAGE:  Enable-ExchangeMailbox -User `$User"
         return
@@ -90,83 +101,114 @@ PROCESS {
     } else { 
         switch ($objUser.RecipientTypeDetails) {
             'User' { break }
-            'MailUser' { break }
+            'MailUser' {
+                if (!$Mailbox) {
+                    Write-Output "$($objUser.SamAccountName)`tis already a MailUser"
+                    return
+                } else {
+                    break
+                }
+            }
             'UserMailbox' {
-                if (!$Automated) {
+                if ($Mailbox) {
                     Write-Output "$($objUser.SamAccountName)`talready has a mailbox"
+                } else {
+                    Write-Output "$($objUser.SamAccountName)`tis a Mailbox, refusing to enable as MailUser instead"
+                    $exitCode += 1
                 }
                 return
             }
+            'DisabledUser' {
+                if ($Mailbox) {
+                    Write-Output "$($objUser.SamAccountName)`tis disabled, refusing to create mailbox"
+                    $exitCode += 1
+                    return
+                }
+                break;
+            }
             default {
-                Write-Output "$($objUser.SamAccountName)`tis a $($objUser.RecipientTypeDetails) object, refusing to create mailbox"
+                Write-Output "$($objUser.SamAccountName)`tis a $($objUser.RecipientTypeDetails) object, refusing to provision"
                 $exitCode += 1
                 return
             }
         }
     }
 
-# Don't auto-create mailboxes for users in the Students OU
-    if ($objUser.DistinguishedName -match 'Student') {
-        Write-Output "$($User)`tis listed as a student, refusing to create mailbox"
-        $exitCode += 1
-        return
-    }
-
-    $candidate = $null
-    foreach ($db in $dbs.Keys) {
-        if ($candidate -eq $null) {
-            $candidate = $db
-        } else {
-            if ($dbs[$db] -lt $dbs[$candidate]) {
-                $candidate = $db
-            }
-        }
-    }
-
-    if ($Verbose) {
-        Write-Output "Assigning $($objUser.SamAccountName) to database $candidate"
-    }
-
-# Save this off because Exchange blanks it out...
+    # Save this off because Exchange blanks it out...
     $displayNamePrintable = $objUser.SimpleDisplayName
 
-# If the user is a MailUser already, remove the Exchange bits first
-    if ($objUser.RecipientTypeDetails -match 'MailUser') {
-        & "$cwd\Deprovision-User.ps1" -User $objUser.DistinguishedName -Confirm:$false
-        if ($LASTEXITCODE -gt 0) {
-            Write-Output "An error occurred; refusing to create mailbox."
+    if ($Mailbox) {
+        # Don't auto-create mailboxes for users in the Students OU
+        if ($objUser.DistinguishedName -match 'Student') {
+            Write-Output "$($User)`tis listed as a student, refusing to create mailbox"
             $exitCode += 1
             return
         }
-    }
 
-# Enable the mailbox
-    $Error.Clear()
-    Enable-Mailbox -Database "$($candidate)" -Identity $objUser `
+        $candidate = $null
+        foreach ($db in $dbs.Keys) {
+            if ($candidate -eq $null) {
+                $candidate = $db
+            } else {
+                if ($dbs[$db] -lt $dbs[$candidate]) {
+                    $candidate = $db
+                }
+            }
+        }
+
+        if ($Verbose) {
+            Write-Output "Assigning $($objUser.SamAccountName) to database $candidate"
+        }
+
+        # If the user is a MailUser already, remove the Exchange bits first
+        if ($objUser.RecipientTypeDetails -match 'MailUser') {
+            & "$cwd\Deprovision-User.ps1" -User $objUser.DistinguishedName -Confirm:$false
+            if ($LASTEXITCODE -gt 0) {
+                Write-Output "An error occurred; refusing to create mailbox."
+                $exitCode += 1
+                return
+            }
+        }
+
+        # Enable the mailbox
+        $Error.Clear()
+        Enable-Mailbox -Database "$($candidate)" -Identity $objUser `
         -ManagedFolderMailboxPolicy "Default Managed Folder Policy" `
         -ManagedFolderMailboxPolicyAllowed:$true `
         -DomainController $DomainController -ErrorAction SilentlyContinue
 
-    if ($Error[0] -ne $null) {
-        $exitCode += 1
-        Write-Output $Error[0]
-        return
-    } else {
-# No error, so set the SimpleDisplayName now that Exchange has 
-# helpfully removed it.
-        if ($Verbose) {
-            Write-Output "Resetting $($objUser.SamAccountName)'s SimpleDisplayName to `"$displayNamePrintable`""
-        }
-        $error.Clear()
-        Set-User $objUser -SimpleDisplayName "$($displayNamePrintable)" `
-            -DomainController $DomainController -ErrorAction SilentlyContinue
+        if ($Error[0] -ne $null) {
+            $exitCode += 1
+            Write-Output $Error[0]
+            return
+        } 
 
-        if (![String]::IsNullOrEmpty($error[0])) {
-            Write-Output $error[0]
-        }
-
-# Increment the running mailbox total for the candidate database.
+        # Increment the running mailbox total for the candidate database.
         $dbs[$candidate]++
+    } else {
+        # The user should be enabled as a MailUser instead of a Mailbox.
+        $Error.Clear()
+        Enable-MailUser -Identity $objUser -ExternalEmailAddress $ExternalEmailAddress `
+        -DomainController $DomainController
+
+        if ($Error[0] -ne $null) {
+            $exitCode += 1
+            Write-Output $Error[0]
+            return
+        } 
+    }
+
+    # No error, so set the SimpleDisplayName now that Exchange has 
+    # helpfully removed it.
+    if ($Verbose) {
+        Write-Output "Resetting $($objUser.SamAccountName)'s SimpleDisplayName to `"$displayNamePrintable`""
+    }
+    $error.Clear()
+    Set-User $objUser -SimpleDisplayName "$($displayNamePrintable)" `
+    -DomainController $DomainController -ErrorAction SilentlyContinue
+
+    if (![String]::IsNullOrEmpty($error[0])) {
+        Write-Output $error[0]
     }
 
 } # end 'PROCESS{}'
