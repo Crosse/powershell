@@ -86,6 +86,16 @@ function global:Migrate-User( $inputObject=$Null,
         if (!($emailAddresses.Contains("smtp:$($sourcembx.PrimarySmtpAddress.ToString())")) ) {
             $emailAddresses.Add("smtp:$($sourcembx.PrimarySmtpAddress.ToString())")
         }
+
+        # Add the source mailbox's legacyExchangeDN as an X.500 
+        # address to the target mailbox's address collection.
+        $sourceLegacyExchangeDN = $sourcembx.LegacyExchangeDN
+
+        if (![String]::IsNullOrEmpty($sourceLegacyExchangeDN) -and 
+                !($emailAddresses.Contains("X500:$($sourceLegacyExchangeDN)")) {
+            $emailAddresses.Add("X500:$($sourceLegacyExchangeDN)")
+        }
+
         Set-Mailbox -Identity $Identity -EmailAddressPolicyEnabled:$False -EmailAddresses $emailAddresses `
             -DomainController $TargetForestDomainController
 
