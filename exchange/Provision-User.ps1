@@ -60,6 +60,7 @@ BEGIN {
     if ($Mailbox -eq $true) {
         if ($Databases -eq $null) {
             $dbs = & "$cwd\Get-BestDatabase.ps1" -Server $Server -Single:$false
+            $dbs
             if ($dbs -eq $null) {
                 Write-Error "Could not enumerate databases!"
                 return
@@ -139,7 +140,7 @@ PROCESS {
 
     if ($Mailbox) {
         # Don't auto-create mailboxes for users in the Students OU
-        if ($objUser.DistinguishedName -match 'Student') {
+        if ($objUser.DistinguishedName -match 'Student' -and $Force -eq $false) {
             Write-Output "$($User)`tis listed as a student, refusing to create mailbox"
             $exitCode += 1
             return
