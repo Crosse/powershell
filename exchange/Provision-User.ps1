@@ -31,6 +31,8 @@ param ( $User="",
         [string]$ExternalEmailAddress=$null,
         [switch]$Force=$false,
         [switch]$Verbose=$false,
+        [string]$RetryableErrorsFilePath=$null,
+        [string]$DomainController=$null,
         [System.Collections.Hashtable]$Databases=$null,
         $inputObject=$null )
 
@@ -44,33 +46,45 @@ BEGIN {
     if ($Mailbox) {
         $srv = Get-ExchangeServer $Server -ErrorAction SilentlyContinue
         if ($srv -eq $null) {
-            Write-Error "Could not find Exchange Server $Server"
+            Write-Output "ERROR: Could not find Exchange Server $Server"
             return
         }
     }
 
-    $DomainController = (gc Env:\LOGONSERVER).Replace('\', '')
-    if ($DomainController -eq $null) { 
-        Write-Warning "Could not determine the local computer's logon server!"
-        return
+    if ([String]::IsNullOrEmpty($DomainController)) {
+        $DomainController = (gc Env:\LOGONSERVER).Replace('\', '')
+        if ([String]::IsNullOrEmpty($DomainController)) {
+            Write-Output "ERROR:  Could not determine the local computer's logon server!"
+            return
+        }
+    }
+
+    if ($Verbose) {
+        Write-Host "Using Domain Controller $DomainController"
     }
 
     $cwd = [System.IO.Path]::GetDirectoryName(($MyInvocation.MyCommand).Definition)
 
+    $start = Get-Date
+    if ([String]::IsNullOrEmpty($RetryableErrorsFilePath) -eq $false -or 
+        [System.IO.File]::Exists($RetryableErrorsFilePath) -eq $false) {
+            $RetryableErrorsFilePath = [System.IO.Path]::Combine($(Get-Location), "provisioning_errors_$($start.Ticks).csv")
+    }
+
     if ($Mailbox -eq $true) {
         if ($Databases -eq $null) {
-            $dbs = & "$cwd\Get-BestDatabase.ps1" -Server $Server -Single:$false
-            $dbs
-            if ($dbs -eq $null) {
-                Write-Error "Could not enumerate databases!"
+            $Databases = & "$cwd\Get-BestDatabase.ps1" -Server $Server -Single:$false
+            if ($Databases -eq $null) {
+                Write-Output "ERROR: Could not enumerate databases!"
                 return
             }
-        } else {
-            $dbs = $Databases
+            if ($Verbose -eq $true) {
+                Write-Output "Found $($Databases.Count) databases."
+            }
         }
     } else {
         if ([String]::IsNullOrEmpty($ExternalEmailAddress)) {
-            Write-Error "No ExternalEmailAddress given, and Mailbox is false"
+            Write-Output "ERROR:  No ExternalEmailAddress given, and Mailbox is false"
             return
         }
     }
@@ -81,7 +95,7 @@ BEGIN {
 # This section executes for each object in the pipeline.
 PROCESS {
     if ( !($_) -and !($User) ) { 
-        Write-Output "No user given."
+        Write-Output "ERROR: No user given."
         return
     }
 
@@ -89,7 +103,7 @@ PROCESS {
 
     # Was a username passed to us?  If not, bail.
     if ([String]::IsNullOrEmpty($User)) { 
-        Write-Error "USAGE:  Enable-ExchangeMailbox -User `$User"
+        Write-Output "USAGE:  Provision-User -User `$User"
         return
     }
 
@@ -97,6 +111,9 @@ PROCESS {
 
     if (!($objUser)) {
         Write-Output "$User`tis not a valid user in Active Directory."
+        if ($Automated) {
+            Out-File -NoClobber -Append -FilePath $RetryableErrorsFilePath -InputObject "$User,$start,No AD Account"
+        }
         $exitCode += 1
         return
     } else { 
@@ -122,6 +139,9 @@ PROCESS {
             'DisabledUser' {
                 if ($Mailbox) {
                     Write-Output "$($objUser.SamAccountName)`tis disabled, refusing to create mailbox"
+                    if ($Automated) {
+                        Out-File -Append -FilePath $RetryableErrorsFilePath -InputObject "$User,$start,Disabled AD Account"
+                    }
                     $exitCode += 1
                     return
                 }
@@ -142,16 +162,19 @@ PROCESS {
         # Don't auto-create mailboxes for users in the Students OU
         if ($objUser.DistinguishedName -match 'Student' -and $Force -eq $false) {
             Write-Output "$($User)`tis listed as a student, refusing to create mailbox"
+            if ($Automated) {
+                Out-File -Append -FilePath $RetryableErrorsFilePath -InputObject "$User,$start,Student"
+            }
             $exitCode += 1
             return
         }
 
         $candidate = $null
-        foreach ($db in $dbs.Keys) {
+        foreach ($db in $Databases.Keys) {
             if ($candidate -eq $null) {
                 $candidate = $db
             } else {
-                if ($dbs[$db] -lt $dbs[$candidate]) {
+                if ($Databases[$db] -lt $Databases[$candidate]) {
                     $candidate = $db
                 }
             }
@@ -166,6 +189,9 @@ PROCESS {
             & "$cwd\Deprovision-User.ps1" -User $objUser.DistinguishedName -Confirm:$false
             if ($LASTEXITCODE -gt 0) {
                 Write-Output "An error occurred; refusing to create mailbox."
+                if ($Automated) {
+                    Out-File -Append -FilePath $RetryableErrorsFilePath -InputObject "$User,$start,Deprovisioning Error"
+                }
                 $exitCode += 1
                 return
             }
@@ -179,13 +205,16 @@ PROCESS {
         -DomainController $DomainController -ErrorAction SilentlyContinue
 
         if ($Error[0] -ne $null) {
-            $exitCode += 1
             Write-Output $Error[0]
+            if ($Automated) {
+                Out-File -Append -FilePath $RetryableErrorsFilePath -InputObject "$User,$start,$($Error[0].ToString())"
+            }
+            $exitCode += 1
             return
         } 
 
         # Increment the running mailbox total for the candidate database.
-        $dbs[$candidate]++
+        $Databases[$candidate]++
     } else {
         # The user should be enabled as a MailUser instead of a Mailbox.
         $Error.Clear()
@@ -195,6 +224,9 @@ PROCESS {
         if ($Error[0] -ne $null) {
             $exitCode += 1
             Write-Output $Error[0]
+            if ($Automated) {
+                Out-File -Append -FilePath $RetryableErrorsFilePath -InputObject "$User,$start,$($Error[0].ToString())"
+            }
             return
         } 
     }
