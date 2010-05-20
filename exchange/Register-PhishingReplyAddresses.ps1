@@ -8,10 +8,6 @@
 # DESCRIPTION:  Imports a phishing_reply_addresses file of the format found at 
 #               http://aper.svn.sourceforge.net/viewvc/aper/phishing_reply_addresses
 #               into Active Directory.
-#               This script can be paired with the New-DynamicContact script
-#               to create dynamic objects, or with other cmdlets that create
-#               users.  By default it uses New-DynamicContact.
-#
 # 
 # Copyright (c) 2009,2010 Seth Wright <wrightst@jmu.edu>
 #
