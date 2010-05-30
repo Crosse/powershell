@@ -26,6 +26,7 @@
 
 param ( $User="",
         [switch]$Confirm=$true,
+        [string]$ExternalEmailAddress=$null,
         [switch]$Verbose=$false,
         $inputObject=$null )
 
@@ -41,6 +42,8 @@ BEGIN {
         Write-Warning "Could not determine the local computer's logon server!"
         break
     }
+
+    $cwd = [System.IO.Path]::GetDirectoryName(($MyInvocation.MyCommand).Definition)
 
     $exitCode = 0
 } # end 'BEGIN{}'
@@ -69,6 +72,7 @@ PROCESS {
         $disabled = $false
 # Save this off because Exchange blanks it out...
         $displayNamePrintable = $objUser.SimpleDisplayName
+        $emailAddresses = $null
 
         $error.Clear()
         switch ($objUser.RecipientTypeDetails) {
@@ -88,6 +92,7 @@ PROCESS {
                 break
             }
             'UserMailbox' {
+                $emailAddresses = (Get-Mailbox -Identity $objUser.Identity).EmailAddresses
                 Disable-Mailbox -Identity $objUser.DistinguishedName -Confirm:$Confirm `
                     -DomainController $DomainController -ErrorAction SilentlyContinue
 
@@ -105,9 +110,9 @@ PROCESS {
     }
 
     if ($disabled -eq $true) {
-# Set the SimpleDisplayName now that Exchange has helpfully removed it.
+        # Set the SimpleDisplayName now that Exchange has helpfully removed it.
         if ($Verbose) {
-            Write-Output "Resetting $($objUser.SamAccountName)'s SimpleDisplayName to `"$displayNamePrintable`""
+            Write-Output "Resetting attributes on $($objUser.SamAccountName)"
         }
         if (![String]::IsNullOrEmpty($displayNamePrintable)) {
             $error.Clear()
@@ -118,7 +123,18 @@ PROCESS {
                 Write-Output $error[0]
             }
         }
-        Write-Output "$($objUser.SamAccountName) has been disabled as a $($objUser.RecipientTypeDetails)"
+        if ($objUser.RecipientTypeDetails -match 'UserMailbox' -and $ExternalEmailAddress -ne $null) {
+            Write-Output "Enabling user as MailUser with forwarding address of $ExternalEmailAddress"
+            & "$cwd\Provision-User.ps1" -User $objUser.DistinguishedName `
+                -Mailbox:$false -Automated:$false `
+                -ExternalEmailAddress $ExternalEmailAddress `
+                -EmailAddresses $EmailAddresses `
+                -DomainController $DomainController
+        }
+
+        if ($Verbose) {
+            Write-Output "$($objUser.SamAccountName) has been disabled as a $($objUser.RecipientTypeDetails)"
+        }
     } else {
         Write-Output "An error occurred deprovisioning $($objUser.SamAccountName)."
         $exitCode += 1
