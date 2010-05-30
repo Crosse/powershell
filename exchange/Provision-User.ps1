@@ -31,6 +31,7 @@ param ( $User="",
         [string]$ExternalEmailAddress=$null,
         [switch]$Force=$false,
         [switch]$Verbose=$false,
+        $EmailAddresses=$null,
         [string]$RetryableErrorsFilePath=$null,
         [string]$DomainController=$null,
         [System.Collections.Hashtable]$Databases=$null,
@@ -123,7 +124,6 @@ PROCESS {
                 if (!$Mailbox) {
                     Write-Output "$($objUser.SamAccountName)`tis already a MailUser"
                     return
-                } else {
                     break
                 }
             }
@@ -165,7 +165,8 @@ PROCESS {
             if ($Automated) {
                 Out-File -Append -FilePath $RetryableErrorsFilePath -InputObject "$User,$start,Student"
             }
-            $exitCode += 1
+            # Don't mark this as being an error.
+            #$exitCode += 1
             return
         }
 
@@ -199,10 +200,10 @@ PROCESS {
 
         # Enable the mailbox
         $Error.Clear()
-        Enable-Mailbox -Database "$($candidate)" -Identity $objUser `
-        -ManagedFolderMailboxPolicy "Default Managed Folder Policy" `
-        -ManagedFolderMailboxPolicyAllowed:$true `
-        -DomainController $DomainController -ErrorAction SilentlyContinue
+        Enable-Mailbox -Database "$($candidate)" -Identity $objUser.Identity `
+            -ManagedFolderMailboxPolicy "Default Managed Folder Policy" `
+            -ManagedFolderMailboxPolicyAllowed:$true `
+            -DomainController $DomainController -ErrorAction SilentlyContinue
 
         if ($Error[0] -ne $null) {
             Write-Output $Error[0]
@@ -219,7 +220,7 @@ PROCESS {
         # The user should be enabled as a MailUser instead of a Mailbox.
         $Error.Clear()
         Enable-MailUser -Identity $objUser -ExternalEmailAddress $ExternalEmailAddress `
-        -DomainController $DomainController
+            -DomainController $DomainController
 
         if ($Error[0] -ne $null) {
             $exitCode += 1
@@ -238,12 +239,61 @@ PROCESS {
     }
     $error.Clear()
     Set-User $objUser -SimpleDisplayName "$($displayNamePrintable)" `
-    -DomainController $DomainController -ErrorAction SilentlyContinue
+        -DomainController $DomainController -ErrorAction SilentlyContinue
 
     if (![String]::IsNullOrEmpty($error[0])) {
         Write-Output $error[0]
     }
 
+    $EmailAddresses
+    if ($EmailAddresses -eq $null) {
+        if ($Verbose) {
+            Write-Output "Not setting addresses"
+        }
+    } else {
+        if ($Verbose) {
+            Write-Output "Explicitly adding the following addresses to $($objUser.SamAccountName)'s EmailAddresses collection:"
+            $EmailAddresses
+        }
+        $error.Clear()
+        if ($Mailbox) {
+            $addrs = (Get-Mailbox -Identity $objUser.Identity).EmailAddresses
+            foreach ($addr in $addrs) { 
+                if (!$EmailAddresses.Contains($addr)) {
+                    $EmailAddresses.Add($addr)
+                }
+            }
+
+            Set-Mailbox -Identity $objUser.Identity `
+                -EmailAddressPolicyEnabled:$false `
+                -EmailAddresses $EmailAddresses `
+                -DomainController $DomainController
+            Set-Mailbox -Identity $objUser.Identity `
+                -EmailAddressPolicyEnabled:$true `
+                -DomainController $DomainController
+            if (![String]::IsNullOrEmpty($error[0])) {
+                Write-Output $error[0]
+            }
+        } else {
+            $addrs = (Get-MailUser -Identity $objUser.Identity).EmailAddresses
+            foreach ($addr in $addrs) { 
+                if (!$EmailAddresses.Contains($addr)) {
+                    $EmailAddresses.Add($addr)
+                }
+            }
+
+            Set-MailUser -Identity $objUser.Identity `
+                -EmailAddressPolicyEnabled:$false `
+                -EmailAddresses $EmailAddresses `
+                -DomainController $DomainController
+            Set-MailUser -Identity $objUser.Identity `
+                -EmailAddressPolicyEnabled:$true `
+                -DomainController $DomainController
+            if (![String]::IsNullOrEmpty($error[0])) {
+                Write-Output $error[0]
+            }
+        }
+    }
 } # end 'PROCESS{}'
 
 # This section executes only once, after the pipeline.
