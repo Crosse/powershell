@@ -48,7 +48,7 @@ if ($DomainController -eq $null) {
 
 
 $resource = Get-Mailbox $Identity
-$delegate = Get-Mailbox $Delegate
+$objUser = Get-User $Delegate
 
 if ($resource -eq $null) {
     Write-Error "Could not find Resource"
@@ -58,26 +58,30 @@ if ($resource -eq $null) {
 Write-Host "Setting Permissions: "
 
 # Grant Send-As rights to the owner:
-$resource | Add-ADPermission -ExtendedRights "Send-As" -User $Delegate `
+$resource | Add-ADPermission -ExtendedRights "Send-As" -User $objUser.DistinguishedName `
             -DomainController $DomainController
 
 # Give the owner Full Access to the resource:
 $resource | Add-MailboxPermission -DomainController $DomainController `
-            -AccessRights FullAccess -User $Delegate
+            -AccessRights FullAccess -User $objUser.Identity
 
 # Grant SendOnBehalfOf rights to the owner:
-$sobo = (Get-Mailbox -DomainController $DomainController -Identity $resource).GrantSendOnBehalfTo
-if ( !$sobo.Contains((Get-User $Delegate).DistinguishedName) ) {
-    $sobo.Add( (Get-User $Delegate).DistinguishedName )
+if ($objUser.RecipientType -match 'MailUser' -or $objUser.RecipientType -match 'UserMailbox') {
+    $sobo = (Get-Mailbox -DomainController $DomainController -Identity $resource).GrantSendOnBehalfTo
+    if ( !$sobo.Contains((Get-User $objUser).DistinguishedName) ) {
+        $sobo.Add( (Get-User $objUser).DistinguishedName )
+    }
+    $resource | Set-Mailbox -DomainController $DomainController `
+                -GrantSendOnBehalfTo $sobo
+} else {
+    Write-Output "Not setting Send-On-Behalf-Of rights, because $($objUser.SamAccountName) is a $($objUser.RecipientType)"
 }
-$resource | Set-Mailbox -DomainController $DomainController `
-            -GrantSendOnBehalfTo $sobo
 
 if ( ($resource.RecipientTypeDetails -eq 'RoomMailbox') -or ($resource.RecipientTypeDetails -eq 'EquipmentMailbox') ) {
     # Set the ResourceDelegates
     $resourceDelegates = (Get-MailboxCalendarSettings -Identity $resource).ResourceDelegates
-    if ( !($resourceDelegates.Contains((Get-User $Delegate).DistinguishedName)) ) {
-        $resourceDelegates.Add( (Get-User $Delegate).DistinguishedName )
+    if ( !($resourceDelegates.Contains((Get-User $objUser).DistinguishedName)) ) {
+        $resourceDelegates.Add( (Get-User $objUser).DistinguishedName )
     }
 
     foreach ($i in 1..10) {
@@ -96,7 +100,7 @@ if ( ($resource.RecipientTypeDetails -eq 'RoomMailbox') -or ($resource.Recipient
 
 $resourceType = $resource.RecipientTypeDetails
 
-if ($EmailDelegate) {
+if ($EmailDelegate -and $objUser.RecipientTypeDetails -ne "User" ) {
     $Title = "Information about Exchange resource `"$resource`""
     if ( $resourceType -eq 'SharedMailbox' ) {
         $Title += " (Shared Mailbox)"
@@ -106,7 +110,7 @@ if ($EmailDelegate) {
         $Title += " (Room Resource)"
     }
 
-    $To = (Get-Mailbox $Delegate).PrimarySmtpAddress.ToString()
+    $To = (Get-Mailbox $objUser).PrimarySmtpAddress.ToString()
 
     $Body = @"
 You have been identified as a resource owner / delegate for the
