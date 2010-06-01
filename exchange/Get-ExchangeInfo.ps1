@@ -121,9 +121,7 @@ Distribution Groups:	$dls
 Top Senders by Total Recipient Count (last 24 hours):
 $($recipientCounts | ft -Autosize | Out-String)
 -----------------------------------------------------------------------
-
 Database Information:
------------------------------------------------------------------------
 $($dbInfoArray | Sort Identity | ft -AutoSize | Out-String)
 -----------------------------------------------------------------------
 "@
