@@ -108,15 +108,24 @@ Get-MailboxServer | % {
     }
 }
 
+$recipientCounts = & "$cwd\Get-TopRecipientCounts.ps1"
+
 $Body  = @"
      User Mailboxes:	$users
    Shared Mailboxes:	$shared
  Resource Mailboxes:	$resources
 Distribution Groups:	$dls
- Total Storage Used:    $totalStorage MB
+ Total Storage Used:	$totalStorage MB
+-----------------------------------------------------------------------
 
+Top Senders by Total Recipient Count (last 24 hours):
+$($recipientCounts | ft -Autosize | Out-String)
+-----------------------------------------------------------------------
 
+Database Information:
+-----------------------------------------------------------------------
 $($dbInfoArray | Sort Identity | ft -AutoSize | Out-String)
+-----------------------------------------------------------------------
 "@
 
 $attachedFile = gci ([System.IO.Path]::GetTempFileName())
