@@ -110,7 +110,7 @@ if ($EmailDelegate -and $objUser.RecipientTypeDetails -ne "User" ) {
         $Title += " (Room Resource)"
     }
 
-    $To = (Get-Mailbox $objUser).PrimarySmtpAddress.ToString()
+    $To = (Get-Mailbox $objUser.Identity).PrimarySmtpAddress.ToString()
 
     $Body = @"
 You have been identified as a resource owner / delegate for the
