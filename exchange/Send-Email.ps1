@@ -46,7 +46,7 @@ BEGIN {
 PROCESS {
     if ($_) { $Body = $_ }
 
-# Was a username passed to us?  If not, bail.
+# Was body text passed to us?  If not, bail.
     if (!($Body)) { 
         Write-Warning "Sending email with null body!"
     }
