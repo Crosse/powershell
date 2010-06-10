@@ -22,7 +22,11 @@
 #
 ################################################################################
 
-param ($Identity=$null, $inputObject=$null)
+param ( $Identity=$null, 
+        [switch]$MailboxPermissions=$false, 
+        [switch]$SendAsPermissions=$false,
+        [switch]$SendOnBehalfPermissions=$false,
+        $inputObject=$null)
 
 # This section executes only once, before the pipeline.
 BEGIN {
@@ -38,9 +42,10 @@ PROCESS {
     if ($_) { $Identity = $_ }
 
     if ($Identity -eq $null) {
-        Write-Warning "No mailbox specified; generating statistics for all Mailboxes"
+        Write-Error "No mailbox specified"
+        return
     } else {
-        $Identity = Get-Mailbox $Identity.ToString() -ErrorAction SilentlyContinue
+        $Identity = Get-Mailbox $Identity -ErrorAction SilentlyContinue
 
         if ($Identity -eq $null) {
             Write-Error "$Identity is not a mailbox."
@@ -48,11 +53,41 @@ PROCESS {
         }
     }
 
+    if ($MailboxPermissions -eq $false -and `
+            $SendAsPermissions -eq $false -and `
+            $SendOnBehalfPermissions -eq $false) {
 
-$perms = Get-MailboxPermission $Identity | ? { `
-        $_.IsInherited -eq $False -and $_.AccessRights -eq "FullAccess" } 
+        $MailboxPermissions = $true
+        $SendAsPermissions = $true
+        $SendOnBehalfPermissions = $true
+    }
 
-$perms | 
-    Select @{Name="Identity"; Expression={ $_.Identity.Name } }, User | 
-    Sort Identity, User
+    if ($MailboxPermissions -eq $true) {
+        $perms = Get-MailboxPermission $Identity.ToString() | ? { `
+                $_.IsInherited -eq $False -and $_.AccessRights -eq "FullAccess" } 
+
+        $perms | 
+            Select @{Name="Identity"; Expression={ $_.Identity.Name } }, `
+            User, `
+            @{Name="Right"; Expression={ $_.AccessRights } }
+    }
+
+    if ($SendAsPermissions -eq $true) {
+        $perms = Get-ADPermission $Identity.Identity | ? { `
+            $_.Deny -eq $false -and `
+            $_.User -notmatch "SELF" -and `
+            $_.ExtendedRights -match "Send-As" }
+
+        $perms | 
+            Select @{Name="Identity"; Expression={ $_.Identity.Name } }, `
+                User, `
+                @{Name="Right"; Expression={ $_.ExtendedRights } }
+    }
+
+    if ($SendOnBehalfPermissions -eq $true) {
+        $Identity.GrantSendOnBehalfTo |
+            Select @{Name="Identity"; Expression={ $Identity.Name } }, `
+            @{Name="User"; Expression={ $_.Name } }, `
+            @{Name="Right"; Expression={ "SendOnBehalf" } }
+    }
 }
