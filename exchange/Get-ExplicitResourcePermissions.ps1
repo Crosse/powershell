@@ -1,0 +1,58 @@
+################################################################################
+# 
+# $Id$
+# 
+# DESCRIPTION:  Gets mailbox permissions, removing extraneous entries.
+#               Will NOT return inherited ACEs.
+#
+# 
+# Copyright (c) 2009,2010 Seth Wright <wrightst@jmu.edu>
+#
+# Permission to use, copy, modify, and distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#
+################################################################################
+
+param ($Identity=$null, $inputObject=$null)
+
+# This section executes only once, before the pipeline.
+BEGIN {
+    if ($inputObject) {
+        Write-Output $inputObject | &($MyInvocation.InvocationName)
+        break
+    }
+
+} # end 'BEGIN{}'
+
+# This section executes for each object in the pipeline.
+PROCESS {
+    if ($_) { $Identity = $_ }
+
+    if ($Identity -eq $null) {
+        Write-Warning "No mailbox specified; generating statistics for all Mailboxes"
+    } else {
+        $Identity = Get-Mailbox $Identity.ToString() -ErrorAction SilentlyContinue
+
+        if ($Identity -eq $null) {
+            Write-Error "$Identity is not a mailbox."
+            return
+        }
+    }
+
+
+$perms = Get-MailboxPermission $Identity | ? { `
+        $_.IsInherited -eq $False -and $_.AccessRights -eq "FullAccess" } 
+
+$perms | 
+    Select @{Name="Identity"; Expression={ $_.Identity.Name } }, User | 
+    Sort Identity, User
+}
