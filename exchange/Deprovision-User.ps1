@@ -124,6 +124,27 @@ PROCESS {
             }
         }
         if ($objUser.RecipientTypeDetails -match 'UserMailbox' -and $ExternalEmailAddress -ne $null) {
+            $wait = 60
+            $continue = $false
+            while ($wait -gt 0) {
+                $objUser = Get-User $objUser.DistinguishedName `
+                            -ErrorAction SilentlyContinue `
+                            -DomainController $DomainController
+                if ($objUser -ne $null -and $objUser -eq "UserMailbox") {
+                    Start-Sleep 1
+                    $wait -= 1
+                } else {
+                    $continue = $true
+                    break
+                }
+            }
+
+            if ($continue -eq $false) {
+                Write-Output "An error occurred reprovisioning $($objUser.SamAccountName)."
+                $exitCode += 1
+                return
+            }
+
             Write-Output "Enabling user as MailUser with forwarding address of $ExternalEmailAddress"
             & "$cwd\Provision-User.ps1" -User $objUser.DistinguishedName `
                 -Mailbox:$false -Automated:$false `
