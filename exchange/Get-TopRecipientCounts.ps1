@@ -36,13 +36,11 @@ $msgs = $hubs | Get-MessageTrackingLog -Start $StartDate -EventId RECEIVE `
 
 foreach ($msg in $msgs) { 
     $sender = $msg.Sender
-    foreach ($recipient in $msg.Recipients) {
         if ($recipientCounts.Contains($sender)) {
-            $recipientCounts[$sender] += 1 
+            $recipientCounts[$sender] += $msg.RecipientCount
         } else { 
             $recipientCounts.Add($sender, 1)
         }
-    }
 }
 
 $recipientCounts.GetEnumerator() | Sort Value -Descending | Select -First $ResultsToReturn
