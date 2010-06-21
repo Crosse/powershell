@@ -79,7 +79,7 @@ Get-MailboxServer | % {
             $dbInfo.DbSize = $dbSize
 
             $mboxes = Get-Mailbox -ResultSize Unlimited -Database $db
-            $dbInfo.UserCount = $mboxes.Count
+            $dbInfo.UserCount = @($mboxes).Count
 
             $mboxes | % { 
                 switch ($_.RecipientTypeDetails) {

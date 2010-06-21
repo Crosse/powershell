@@ -41,7 +41,7 @@ if ($DomainController -eq $null) {
 }
 
 $databases = Get-MailboxDatabase -Server $srv -Status | 
-Where { $_.Mounted -eq $True -and $_.Name -match "^SG" }
+Where { $_.Mounted -eq $True -and $_.Name -match "^(SG|DB)" }
 if ($databases -eq $null) {
     Write-Error "Could not enumerate databases on server $Server"
     return
@@ -56,20 +56,20 @@ foreach ($database in $databases) {
         -PercentComplete $percent -CurrentOperation "Verifying $($database.Identity)"
     $i++
 
-    $mailboxCount = (Get-Mailbox -Database $database).Count
+    $mailboxCount = @((Get-Mailbox -Database $database)).Count
     if ($? -eq $False) {
         Write-Error "Error processing database $database"
         return
     }
 
-    $maxUsers = 200GB / (Get-MailboxDatabase $database).ProhibitSendReceiveQuota.Value.ToBytes()
+#    $maxUsers = 200GB / (Get-MailboxDatabase $database).ProhibitSendReceiveQuota.Value.ToBytes()
 
-    if ($mailboxCount -le $maxUsers) {
+#    if ($mailboxCount -le $maxUsers) {
 # Normally we'd not add this database
 # if the mailboxCount was greater than the maximum
 # number of users allowed for the database,
 # but we're fudging it for a while.
-    }
+#    }
     $dbs.Add($database.Identity.ToString(), $mailboxCount)
 }
 

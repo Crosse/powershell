@@ -24,6 +24,14 @@
 #
 ################################################################################
 
+# Change these to suit your environment
+$SmtpServer = "it-exhub.ad.jmu.edu"
+$From       = "it-exmaint@jmu.edu"
+$To         = "wrightst@jmu.edu, millerca@jmu.edu"
+$Title      = "Training Mailboxes"
+
+##################################
+$cwd = [System.IO.Path]::GetDirectoryName(($MyInvocation.MyCommand).Definition)
 $now = Get-Date
 
 # Get all of the training user mailboxes
@@ -33,4 +41,7 @@ $mboxes | Disable-Mailbox -Confirm:$false
 # Sleep for a while.
 Start-Sleep 120
 # Recreate the mailboxes
-$mboxes | Enable-Mailbox -Database it-exmbx1\Training -ManagedFolderMailboxPolicy "Default Managed Folder Policy" -ManagedFolderMailboxPolicyAllowed:$true
+$Body = $mboxes | Enable-Mailbox -Database it-exmbx1\Training -ManagedFolderMailboxPolicy "Default Managed Folder Policy" -ManagedFolderMailboxPolicyAllowed:$true | Out-String
+
+& "$cwd\Send-Email.ps1" -From $From -To $To -Subject $Title -Body $Body -SmtpServer $SmtpServer 
+
