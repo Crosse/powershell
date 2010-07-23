@@ -29,7 +29,8 @@ param ( [string]$DisplayName,
         [switch]$Shared,
         [switch]$Calendar,
         [string]$PrimarySmtpAddress = "",
-        [switch]$EmailOwner=$true)
+        [switch]$EmailOwner=$true,
+        [switch]$Legacy=$false)
 
 # Change these to suit your environment
 $SmtpServer         = "it-exhub.ad.jmu.edu"
@@ -101,16 +102,21 @@ if ($Shared -and !$Calendar) {
     $alias += "_Mailbox"
 }
 
-$Database = & "$cwd\Get-BestDatabase.ps1" IT-ExMbx1
-if ($Database -eq $null) {
-    Write-Error "Could not find a suitable database!"
-    return
+if ($Legacy) {
+    $Database = & "$cwd\Get-BestDatabase.ps1" IT-ExMbx1
+    if ($Database -eq $null) {
+        Write-Error "Could not find a suitable database!"
+        return
+    }
 }
 
-$cmd  = "New-Mailbox -DomainController $DomainController -Database `"$Database`""
+$cmd  = "New-Mailbox -DomainController $DomainController "
 $cmd += "-OrganizationalUnit `"$ou`" -Name `"$Name`" -Alias `"$alias`" -UserPrincipalName "
 $cmd += "`"$($alias)@ad.jmu.edu`" -DisplayName `"$DisplayName`""
-$cmd += "-ManagedFolderMailboxPolicy 'Default Managed Folder Policy' -ManagedFolderMailboxPolicyAllowed:`$true"
+$cmd += "-ManagedFolderMailboxPolicy 'Default Managed Folder Policy' -ManagedFolderMailboxPolicyAllowed:`$true "
+if ($Legacy) {
+    $cmd += "-Database `"$Database`""
+}
 
 $error.Clear()
 
