@@ -26,8 +26,8 @@ if (!(Get-PSSnapin -Name FSSPSSnapIn -ErrorAction SilentlyContinue)) {
     Add-PSSnapin FSSPSSnapIn
 }
 
-if (!(Get-PSSnapin -Name Microsoft.Exchange.Management.PowerShell.Admin -ErrorAction SilentlyContinue)) {
-    Add-PSSnapin Microsoft.Exchange.Management.PowerShell.Admin
+if (!(Get-PSSnapin -Name Microsoft.Exchange.Management.PowerShell.E2010 -ErrorAction SilentlyContinue)) {
+    Add-PSSnapin Microsoft.Exchange.Management.PowerShell.E2010
 }
 
 $startTime = $(Get-Date).AddDays(-1)
