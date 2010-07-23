@@ -31,106 +31,62 @@ $Title      = "Exchange User Detail for $(Get-Date -Format d)"
 ##################################
 $cwd = [System.IO.Path]::GetDirectoryName(($MyInvocation.MyCommand).Definition)
 
-$dls = (Get-DistributionGroup).Count
-$resources = 0
-$shared = 0
-$users = 0
 $totalStorage = 0
-
 $dbInfoArray = New-Object System.Collections.ArrayList
-Get-MailboxServer | % { 
-    $CMSName = $_.Name
-    $OperationalMachines = (Get-ClusteredMailboxServerStatus -Identity $CMSName).OperationalMachines
-    $null = $OperationalMachines | where { $_ -match "^(?<activenode>.*)\s+<Active.*" }
-    
-    if (!($matches.activenode)) {
-        # No regex matches were found.
-        $message = "Cannot determine the Active Node of CMS $CMSName"
-        continue
+
+foreach ($db in (Get-MailboxDatabase -IncludePreExchange2010 -Status)) { 
+    Write-Host "Processing $db"
+    $dbInfo = New-Object PSObject
+    $dbInfo = Add-Member -PassThru -InputObject $dbInfo NoteProperty Identity $db.Name
+    Add-Member -InputObject $dbInfo NoteProperty Size $null
+    Add-Member -InputObject $dbInfo NoteProperty BackupStatus $null
+    Add-Member -InputObject $dbInfo NoteProperty LastFullBackup $db.LastFullBackup
+
+    if ($db.DatabaseSize -ne $null) {
+        $dbInfo.Size = $db.DatabaseSize.ToMB()
+        $totalStorage += $db.DatabaseSize.ToMB()
     }
 
-    $ActiveNode = $matches.activenode
-    $preamble = "\\" + $ActiveNode + "\"
-
-    $sgs = Get-StorageGroup -Server $CMSName
-    $i = 1
-    foreach ($sg in $sgs) {
-        $percent = $([int]($i/$sgs.Count*100))
-        Write-Progress -Activity "Processing Storage Groups on $CMSName" `
-            -Status "$percent% Complete" `
-            -PercentComplete $percent -CurrentOperation "Processing $($sg.Identity)"
-        $i++
-        
-        foreach ($db in (Get-MailboxDatabase -StorageGroup $sg)) { 
-            $dbInfo = New-Object PSObject
-            $dbInfo = Add-Member -PassThru -InputObject $dbInfo NoteProperty Identity $null
-            Add-Member -InputObject $dbInfo NoteProperty UserCount -1
-            Add-Member -InputObject $dbInfo NoteProperty LogCount -1
-            Add-Member -InputObject $dbInfo NoteProperty DbSize -1
-
-            $dbInfo.Identity = $db.Identity
-
-            $logPath = $preamble + $sg.LogFolderPath.ToString().Replace(":", "$")
-            $dbInfo.LogCount = (gci "$logPath\*.log").Count
-
-            $edbFilePath = $preamble + $db.EdbFilePath.ToString().Replace(":", "$")
-            $dbSize = [Math]::Floor( (gci $edbFilePath).Length / 1MB )
-            $totalStorage += $dbSize
-            $dbInfo.DbSize = $dbSize
-
-            $mboxes = Get-Mailbox -ResultSize Unlimited -Database $db
-            $dbInfo.UserCount = @($mboxes).Count
-
-            $mboxes | % { 
-                switch ($_.RecipientTypeDetails) {
-                    'UserMailbox' { 
-                        $users++
-                        break
-                    }
-                    'SharedMailbox' { 
-                        $shared++
-                        break
-                    }
-                    'EquipmentMailbox' { 
-                        $resources++
-                        break
-                    }
-                    'RoomMailbox' {
-                        $resources++
-                        break
-                    }
-                    default { }
-                }
-            }
-                        
-            $null = $dbInfoArray.Add($dbInfo)
-        }
+    if ($db.LastFullBackup -gt (Get-Date).AddDays(-1)) {
+        $dbInfo.BackupStatus = "OK (<24h)"
+    } else {
+        $dbInfo.BackupStatus = "NOT OK (>24h)"
     }
+
+    $null = $dbInfoArray.Add($dbInfo)
 }
 
 $recipientCounts = & "$cwd\Get-TopRecipientCounts.ps1"
+
+Write-Host "Getting Distribution Group count..."
+$dls = (Get-DistributionGroup).Count
+Write-Host "Getting MailUser count..."
+$mailusers = $(adfind -q -b 'OU=JMUma,dc=ad,dc=jmu,dc=edu' -c -f targetAddress=*)[1].Split(" ")[0]
+Write-Host "Getting UserMailbox count..."
+$users = $(adfind -q -b 'OU=JMUma,dc=ad,dc=jmu,dc=edu' -c -f homeMDB=*)[1].Split(" ")[0]
+Write-Host "Getting SharedMailbox count..."
+$shared = (Get-User -ResultSize Unlimited -RecipientTypeDetails SharedMailbox).Count
+Write-Host "Getting Resource Mailbox count..."
+$resources = (Get-User -ResultSize Unlimited -RecipientTypeDetails RoomMailbox,EquipmentMailbox).Count
 
 $Body  = @"
      User Mailboxes:	$users
    Shared Mailboxes:	$shared
  Resource Mailboxes:	$resources
+         Mail Users:	$mailusers
 Distribution Groups:	$dls
- Total Storage Used:	$totalStorage MB
+Total Storage Used*:	$totalStorage MB
+(*only for E2010 databases)
 -----------------------------------------------------------------------
 
 Top Senders by Total Recipient Count (last 24 hours):
 $($recipientCounts | ft -Autosize | Out-String)
 -----------------------------------------------------------------------
+
 Database Information:
 $($dbInfoArray | Sort Identity | ft -AutoSize | Out-String)
 -----------------------------------------------------------------------
 "@
 
-$attachedFile = gci ([System.IO.Path]::GetTempFileName())
-$attachedFile.MoveTo("$([System.IO.Path]::GetFileNameWithoutExtension($attachedFile.Name)).csv")
+& "$cwd\Send-Email.ps1" -From $From -To $To -Subject $Title -Body $Body -SmtpServer $SmtpServer 
 
-$dbInfoArray | Sort Identity | Export-Csv -NoTypeInformation -Encoding ASCII -Path $attachedFile
-
-& "$cwd\Send-Email.ps1" -From $From -To $To -Subject $Title -Body $Body -AttachmentFile $attachedFile -SmtpServer $SmtpServer 
-
-Remove-Item $attachedFile
