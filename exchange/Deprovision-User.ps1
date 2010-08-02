@@ -28,6 +28,7 @@ param ( $User="",
         [switch]$Confirm=$true,
         [string]$ExternalEmailAddress=$null,
         [switch]$Verbose=$false,
+        $DomainController="localhost",
         $inputObject=$null )
 
 # This section executes only once, before the pipeline.
@@ -37,10 +38,12 @@ BEGIN {
         break
     }
 
-    $DomainController = (gc Env:\LOGONSERVER).Replace('\', '')
-    if ($DomainController -eq $null) { 
-        Write-Warning "Could not determine the local computer's logon server!"
-        break
+    if ([String]::IsNullOrEmpty($DomainController)) {
+        $DomainController = (gc Env:\LOGONSERVER).Replace('\', '')
+        if ([String]::IsNullOrEmpty($DomainController)) {
+            Write-Output "ERROR:  Could not determine the local computer's logon server!"
+            return
+        }
     }
 
     $cwd = [System.IO.Path]::GetDirectoryName(($MyInvocation.MyCommand).Definition)

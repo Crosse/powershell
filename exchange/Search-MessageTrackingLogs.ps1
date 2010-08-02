@@ -31,7 +31,7 @@ param ( $Start=$(Get-Date).AddDays(-1),
 
 $hubs = Get-ExchangeServer | ? { $_.ServerRole -match 'Hub' }
 
-$cmd = "Invoke-Command { `$hubs | Get-MessageTrackingLog -Start `"$Start`""
+$cmd = "Invoke-Command { `$hubs | Get-MessageTrackingLog -ResultSize Unlimited -Start `"$Start`""
 
 if ($End -ne $null) {
     $cmd += " -End `"$End`""

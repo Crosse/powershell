@@ -35,6 +35,7 @@ param ( $User="",
         [string]$RetryableErrorsFilePath=$null,
         [string]$DomainController=$null,
         [System.Collections.Hashtable]$Databases=$null,
+        [switch]$Legacy=$false,
         $inputObject=$null )
 
 # This section executes only once, before the pipeline.
@@ -48,7 +49,6 @@ BEGIN {
         $srv = Get-ExchangeServer $Server -ErrorAction SilentlyContinue
         if ($srv -eq $null) {
             Write-Output "ERROR: Could not find Exchange Server $Server"
-            return
         }
     }
 
@@ -73,14 +73,16 @@ BEGIN {
     }
 
     if ($Mailbox -eq $true) {
-        if ($Databases -eq $null) {
-            $Databases = & "$cwd\Get-BestDatabase.ps1" -Server $Server -Single:$false
+        if ($Legacy) {
             if ($Databases -eq $null) {
-                Write-Output "ERROR: Could not enumerate databases!"
-                return
-            }
-            if ($Verbose -eq $true) {
-                Write-Output "Found $($Databases.Count) databases."
+                $Databases = & "$cwd\Get-BestDatabase.ps1" -Server $Server -Single:$false
+                if ($Databases -eq $null) {
+                    Write-Output "ERROR: Could not enumerate databases!"
+                    return
+                }
+                if ($Verbose -eq $true) {
+                    Write-Output "Found $($Databases.Count) databases."
+                }
             }
         }
     } else {
@@ -170,24 +172,26 @@ PROCESS {
             return
         }
 
-        $candidate = $null
-        foreach ($db in $Databases.Keys) {
-            if ($candidate -eq $null) {
-                $candidate = $db
-            } else {
-                if ($Databases[$db] -lt $Databases[$candidate]) {
+        if ($Legacy) {
+            $candidate = $null
+            foreach ($db in $Databases.Keys) {
+                if ($candidate -eq $null) {
                     $candidate = $db
+                } else {
+                    if ($Databases[$db] -lt $Databases[$candidate]) {
+                        $candidate = $db
+                    }
                 }
             }
-        }
 
-        if ($Verbose) {
-            Write-Output "Assigning $($objUser.SamAccountName) to database $candidate"
+            if ($Verbose) {
+                Write-Output "Assigning $($objUser.SamAccountName) to database $candidate"
+            }
         }
 
         # If the user is a MailUser already, remove the Exchange bits first
         if ($objUser.RecipientTypeDetails -match 'MailUser') {
-            & "$cwd\Deprovision-User.ps1" -User $objUser.DistinguishedName -Confirm:$false
+            & "$cwd\Deprovision-User.ps1" -User $objUser.DistinguishedName -Confirm:$false -DomainController $DomainController
             if ($LASTEXITCODE -gt 0) {
                 Write-Output "An error occurred; refusing to create mailbox."
                 if ($Automated) {
@@ -200,10 +204,20 @@ PROCESS {
 
         # Enable the mailbox
         $Error.Clear()
-        Enable-Mailbox -Database "$($candidate)" -Identity $objUser.Identity `
-            -ManagedFolderMailboxPolicy "Default Managed Folder Policy" `
-            -ManagedFolderMailboxPolicyAllowed:$true `
-            -DomainController $DomainController -ErrorAction SilentlyContinue
+        if ($Legacy) {
+            Enable-Mailbox -Database "$($candidate)" -Identity $objUser.Identity `
+                -ManagedFolderMailboxPolicy "Default Managed Folder Policy" `
+                -ManagedFolderMailboxPolicyAllowed:$true `
+                -DomainController $DomainController -ErrorAction SilentlyContinue
+
+            # Increment the running mailbox total for the candidate database.
+            $Databases[$candidate]++
+        } else { 
+            Enable-Mailbox -Identity $objUser.Identity `
+                -ManagedFolderMailboxPolicy "Default Managed Folder Policy" `
+                -ManagedFolderMailboxPolicyAllowed:$true `
+                -DomainController $DomainController -ErrorAction SilentlyContinue
+        }
 
         if ($Error[0] -ne $null) {
             Write-Output $Error[0]
@@ -214,8 +228,6 @@ PROCESS {
             return
         } 
 
-        # Increment the running mailbox total for the candidate database.
-        $Databases[$candidate]++
     } else {
         # The user should be enabled as a MailUser instead of a Mailbox.
         $Error.Clear()
