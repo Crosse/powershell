@@ -25,23 +25,46 @@
 ################################################################################
 
 # Change these to suit your environment
-$SmtpServer = "it-exhub.ad.jmu.edu"
+$SmtpServer = "mailgw.jmu.edu"
 $From       = "it-exmaint@jmu.edu"
 $To         = "wrightst@jmu.edu, millerca@jmu.edu"
 $Title      = "Training Mailboxes"
 
+$DomainController = "jmuadc1.ad.jmu.edu"
+
 ##################################
+
 $cwd = [System.IO.Path]::GetDirectoryName(($MyInvocation.MyCommand).Definition)
+
 $now = Get-Date
+Start-Transcript "cleanTrainingMailboxes_$($now.Year)-$($now.Month)-$($now.Day).log" -Append
+
+$results = ""
 
 # Get all of the training user mailboxes
-$mboxes = Get-Mailbox -Filter { Name -like "Training User*" } -RecipientTypeDetails UserMailbox
-# Disable them (remove the mailbox, but not the user account)
-$mboxes | Disable-Mailbox -Confirm:$false
-# Sleep for a while.
-Start-Sleep 120
-# Recreate the mailboxes
-$Body = $mboxes | Enable-Mailbox -Database it-exmbx1\Training -ManagedFolderMailboxPolicy "Default Managed Folder Policy" -ManagedFolderMailboxPolicyAllowed:$true | Out-String
+$trainingUsers = Get-User -OrganizationalUnit ad.jmu.edu/ExchangeObjects/ITTraining -Filter { Name -like "Training User*" } | Sort UserPrincipalName
 
-& "$cwd\Send-Email.ps1" -From $From -To $To -Subject $Title -Body $Body -SmtpServer $SmtpServer 
+foreach ($user in $trainingUsers) {
+  $results += "Processing $($user.Name)..."
+  if ($user.RecipientTypeDetails -match 'UserMailbox') {
+    $oldDatabase = (Get-Mailbox $user.Name).Database
+    $error.clear()
+    Disable-Mailbox -Identity $user.Name -Confirm:$false -DomainController $DomainController
+    if (![String]::IsNullOrEmpty($error[0])) {
+      $results += "`n==> An error occurred disabling the mailbox:  $error[0]"
+      continue
+    }
+  }
 
+  $error.clear()
+  Enable-Mailbox -Identity $user -ManagedFolderMailboxPolicy "Default Managed Folder Policy" -ManagedFolderMailboxPolicyAllowed:$true -DomainController $DomainController
+  if (![String]::IsNullOrEmpty($error[0])) {
+    $results += "`n==> An error occurred enabling the mailbox:  $error[0]"
+  } else {
+    $results += "done.`n"
+  }
+}
+
+& "$cwd\Send-Email.ps1" -From $From -To $To -Subject $Title -Body $results -SmtpServer $SmtpServer 
+
+Stop-Transcript
