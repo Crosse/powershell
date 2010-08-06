@@ -57,7 +57,11 @@ foreach ($user in $trainingUsers) {
   }
 
   $error.clear()
-  Enable-Mailbox -Identity $user -ManagedFolderMailboxPolicy "Default Managed Folder Policy" -ManagedFolderMailboxPolicyAllowed:$true -DomainController $DomainController
+  Enable-Mailbox -Identity $user `
+    -ManagedFolderMailboxPolicy "Default Managed Folder Policy" `
+    -ManagedFolderMailboxPolicyAllowed:$true `
+    -Alias $user.UserPrincipalName.Replace(".ad", "") `
+    -DomainController $DomainController
   if (![String]::IsNullOrEmpty($error[0])) {
     $results += "`n==> An error occurred enabling the mailbox:  $error[0]"
   } else {

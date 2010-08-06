@@ -173,7 +173,7 @@ if ($Equipment -or $Room) {
 
     foreach ($i in 1..10) {
         $error.Clear()
-        $resource | Set-MailboxCalendarSettings -DomainController $DomainController `
+        $resource | Set-CalendarProcessing -DomainController $DomainController `
                     -AllRequestOutOfPolicy:$True -AutomateProcessing AutoAccept `
                     -BookingWindowInDays 365 -ResourceDelegates $owner `
                     -ErrorAction SilentlyContinue
