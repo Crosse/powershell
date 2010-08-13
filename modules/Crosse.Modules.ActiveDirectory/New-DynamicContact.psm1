@@ -28,75 +28,55 @@
 
 function New-DynamicContact {
     param (
+            [Parameter(Mandatory=$true,
+                ValueFromPipeline=$true)]
+            [ValidatePattern(".*@*.\.*")]
             [string]
             # The email address to assign to the dynamic contact.
-            $EmailAddress='',
+            $EmailAddress,
 
+            [Parameter(Mandatory=$false)]
+            [ValidatePattern("(CN|OU)=.*")]
             [string]
             # The Organizational Unit in which to place the dynamic contact.
-            $OrganizationalUnit='',
+            # The default is "CN=Users". If the value is not fully-qualified
+            # (i.e., if the value does not end with "DC=foo"), then the
+            # current domain will be appended.
+            $OrganizationalUnit='CN=Users',
 
+            [Parameter(Mandatory=$false)]
+            [ValidateNotNullOrEmpty()]
             [string]
-            # To specify the fully qualified domain name (FQDN) of the domain 
+            # The fully qualfied domain name (FQDN) of the domain 
             # controller on which to perform the create.
-            $DomainController='',
+            $DomainController,
 
+            [Parameter(Mandatory=$false)]
+            [ValidateNotNullOrEmpty()]
             [string]
             # The descrtiption of the contact.
-            $Description='',
+            $Description,
 
+            [Parameter(Mandatory=$false)]
+            [ValidateRange(900,31557600)]
             [int]
             # The dynamic contact's Time-To-Live (TTL), in seconds.
             # The default is 900 seconds, or 15 minutes.  This is the lowest
             # value allowed by the Active Directory Schema.
-            $EntryTTL=900,
-
-            [switch]
-            # Whether to print verbose information. By default this parameter
-            # is set to $True.
-            $Verbose=$True,
-
-            $inputObject=$Null
+            $EntryTTL=900
         )
 
-    BEGIN {
-        # This has something to do with pipelining.  
-        # Let's call it "magic voodoo" for now.
-        if ($inputObject) {
-            Write-Output $inputObject | &($MyInvocation.InvocationName) -EmailAddress $EmailAddress 
-            break
-        }
-    }
     PROCESS {
-        # If we got data via the pipeline, assign it to a named variable 
-        # to make things easier to read.
-        if ($_) { $EmailAddress = $_ }
-
-        # Validate input.
-        if ( !($EmailAddress) ) {
-            Write-Error "The Email Address must be specified."
-            return
-        }
-
-        if ( $OrganizationalUnit.IndexOfAny("/") -ge 0 ) {
-            Write-Error "Invalid Organizational Unit"
-            return
-        }
-
         $SanitizedEmailAddress = $EmailAddress.Replace("@", "_at_")
 
         # Get the current domain for use later.
         $currDomain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
 
-        if ( !($OrganizationalUnit) ) {
-            # Default to the Users container if no OU was specified.
-            $OrganizationalUnit = "CN=Users"
-        }
-
         if ( $OrganizationalUnit.ToLower().IndexOf("dc=") -lt 0 ) {
             # If the user left of the "DC=" part of the OU, get the
             # current domain and use that.
             $OrganizationalUnit += ",DC=$($currDomain.Name.Replace('.', ',DC='))"
+            Write-Verbose "Using `"$OrganizationalUnit`" as the fully-qualified Organizational Unit"
         }
 
         # Create an ADSI connection.
@@ -112,13 +92,21 @@ function New-DynamicContact {
         $ldap += $OrganizationalUnit
         $parentOU = [ADSI]$ldap
 
+        if ($parentOU.Path -eq $null) {
+            Write-Error "Could not bind to `"$ldap`": $($error[0])"
+            return $null
+        }
+
         $objUser = $null
         # Verify whether the object already exists.
         if ($contactExists) {
+            Write-Verbose "The requested object already exists."
+
             $error.Clear()
             $ErrorActionPreference = "SilentlyContinue"
 
             # The contact already exists; just set the TTL
+            Write-Verbose "Updating TTL value for already-existing object"
             $objUser = $parentOU.psbase.Children.Find("CN=$($SanitizedEmailAddress)")
 
             if ( !([String]::IsNullOrEmpty($error[0])) ) {
@@ -129,6 +117,7 @@ function New-DynamicContact {
             $objUser.Put("entryTTL", $entryTTL)
 
             # Commit the changes to Active Directory.
+            Write-Verbose "Committing changes to Active Directory"
             $error.Clear()
             $objUser.SetInfo()
             $ErrorActionPreference = "Continue"
@@ -136,14 +125,11 @@ function New-DynamicContact {
             if ( !([String]::IsNullOrEmpty($error[0])) ) {
                 Write-Error "Could not modify contact $EmailAddress: $($error[0])"
             } else {
-                if ($Verbose) {
-                    Write-Host "Modified contact $EmailAddress"
-                } else {
-                    Write-Host -NoNewLine "!"
-                }
+                Write-Verbose "Changes committed."
             }
         } else {
             # Create the user and set some info.
+            Write-Verbose "Creating contact $SanitizedEmailAddress"
             $objUser = $parentOU.Create("contact", "CN=$($SanitizedEmailAddress)")
             $objUser.Put("objectClass", @('dynamicObject', 'contact'))
             $objUser.Put("displayName", "$EmailAddress")
@@ -155,11 +141,12 @@ function New-DynamicContact {
             $objUser.Put("targetAddress", "SMTP:$($EmailAddress)")
             $objUser.Put("msExchHideFromAddressLists", "TRUE")
             $objUser.Put("msExchRequireAuthToSendTo", "TRUE")
-            if ($Description) {
+            if (![String]::IsNullOrEmpty($Description)) {
                 $objUser.Put("description", "$($Description)")
             }
 
             # Commit the changes to Active Directory.
+            Write-Verbose "Committing the changes to Active Directory"
             $error.Clear()
             $ErrorActionPreference = "SilentlyContinue"
             $objUser.SetInfo()
@@ -171,30 +158,52 @@ function New-DynamicContact {
             if ( !([String]::IsNullOrEmpty($error[0])) ) {
                 Write-Error "Could not create contact: $($error[0])"
             } else {
-                if ($Verbose) {
-                    Write-Host "Created contact $EmailAddress"
-                } else {
-                    Write-Host -NoNewLine "."
-                }
+                Write-Verbose "Created contact $EmailAddress"
             }
         }
-    }
-    END {
+        return $objUser
     }
 
     <#
         .SYNOPSIS
-        Creates a "dynamic" contact in Active Directory
+        Creates a dynamic contact in Active Directory
 
         .DESCRIPTION
-        Creates a "dynamic" contact in Active Directory, as per RFC 2589.
+        Creates a dynamic contact in Active Directory, as per RFC 2589.
         See "Related Links" for more information.
 
         .INPUTS
-        None.  New-DynamicContact does not accept any values from the pipeline.
+        New-DynamicUser can accept the a System.String from the pipeline that 
+        corresponds to the email address to use for the new contact.
 
         .OUTPUTS
-        None.  New-DynamicContact does not return any values.
+        System.DirectoryServices.DirectoryEntry. New-DynamicUser returns the 
+        newly-created (or updated) dynamic object, or $null if an error 
+        occurred.
+
+        .EXAMPLE
+        C:\PS> New-DynamicContact user@foo.com
+
+
+        distinguishedName : {CN=user_at_foo.com,CN=Users,DC=contoso,DC=com}
+        Path              : LDAP://CN=user_at_foo.com,CN=Users,DC=contoso,DC=com
+
+        The above example creates a new dynamic contact with default parameters.
+
+        .EXAMPLE
+
+        C:\PS> New-DynamicContact -Verbose -EmailAddress "asdf@asdf.com" -OrganizationalUnit "OU=DynamicObjects,OU=Test" -Description "test" -EntryTTL 1000
+        VERBOSE: Using "OU=DynamicObjects,OU=Test,DC=contoso,DC=com" as the fully-qualified Organizational Unit
+        VERBOSE: The requested object already exists.
+        VERBOSE: Updating TTL value for already-existing object
+        VERBOSE: Committing changes to Active Directory
+        VERBOSE: Changes committed.
+
+
+        distinguishedName : {CN=asdf_at_asdf.com,OU=DynamicObjects,OU=Test,DC=contoso,DC=com}
+        Path              : LDAP://CN=asdf_at_asdf.com,OU=DynamicObjects,OU=Test,DC=contoso,DC=com
+
+        The above exmaple creates a new dynamic contact with data specified on the command-line.
 
         .LINK
         http://www.ietf.org/rfc/rfc2589.txt
