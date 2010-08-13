@@ -26,31 +26,42 @@
 ################################################################################
 
 
-param ([string]$CN="", 
-        [string]$OrganizationalUnit='', 
-        [string]$DomainController='',
-        [string]$SamId='', 
-        [string]$UserPrincipalName='', 
-        [int]$entryTTL=900,
-        [string]$Description='', 
-        [switch]$Install=$False)
+function New-DynamicUser { 
+    param (
+            [string]
+            # The cn to use for the dynamic user.
+            $CN='',
 
-# Note that the the default $entryTTL value above is the default value for the 
-# DefaultMinTTL attribute in the Active Directory Schema.
+            [string]
+            # The Organizational Unit in which to place the dynamic user.
+            $OrganizationalUnit='',
 
-if (Test-Path function:New-DynamicUser) {
-    Remove-Item function:New-DynamicUser
-}
+            [string]
+            # To specify the fully qualified domain name (FQDN) of the domain 
+            # controller on which to perform the create.
+            $DomainController='', 
 
-function global:New-DynamicUser(
-        [string]$CN='',
-        [string]$OrganizationalUnit='',
-        [string]$DomainController='', 
-        [string]$SamId='',
-        [string]$UserPrincipalName='',
-        [string]$Description='', 
-        [int]$EntryTTL=900,
-        $inputObject=$Null) {
+            [string]
+            # The sAmAccountName to use for the dynamic user.
+            $SamAccountName='',
+
+            [string]
+            # The userPrincipalName to use for the dynamic user.
+            $UserPrincipalName='',
+
+            [string]
+            # The descrtiption of the contact.
+            $Description='', 
+
+            [int]
+            # The dynamic contact's Time-To-Live (TTL), in seconds.
+            # The default is 900 seconds, or 15 minutes.  This is the lowest
+            # value allowed by the Active Directory Schema.
+            $EntryTTL=900,
+
+            $inputObject=$Null
+          )
+
     BEGIN {
         # This has something to do with pipelining.  
         # Let's call it "magic voodoo" for now.
@@ -70,9 +81,9 @@ function global:New-DynamicUser(
             return
         }
 
-        if ( !($SamId) ) {
+        if ( !($SamAccountName) ) {
             # Set the sAMAccountName to the CN, if not specified.
-            $SamId = $CN
+            $SamAccountName = $CN
         }
 
         # Get the current domain for use later.
@@ -104,7 +115,7 @@ function global:New-DynamicUser(
 
         # "Create the user and set some info.
         $objUser = $parentOU.Create("user", "CN=$($CN)")
-        $objUser.Put("sAMAccountName", "$($SamId)")
+        $objUser.Put("sAMAccountName", "$($SamAccountName)")
         $objUser.Put("userPrincipalName", "$($UserPrincipalName)")
         if ($Description) {
             $objUser.Put("description", "$($Description)")
@@ -126,14 +137,23 @@ function global:New-DynamicUser(
     }
     END {
     }
-}
 
-if ($Install -eq $True) {
-    Write-Host "Added New-DynamicUser to global functions." -Fore White
-    return
-} else {
-    New-DynamicUser -CN $CN -OrganizationalUnit $OrganizationalUnit `
-                    -DomainController $DomainController -SamId $SamId `
-                    -UserPrincipalName $UserPrincipalName -Description $Description `
-                    -entryTTL $entryTTL
+    <#
+        .SYNOPSIS
+        Creates a "dynamic" user in Active Directory
+
+        .DESCRIPTION
+        Creates a "dynamic" user in Active Directory, as per RFC 2589.
+        See "Related Links" for more information.
+
+        .INPUTS
+        None.  New-DynamicUser does not accept any values from the pipeline.
+
+        .OUTPUTS
+        None.  New-DynamicUser does not return any values.
+
+        .LINK
+        http://www.ietf.org/rfc/rfc2589.txt
+        http://msdn.microsoft.com/en-us/library/ms677963%28VS.85%29.aspx
+#>
 }

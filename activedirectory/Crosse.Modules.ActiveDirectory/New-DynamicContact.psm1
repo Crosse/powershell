@@ -26,29 +26,39 @@
 ################################################################################
 
 
-param ([string]$EmailAddress="", 
-        [string]$OrganizationalUnit='', 
-        [string]$DomainController='',
-        [string]$Description='', 
-        [int]$entryTTL=900,
-        [switch]$Verbose=$True,
-        [switch]$Install=$False)
+function New-DynamicContact {
+    param (
+            [string]
+            # The email address to assign to the dynamic contact.
+            $EmailAddress='',
 
-# Note that the the default $entryTTL value above is the default value for the 
-# DefaultMinTTL attribute in the Active Directory Schema.
+            [string]
+            # The Organizational Unit in which to place the dynamic contact.
+            $OrganizationalUnit='',
 
-if (Test-Path function:New-DynamicContact) {
-    Remove-Item function:New-DynamicContact
-}
+            [string]
+            # To specify the fully qualified domain name (FQDN) of the domain 
+            # controller on which to perform the create.
+            $DomainController='',
 
-function global:New-DynamicContact(
-        [string]$EmailAddress='',
-        [string]$OrganizationalUnit='',
-        [string]$DomainController='', 
-        [string]$Description='', 
-        [int]$EntryTTL=900,
-        [switch]$Verbose=$True,
-        $inputObject=$Null) {
+            [string]
+            # The descrtiption of the contact.
+            $Description='',
+
+            [int]
+            # The dynamic contact's Time-To-Live (TTL), in seconds.
+            # The default is 900 seconds, or 15 minutes.  This is the lowest
+            # value allowed by the Active Directory Schema.
+            $EntryTTL=900,
+
+            [switch]
+            # Whether to print verbose information. By default this parameter
+            # is set to $True.
+            $Verbose=$True,
+
+            $inputObject=$Null
+        )
+
     BEGIN {
         # This has something to do with pipelining.  
         # Let's call it "magic voodoo" for now.
@@ -171,12 +181,24 @@ function global:New-DynamicContact(
     }
     END {
     }
+
+    <#
+        .SYNOPSIS
+        Creates a "dynamic" contact in Active Directory
+
+        .DESCRIPTION
+        Creates a "dynamic" contact in Active Directory, as per RFC 2589.
+        See "Related Links" for more information.
+
+        .INPUTS
+        None.  New-DynamicContact does not accept any values from the pipeline.
+
+        .OUTPUTS
+        None.  New-DynamicContact does not return any values.
+
+        .LINK
+        http://www.ietf.org/rfc/rfc2589.txt
+        http://msdn.microsoft.com/en-us/library/ms677963%28VS.85%29.aspx
+#>
 }
 
-if ($Install -eq $True) {
-    Write-Host "Added New-DynamicContact to global functions." -Fore White
-    return
-} else {
-    New-DynamicContact -EmailAddress "$EmailAddress" -OrganizationalUnit "$OrganizationalUnit" `
-    -DomainController $DomainController -Description "$Description" -entryTTL $entryTTL -Verbose:$Verbose
-}
