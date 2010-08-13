@@ -28,7 +28,7 @@
 
 
 # detect source control management software
-function global:findscm {
+function findscm {
     $scm = ''
     :selectscm foreach ($_ in @('svn', 'hg')) {
         $dir = (Get-Location).ProviderPath.trimEnd("\")
@@ -44,7 +44,7 @@ function global:findscm {
 }
 
 # draw output
-function global:drawlines($colors, $cmd) {
+function drawlines($colors, $cmd) {
     $scm = findscm
     if (!$cmd -or !$scm) { return }
     foreach ($line in (&$scm ($cmd).split())) {
@@ -58,19 +58,16 @@ function global:drawlines($colors, $cmd) {
 }
 
 # svn stat
-function global:st {
+function st {
     drawlines @{ "A"="Magenta"; "D"="Red"; "C"="Yellow"; "G"="Blue"; "M"="Cyan"; "U"="Green"; "?"="DarkGray"; "!"="DarkRed" } "stat $args"
 }
-Write-Host "`tAdded st (svn stat) to global functions." -Fore White
 
 # svn update
-function global:su {
+function su {
     drawlines @{ "A"="Magenta"; "D"="Red"; "U"="Green"; "C"="Yellow"; "G"="Blue"; } "up $args"
 }
-Write-Host "`tAdded su (svn update) to global functions." -Fore White
 
 # svn diff
-function global:sd {
+function sd {
     drawlines @{ "@"="Magenta"; "-"="Red"; "+"="Green"; "="="DarkGray"; } "diff $args" 
 }
-Write-Host "`tAdded sd (svn diff) to global functions." -Fore White
