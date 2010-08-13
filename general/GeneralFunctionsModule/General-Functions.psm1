@@ -173,4 +173,51 @@ function Get-RemoteFile {
                 $wc.DownloadFile($Url, $FileName)
         }
     $wc.Dispose()
+
+    <#
+        .SYNOPSIS
+        Downloads a file from a remote URL.
+
+        .DESCRIPTION
+        Downloads a file from a remote URL.  The file can either be saved or 
+        converted to a System.String.
+
+        .INPUTS
+        The URL to retrieve can be passed via the pipeline.
+
+        .OUTPUTS
+        If -AsString is True, then return the contents of the remote file as
+        a System.String.  Otherwise, nothing is returned.
+
+        .EXAMPLE
+        C:\PS> Get-RemoteFile -Url http://checkip.dyndns.org -AsString
+        <html><head><title>Current IP Check</title></head><body>Current IP Address: 134.126.39.81</body></html>
+    #>
+}
+
+
+function New-Guid {
+    return [System.Guid]::NewGuid()
+
+    <#
+        .SYNOPSIS
+        Generates a new Globally-Unique Identifier (GUID).
+
+        .DESCRIPTION
+        Generates a new Globally-Unique Identifier (GUID).
+
+        .INPUTS
+        None.  You cannot pipe objects to New-Guid.
+
+        .OUTPUTS
+        Returns a System.Guid.
+
+        .EXAMPLE
+        C:\PS> New-Guid
+
+        Guid
+        ----
+        f6bf4469-7419-4356-aac9-074de4e00a17
+    #>
+
 }
