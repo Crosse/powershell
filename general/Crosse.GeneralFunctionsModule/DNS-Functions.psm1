@@ -22,16 +22,6 @@
 #
 ################################################################################
 
-# If the function already exists in this runspace, remove it so it 
-# can be re-added below.
-if (Test-Path function:Get-HostEntry) { 
-    Remove-Item function:Get-HostEntry
-}
-
-############################################################
-# This function will be inserted into the current          #
-# runspace.  It does the real work of this script.         #
-############################################################
 <#
 .Synopsis
     Returns, in UNIX 'host'-style, the name or IP addresses of a host.
@@ -39,10 +29,6 @@ if (Test-Path function:Get-HostEntry) {
     Given either an IP address or a hostname, this function will attempt to 
     resolve the entry and will display the output in a style similar to 
     UNIX's 'host' command.
-.Parameter HostEntry
-    The name or IP address to lookup.
-.Parameter q
-    If specified, only print the returned IP address or host name.
 .Example
     PS> Get-HostEntry www.google.com
     www.l.google.com has address 74.125.91.104
@@ -50,22 +36,28 @@ if (Test-Path function:Get-HostEntry) {
     www.l.google.com has address 74.125.91.99
     www.l.google.com has address 74.125.91.103
 .Example 
+    - asdf - description
     PS> Get-HostEntry 74.125.91.103
     qy-in-f103.google.com has address 74.125.91.103
-
-
-.ReturnValue
-    [String]
-
-.Notes
-NAME:      Get-HostEntry
-AUTHOR:    Seth Wright
-LASTEDIT:  4/21/2009
-#Requires -Version 2.0
 #>
-function global:Get-HostEntry(
-        [Parameter(Position=0, Mandatory=$true, ValueFromPipeline=$true)]$HostEntry="", 
-        [switch]$q, [switch]$4, [switch]$6, $inputObject=$Null) {
+function Get-HostEntry(
+        [Parameter(Position=0, Mandatory=$true, ValueFromPipeline=$true)]
+        # The name or IP address to lookup.
+        $HostEntry="",
+
+        [switch]
+        # If specified, only print the returned IP address or host name.
+        $q,
+
+        [switch]
+        # Only report IPv4 records.
+        $4,
+        
+        [switch]
+        # Only report IPv6 records.
+        $6,
+        
+        $inputObject=$Null) {
     ########################################
     # This section executes only once      #
     # before the pipeline.                 #
@@ -125,5 +117,3 @@ function global:Get-HostEntry(
         }
     }
 }
-
-Write-Host "`tAdded Get-HostEntry to global functions." -Fore White
