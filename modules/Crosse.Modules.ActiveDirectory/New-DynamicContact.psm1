@@ -27,6 +27,8 @@
 
 
 function New-DynamicContact {
+    [CmdletBinding(SupportsShouldProcess=$true,
+            ConfirmImpact="High")]
     param (
             [Parameter(Mandatory=$true,
                 ValueFromPipeline=$true)]
@@ -34,6 +36,58 @@ function New-DynamicContact {
             [string]
             # The email address to assign to the dynamic contact.
             $EmailAddress,
+
+            [Parameter(Mandatory=$false)]
+            [ValidateNotNullOrEmpty()]
+            [string]
+            # The CN to assign to the dynamic contact.  If not specified,
+            # the default value will be a sanitized version of the email
+            # address.
+            $CN,
+
+            [Parameter(Mandatory=$false)]
+            [ValidateNotNullOrEmpty()]
+            [string]
+            # The contact's Display Name (displayName).
+            $DisplayName,
+
+            [Parameter(Mandatory=$false)]
+            [ValidateNotNullOrEmpty()]
+            [string]
+            # The contact's Simple Display Name (displayNamePrintable).
+            $SimpleDisplayName,
+
+            [Parameter(Mandatory=$false)]
+            [ValidateNotNullOrEmpty()]
+            [string]
+            # The contact's name.
+            $Name,
+
+            [Parameter(Mandatory=$false)]
+            [ValidateNotNullOrEmpty()]
+            [string]
+            # The contact's first name (givenName).
+            $FirstName,
+
+            [Parameter(Mandatory=$false)]
+            [ValidateNotNullOrEmpty()]
+            [string]
+            # The contact's last name (sn).
+            $LastName,
+
+            [Parameter(Mandatory=$false)]
+            [switch]
+            # The HiddenFromAddressListsEnabled parameter specifies whether 
+            # this mailbox is hidden from other address lists.  The default
+            # value is false.
+            $HiddenFromAddressListsEnabled=$false,
+
+            [Parameter(Mandatory=$false)]
+            [switch]
+            # The RequireSenderAuthenticationEnabled parameter specifies 
+            # whether senders must be authenticated. The default value is 
+            # false.
+            $RequireSenderAuthenticationEnabled=$false,
 
             [Parameter(Mandatory=$false)]
             [ValidatePattern("(CN|OU)=.*")]
@@ -66,83 +120,115 @@ function New-DynamicContact {
             $EntryTTL=900
         )
 
-    PROCESS {
-        $SanitizedEmailAddress = $EmailAddress.Replace("@", "_at_")
-
-        # Get the current domain for use later.
-        $currDomain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
-
+    BEGIN {
         if ( $OrganizationalUnit.ToLower().IndexOf("dc=") -lt 0 ) {
             # If the user left of the "DC=" part of the OU, get the
             # current domain and use that.
-            $OrganizationalUnit += ",DC=$($currDomain.Name.Replace('.', ',DC='))"
+            $currDomain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
+            $domainDN = $currDomain.GetDirectoryEntry().distinguishedName
+            $OrganizationalUnit += ",$($domainDN)"
             Write-Verbose "Using `"$OrganizationalUnit`" as the fully-qualified Organizational Unit"
         }
 
-        # Create an ADSI connection.
-        $ldap = "LDAP://"
-        if ( $DomainController ) {
-            $ldap += $DomainController + "/"
-        }
-        
-        # Do this here just because it's easier to construct the URI.
-        $contactExists = [System.DirectoryServices.DirectoryEntry]::Exists(
-                "$($ldap)CN=$($SanitizedEmailAddress),$($OrganizationalUnit)")
+        $ou = $OrganizationalUnit
 
-        $ldap += $OrganizationalUnit
+        # Create an ADSI connection.
+        $ldapPrefix = "LDAP://"
+        if ( $DomainController ) {
+            $ldapPrefix += $DomainController + "/"
+        }
+
+        $error.Clear()
+        $ldap = "$($ldapPrefix)$($OrganizationalUnit)"
         $parentOU = [ADSI]$ldap
 
         if ($parentOU.Path -eq $null) {
             Write-Error "Could not bind to `"$ldap`": $($error[0])"
             return $null
         }
+    }
+    PROCESS {
+        if ([String]::IsNullOrEmpty($CN)) {
+            $CN = $EmailAddress.Replace("@", "_at_")
+        }
+
+        $dn = "$($ldapPrefix)CN=$($CN),$($ou)"
+        Write-Verbose "Searching for `"$dn`""
+
+        $contactExists = [System.DirectoryServices.DirectoryEntry]::Exists($dn)
 
         $objUser = $null
         # Verify whether the object already exists.
         if ($contactExists) {
-            Write-Verbose "The requested object already exists."
+            Write-Verbose "Contact already exists."
+            if ($PSCmdlet.ShouldProcess($dn, "update entryTTL")) {
+                $error.Clear()
+                $ErrorActionPreference = "SilentlyContinue"
 
-            $error.Clear()
-            $ErrorActionPreference = "SilentlyContinue"
+                # The contact already exists; just set the TTL
+                Write-Verbose "Updating TTL value for already-existing object"
+                $objUser = $parentOU.psbase.Children.Find("CN=$($CN)")
 
-            # The contact already exists; just set the TTL
-            Write-Verbose "Updating TTL value for already-existing object"
-            $objUser = $parentOU.psbase.Children.Find("CN=$($SanitizedEmailAddress)")
+                if ( !([String]::IsNullOrEmpty($error[0])) ) {
+                    Write-Error "Could not find contact, but supposedly it exists: $($error[0])"
+                    return
+                }
 
-            if ( !([String]::IsNullOrEmpty($error[0])) ) {
-                Write-Error "Could not find contact, but supposedly it exists: $($error[0])"
-                return
-            }
+                $objUser.Put("entryTTL", $entryTTL)
 
-            $objUser.Put("entryTTL", $entryTTL)
+                # Commit the changes to Active Directory.
+                Write-Verbose "Committing changes to Active Directory"
+                $error.Clear()
+                $objUser.SetInfo()
+                $ErrorActionPreference = "Continue"
 
-            # Commit the changes to Active Directory.
-            Write-Verbose "Committing changes to Active Directory"
-            $error.Clear()
-            $objUser.SetInfo()
-            $ErrorActionPreference = "Continue"
-
-            if ( !([String]::IsNullOrEmpty($error[0])) ) {
-                Write-Error "Could not modify contact $EmailAddress: $($error[0])"
-            } else {
-                Write-Verbose "Changes committed."
-            }
+                if ( !([String]::IsNullOrEmpty($error[0])) ) {
+                    Write-Error "Could not modify contact $EmailAddress: $($error[0])"
+                } else {
+                    Write-Verbose "Changes committed."
+                }
+           }
         } else {
             # Create the user and set some info.
-            Write-Verbose "Creating contact $SanitizedEmailAddress"
-            $objUser = $parentOU.Create("contact", "CN=$($SanitizedEmailAddress)")
+            Write-Verbose "Creating contact $CN"
+            $objUser = $parentOU.Create("contact", "CN=$($CN)")
             $objUser.Put("objectClass", @('dynamicObject', 'contact'))
-            $objUser.Put("displayName", "$EmailAddress")
-            $objUser.Put("name", "$EmailAddress")
             $objUser.Put("mail", "$EmailAddress")
-            $objUser.Put("mailNickname", "$SanitizedEmailAddress")
+            $objUser.Put("mailNickname", "$CN")
             $objUser.Put("entryTTL", $entryTTL)
-            $objUser.Put("proxyAddresses", @("SMTP:$($EmailAddress)", "smtp:$($SanitizedEmailAddress)@$($currDomain.Name)"))
+            $objUser.Put("proxyAddresses", @("SMTP:$($EmailAddress)"))
             $objUser.Put("targetAddress", "SMTP:$($EmailAddress)")
-            $objUser.Put("msExchHideFromAddressLists", "TRUE")
-            $objUser.Put("msExchRequireAuthToSendTo", "TRUE")
+
+            if (![String]::IsNullOrEmpty($Name)) {
+                $objUser.Put("name", "$Name")
+            }
+            
+            if (![String]::IsNullOrEmpty($DisplayName)) {
+                $objUser.Put("displayName", "$DisplayName")
+            }
+            
+            if (![String]::IsNullOrEmpty($SimpleDisplayName)) {
+                $objUser.Put("displayNamePrintable", "$SimpleDisplayName")
+            }
+            
+            if (![String]::IsNullOrEmpty($FirstName)) {
+                $objUser.Put("givenName", $FirstName)
+            }
+
+            if (![String]::IsNullOrEmpty($LastName)) {
+                $objUser.Put("sn", $LastName)
+            }
+            
             if (![String]::IsNullOrEmpty($Description)) {
                 $objUser.Put("description", "$($Description)")
+            }
+
+            if ($HiddenFromAddressListsEnabled -eq $true) {
+                $objUser.Put("msExchHideFromAddressLists", $true)
+            }
+
+            if ($RequireSenderAuthenticationEnabled -eq $true) {
+                $objUser.Put("msExchRequireAuthToSendTo", $true)
             }
 
             # Commit the changes to Active Directory.
@@ -152,10 +238,11 @@ function New-DynamicContact {
             $objUser.SetInfo()
             $ErrorActionPreference = "Continue"
 
-            $objUser.Put("authOrig", @("CN=$($SanitizedEmailAddress),$($OrganizationalUnit)"))
+            # The following line is the Exchange equivalent of "Allowed Senders"
+            # $objUser.Put("authOrig", @("CN=$($CN),$($ou)"))
             $objUser.SetInfo()
 
-            if ( !([String]::IsNullOrEmpty($error[0])) ) {
+            if (![String]::IsNullOrEmpty($error[0])) {
                 Write-Error "Could not create contact: $($error[0])"
             } else {
                 Write-Verbose "Created contact $EmailAddress"
@@ -173,11 +260,11 @@ function New-DynamicContact {
         See "Related Links" for more information.
 
         .INPUTS
-        New-DynamicUser can accept the a System.String from the pipeline that 
+        New-DynamicContact can accept the a System.String from the pipeline that 
         corresponds to the email address to use for the new contact.
 
         .OUTPUTS
-        System.DirectoryServices.DirectoryEntry. New-DynamicUser returns the 
+        System.DirectoryServices.DirectoryEntry. New-DynamicContact returns the 
         newly-created (or updated) dynamic object, or $null if an error 
         occurred.
 
@@ -207,6 +294,8 @@ function New-DynamicContact {
 
         .LINK
         http://www.ietf.org/rfc/rfc2589.txt
+
+        .LINK
         http://msdn.microsoft.com/en-us/library/ms677963%28VS.85%29.aspx
 #>
 }
