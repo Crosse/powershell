@@ -26,102 +26,128 @@
 ################################################################################
 
 
-function New-DynamicContact {
+function New-DynamicObject {
     [CmdletBinding(SupportsShouldProcess=$true,
             ConfirmImpact="High")]
     param (
             [Parameter(Mandatory=$true,
+                ParameterSetName="User")]
+            [switch]
+            # Specifies that the object should be created as a dynamic 
+            # user object.
+            $User,
+
+            [Parameter(Mandatory=$true,
+                ParameterSetName="Contact")]
+            [switch]
+            # Specifies that the object should be created as a dynamic 
+            # contact object.
+            $Contact,
+
+            [switch]
+            # Specifies whether to create the object with some basic 
+            # attributes used for Microsoft Exchange.  The default value is 
+            # false.
+            $ExchangeObject=$false,
+
+            [Parameter(Mandatory=$true,
                 ValueFromPipeline=$true)]
             [ValidateNotNullOrEmpty()]
             [string]
-            # The CN to assign to the dynamic contact.  If not specified,
-            # the default value will be a sanitized version of the email
-            # address.
-            $CN,
-
-            [Parameter(Mandatory=$false)]
-            [ValidatePattern(".*@*.\.*")]
-            [string]
-            # The email address to assign to the dynamic contact.
-            $EmailAddress,
-
-            [Parameter(Mandatory=$false)]
-            [ValidateNotNullOrEmpty()]
-            [string]
-            # The contact's Display Name (displayName).
-            $DisplayName,
-
-            [Parameter(Mandatory=$false)]
-            [ValidateNotNullOrEmpty()]
-            [string]
-            # The contact's Simple Display Name (displayNamePrintable).
-            $SimpleDisplayName,
-
-            [Parameter(Mandatory=$false)]
-            [ValidateNotNullOrEmpty()]
-            [string]
-            # The contact's name.
+            # The name to assign to the dynamic object.  This will be the CN
+            # and the LDAP 'name' attribute.
             $Name,
 
-            [Parameter(Mandatory=$false)]
+            [Parameter(ParameterSetName="User")]
+            [ValidateLength(1,20)]
+            [string]
+            # The object's sAmAccountName.  The default value is a sanitized
+            # version of the CN.
+            $SamAccountName,
+
             [ValidateNotNullOrEmpty()]
             [string]
-            # The contact's first name (givenName).
+            # The object's Exchange Alias (mailNickname).  The default value
+            # is a sanitized version of the CN.
+            $Alias,
+
+            [Parameter(Mandatory=$true,
+                    ParameterSetName="Contact")]
+            [Parameter(Mandatory=$false,
+                    ParameterSetName="User")]
+            [ValidatePattern(".*@*.\.*")]
+            [string]
+            # The email address to assign to the dynamic object.
+            $EmailAddress,
+
+            [ValidateNotNullOrEmpty()]
+            [string]
+            # The object's Display Name (displayName).
+            $DisplayName,
+
+            [ValidateNotNullOrEmpty()]
+            [string]
+            # The object's Simple Display Name (displayNamePrintable).
+            $SimpleDisplayName,
+
+            [ValidateNotNullOrEmpty()]
+            [string]
+            # The object's first name (givenName).
             $FirstName,
 
-            [Parameter(Mandatory=$false)]
             [ValidateNotNullOrEmpty()]
             [string]
-            # The contact's last name (sn).
+            # The object's last name (sn).
             $LastName,
 
-            [Parameter(Mandatory=$false)]
+            [ValidateNotNullOrEmpty()]
+            [string]
+            # The description of the object.
+            $Description,
+
             [switch]
             # The HiddenFromAddressListsEnabled parameter specifies whether 
-            # this mailbox is hidden from other address lists.  The default
+            # this object is hidden from other address lists.  The default
             # value is false.
             $HiddenFromAddressListsEnabled=$false,
 
-            [Parameter(Mandatory=$false)]
             [switch]
             # The RequireSenderAuthenticationEnabled parameter specifies 
             # whether senders must be authenticated. The default value is 
             # false.
             $RequireSenderAuthenticationEnabled=$false,
 
-            [Parameter(Mandatory=$false)]
             [ValidatePattern("(CN|OU)=.*")]
             [string]
-            # The Organizational Unit in which to place the dynamic contact.
+            # The Organizational Unit in which to place the dynamic object.
             # The default is "CN=Users". If the value is not fully-qualified
             # (i.e., if the value does not end with "DC=foo"), then the
             # current domain will be appended.
             $OrganizationalUnit='CN=Users',
 
-            [Parameter(Mandatory=$false)]
             [ValidateNotNullOrEmpty()]
             [string]
             # The fully qualfied domain name (FQDN) of the domain 
             # controller on which to perform the create.
             $DomainController,
 
-            [Parameter(Mandatory=$false)]
-            [ValidateNotNullOrEmpty()]
-            [string]
-            # The descrtiption of the contact.
-            $Description,
-
-            [Parameter(Mandatory=$false)]
             [ValidateRange(900,31557600)]
             [int]
-            # The dynamic contact's Time-To-Live (TTL), in seconds.
+            # The dynamic object's Time-To-Live (TTL), in seconds.
             # The default is 900 seconds, or 15 minutes.  This is the lowest
             # value allowed by the Active Directory Schema.
             $EntryTTL=900
         )
 
     BEGIN {
-        if ( $OrganizationalUnit.ToLower().IndexOf("dc=") -lt 0 ) {
+        if (!$ExchangeObject -and 
+                ($HiddenFromAddressListsEnabled -or 
+                 $RequireSenderAuthenticationEnabled)) {
+            Write-Error "The -ExchangeObject parameter must be used to specify -HiddenFromAddressListsEnabled or -RequireSenderAuthenticationEnabled"
+            return $null
+        }
+
+        if ($OrganizationalUnit.ToLower().IndexOf("dc=") -lt 0) {
             # If the user left of the "DC=" part of the OU, get the
             # current domain and use that.
             $currDomain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
@@ -143,56 +169,77 @@ function New-DynamicContact {
         $parentOU = [ADSI]$ldap
 
         if ($parentOU.Path -eq $null) {
-            Write-Error "Could not bind to `"$ldap`": $($error[0])"
+            Write-Error "Could not bind to `"$ldap`".  Check for errors in the path."
             return $null
         }
     }
     PROCESS {
-        if ([String]::IsNullOrEmpty($CN)) {
-            $CN = $EmailAddress.Replace("@", "_at_")
-        }
-
-        $dn = "$($ldapPrefix)CN=$($CN),$($ou)"
+        $dn = "$($ldapPrefix)CN=$($Name),$($ou)"
         Write-Verbose "Searching for `"$dn`""
 
-        $contactExists = [System.DirectoryServices.DirectoryEntry]::Exists($dn)
+        $objectExists = [System.DirectoryServices.DirectoryEntry]::Exists($dn)
 
         $objUser = $null
         # Verify whether the object already exists.
-        if ($contactExists) {
-            Write-Verbose "Contact already exists."
+        if ($objectExists) {
+            Write-Warning "An object with the same DN already exists ($dn)."
+
+            if (!$PSCmdlet.ShouldProcess($dn, "update Entry Time-To-Live")) {
+                return $null
+            }
+
             $error.Clear()
             $ErrorActionPreference = "SilentlyContinue"
 
-            $objUser = $parentOU.psbase.Children.Find("CN=$($CN)")
-            if ([String]::IsNullOrEmpty($EmailAddress)) {
-                $EmailAddress = $objUser.Get("mail")
-            }
+            $objUser = $parentOU.psbase.Children.Find("CN=$($Name)")
 
             if ( !([String]::IsNullOrEmpty($error[0])) ) {
                 Write-Error "Could not find contact, but supposedly it exists: $($error[0])"
-                return
+                return $null
             }
         } else {
+            if (!$PSCmdlet.ShouldProcess($dn, "create object")) {
+                return $null
+            }
+            
             # Create the user and set some info.
-            Write-Verbose "Creating contact $CN"
+            Write-Verbose "Creating contact $dn"
             $error.Clear()
-            $objUser = $parentOU.Create("contact", "CN=$($CN)")
+            $objUser = $parentOU.Create("contact", "CN=$($Name)")
             if ($objUser -eq $null) {
                 Write-Error "Could not create dynamic object:  $($error[0])"
                 return $null
             }
 
-            $objUser.Put("objectClass", @('dynamicObject', 'contact'))
-            $objUser.Put("mail", "$EmailAddress")
-            $objUser.Put("mailNickname", "$CN")
-            $objUser.Put("proxyAddresses", @("SMTP:$($EmailAddress)"))
-            $objUser.Put("targetAddress", "SMTP:$($EmailAddress)")
+            if ($Contact -and -not $User) {
+                $objUser.Put("objectClass", @('dynamicObject', 'contact'))
+            } elseif ($User -and -not $Contact) {
+                $objUser.Put("objectClass", @('dynamicObject', 'user'))
 
-            if (![String]::IsNullOrEmpty($Name)) {
-                $objUser.Put("name", "$Name")
+                if ([String]::IsNullOrEmpty($SamAccountName)) {
+                    $SamAccountName = $Name.Replace(" ", "")
+                }
+                $objUser.Put("sAmAccountName", "$SamAccountName")
+            } else {
+                Write-Error "Couldn't determine the type of dynamic object to create!"
+                return $null
             }
-            
+
+            if ($ExchangeObject) {
+                if ([String]::IsNullOrEmpty($Alias)) {
+                    $Alias = $Name.Replace(" ", "")
+                }
+                $objUser.Put("mailNickname", "$Alias")
+            }
+
+            if (![String]::IsNullOrEmpty($EmailAddress)) {
+                $objUser.Put("mail", "$EmailAddress")
+                if ($ExchangeObject) {
+                    $objUser.Put("proxyAddresses", @("SMTP:$($EmailAddress)"))
+                    $objUser.Put("targetAddress", "SMTP:$($EmailAddress)")
+                }
+            }
+
             if (![String]::IsNullOrEmpty($DisplayName)) {
                 $objUser.Put("displayName", "$DisplayName")
             }
@@ -231,16 +278,16 @@ function New-DynamicContact {
         $ErrorActionPreference = "Continue"
 
         # The following line is the Exchange equivalent of "Allowed Senders"
-        # $objUser.Put("authOrig", @("CN=$($CN),$($ou)"))
+        # $objUser.Put("authOrig", @("CN=$($Name),$($ou)"))
         # $objUser.SetInfo()
 
         if (![String]::IsNullOrEmpty($error[0])) {
-            Write-Error "Could not create or update contact: $($error[0])"
+            Write-Error "Could not create or update object: $($error[0])"
         } else {
-            if ($contactExists) {
-                Write-Verbose "Updated contact $CN"
+            if ($objectExists) {
+                Write-Verbose "Updated object $dn"
             } else {
-                Write-Verbose "Created contact $CN"
+                Write-Verbose "Created object $dn"
             }
         }
         return $objUser
@@ -248,44 +295,20 @@ function New-DynamicContact {
 
     <#
         .SYNOPSIS
-        Creates a dynamic contact in Active Directory
+        Creates a dynamic object in Active Directory
 
         .DESCRIPTION
-        Creates a dynamic contact in Active Directory, as per RFC 2589.
+        Creates a dynamic ojbect in Active Directory, as per RFC 2589.
         See "Related Links" for more information.
 
         .INPUTS
-        New-DynamicContact can accept the a System.String from the pipeline that 
-        corresponds to the email address to use for the new contact.
+        New-DynamicObject can accept the a System.String from the pipeline that 
+        corresponds to the Common Name (CN) to use for the new objecg.
 
         .OUTPUTS
-        System.DirectoryServices.DirectoryEntry. New-DynamicContact returns the 
+        System.DirectoryServices.DirectoryEntry. New-DynamicObject returns the 
         newly-created (or updated) dynamic object, or $null if an error 
         occurred.
-
-        .EXAMPLE
-        C:\PS> New-DynamicContact user@foo.com
-
-
-        distinguishedName : {CN=user_at_foo.com,CN=Users,DC=contoso,DC=com}
-        Path              : LDAP://CN=user_at_foo.com,CN=Users,DC=contoso,DC=com
-
-        The above example creates a new dynamic contact with default parameters.
-
-        .EXAMPLE
-
-        C:\PS> New-DynamicContact -Verbose -EmailAddress "asdf@asdf.com" -OrganizationalUnit "OU=DynamicObjects,OU=Test" -Description "test" -EntryTTL 1000
-        VERBOSE: Using "OU=DynamicObjects,OU=Test,DC=contoso,DC=com" as the fully-qualified Organizational Unit
-        VERBOSE: The requested object already exists.
-        VERBOSE: Updating TTL value for already-existing object
-        VERBOSE: Committing changes to Active Directory
-        VERBOSE: Changes committed.
-
-
-        distinguishedName : {CN=asdf_at_asdf.com,OU=DynamicObjects,OU=Test,DC=contoso,DC=com}
-        Path              : LDAP://CN=asdf_at_asdf.com,OU=DynamicObjects,OU=Test,DC=contoso,DC=com
-
-        The above exmaple creates a new dynamic contact with data specified on the command-line.
 
         .LINK
         http://www.ietf.org/rfc/rfc2589.txt
