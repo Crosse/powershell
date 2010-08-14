@@ -32,18 +32,18 @@ function New-DynamicContact {
     param (
             [Parameter(Mandatory=$true,
                 ValueFromPipeline=$true)]
-            [ValidatePattern(".*@*.\.*")]
-            [string]
-            # The email address to assign to the dynamic contact.
-            $EmailAddress,
-
-            [Parameter(Mandatory=$false)]
             [ValidateNotNullOrEmpty()]
             [string]
             # The CN to assign to the dynamic contact.  If not specified,
             # the default value will be a sanitized version of the email
             # address.
             $CN,
+
+            [Parameter(Mandatory=$false)]
+            [ValidatePattern(".*@*.\.*")]
+            [string]
+            # The email address to assign to the dynamic contact.
+            $EmailAddress,
 
             [Parameter(Mandatory=$false)]
             [ValidateNotNullOrEmpty()]
@@ -161,41 +161,31 @@ function New-DynamicContact {
         # Verify whether the object already exists.
         if ($contactExists) {
             Write-Verbose "Contact already exists."
-            if ($PSCmdlet.ShouldProcess($dn, "update entryTTL")) {
-                $error.Clear()
-                $ErrorActionPreference = "SilentlyContinue"
+            $error.Clear()
+            $ErrorActionPreference = "SilentlyContinue"
 
-                # The contact already exists; just set the TTL
-                Write-Verbose "Updating TTL value for already-existing object"
-                $objUser = $parentOU.psbase.Children.Find("CN=$($CN)")
+            $objUser = $parentOU.psbase.Children.Find("CN=$($CN)")
+            if ([String]::IsNullOrEmpty($EmailAddress)) {
+                $EmailAddress = $objUser.Get("mail")
+            }
 
-                if ( !([String]::IsNullOrEmpty($error[0])) ) {
-                    Write-Error "Could not find contact, but supposedly it exists: $($error[0])"
-                    return
-                }
-
-                $objUser.Put("entryTTL", $entryTTL)
-
-                # Commit the changes to Active Directory.
-                Write-Verbose "Committing changes to Active Directory"
-                $error.Clear()
-                $objUser.SetInfo()
-                $ErrorActionPreference = "Continue"
-
-                if ( !([String]::IsNullOrEmpty($error[0])) ) {
-                    Write-Error "Could not modify contact $EmailAddress: $($error[0])"
-                } else {
-                    Write-Verbose "Changes committed."
-                }
-           }
+            if ( !([String]::IsNullOrEmpty($error[0])) ) {
+                Write-Error "Could not find contact, but supposedly it exists: $($error[0])"
+                return
+            }
         } else {
             # Create the user and set some info.
             Write-Verbose "Creating contact $CN"
+            $error.Clear()
             $objUser = $parentOU.Create("contact", "CN=$($CN)")
+            if ($objUser -eq $null) {
+                Write-Error "Could not create dynamic object:  $($error[0])"
+                return $null
+            }
+
             $objUser.Put("objectClass", @('dynamicObject', 'contact'))
             $objUser.Put("mail", "$EmailAddress")
             $objUser.Put("mailNickname", "$CN")
-            $objUser.Put("entryTTL", $entryTTL)
             $objUser.Put("proxyAddresses", @("SMTP:$($EmailAddress)"))
             $objUser.Put("targetAddress", "SMTP:$($EmailAddress)")
 
@@ -230,22 +220,27 @@ function New-DynamicContact {
             if ($RequireSenderAuthenticationEnabled -eq $true) {
                 $objUser.Put("msExchRequireAuthToSendTo", $true)
             }
+        }
 
-            # Commit the changes to Active Directory.
-            Write-Verbose "Committing the changes to Active Directory"
-            $error.Clear()
-            $ErrorActionPreference = "SilentlyContinue"
-            $objUser.SetInfo()
-            $ErrorActionPreference = "Continue"
+        $objUser.Put("entryTTL", $entryTTL)
+        # Commit the changes to Active Directory.
+        Write-Verbose "Committing the changes to Active Directory"
+        $error.Clear()
+        $ErrorActionPreference = "SilentlyContinue"
+        $objUser.SetInfo()
+        $ErrorActionPreference = "Continue"
 
-            # The following line is the Exchange equivalent of "Allowed Senders"
-            # $objUser.Put("authOrig", @("CN=$($CN),$($ou)"))
-            $objUser.SetInfo()
+        # The following line is the Exchange equivalent of "Allowed Senders"
+        # $objUser.Put("authOrig", @("CN=$($CN),$($ou)"))
+        # $objUser.SetInfo()
 
-            if (![String]::IsNullOrEmpty($error[0])) {
-                Write-Error "Could not create contact: $($error[0])"
+        if (![String]::IsNullOrEmpty($error[0])) {
+            Write-Error "Could not create or update contact: $($error[0])"
+        } else {
+            if ($contactExists) {
+                Write-Verbose "Updated contact $CN"
             } else {
-                Write-Verbose "Created contact $EmailAddress"
+                Write-Verbose "Created contact $CN"
             }
         }
         return $objUser
