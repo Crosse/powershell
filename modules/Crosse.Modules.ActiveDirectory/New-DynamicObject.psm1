@@ -117,6 +117,10 @@ function New-DynamicObject {
             # false.
             $RequireSenderAuthenticationEnabled=$false,
 
+            [Parameter(ParameterSetName="User")]
+            [ValidateNotNullOrEmpty()]
+            $Password,
+
             [ValidatePattern("(CN|OU)=.*")]
             [string]
             # The Organizational Unit in which to place the dynamic object.
