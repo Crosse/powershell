@@ -54,21 +54,28 @@ function New-DynamicObject {
                 ValueFromPipeline=$true)]
             [ValidateNotNullOrEmpty()]
             [string]
-            # The name to assign to the dynamic object.  This will be the CN
-            # and the LDAP 'name' attribute.
+            # The name to assign to the dynamic object.  This will be the LDAP
+            # cn and 'name' attributes.
             $Name,
 
             [Parameter(ParameterSetName="User")]
             [ValidateLength(1,20)]
             [string]
             # The object's sAmAccountName.  The default value is a sanitized
-            # version of the CN.
+            # version of the Name attribute.
             $SamAccountName,
+
+            [Parameter(ParameterSetName="User")]
+            [ValidatePattern(".*@*.\.*")]
+            [string]
+            # The object's userPrincipalName.  The default value is the Name
+            # attribute followed by "@current.domain.com"
+            $UserPrincipalName,
 
             [ValidateNotNullOrEmpty()]
             [string]
             # The object's Exchange Alias (mailNickname).  The default value
-            # is a sanitized version of the CN.
+            # is a sanitized version of the 'name' attribute.
             $Alias,
 
             [Parameter(Mandatory=$true,
@@ -119,7 +126,17 @@ function New-DynamicObject {
 
             [Parameter(ParameterSetName="User")]
             [ValidateNotNullOrEmpty()]
+            # A SecureString representation of the password to use for the 
+            # new user. The default is to create a user with no password set, 
+            # thus creating the user in a default-disabled state.
+            [System.Security.SecureString]
             $Password,
+
+            [Parameter(ParameterSetName="User")]
+            [switch]
+            # If the cmdlet should prompt for a password to be entered instead
+            # of passing the password on the command-line.
+            $PromptForPassword=$false,
 
             [ValidatePattern("(CN|OU)=.*")]
             [string]
@@ -151,10 +168,10 @@ function New-DynamicObject {
             return $null
         }
 
+        $currDomain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
         if ($OrganizationalUnit.ToLower().IndexOf("dc=") -lt 0) {
             # If the user left of the "DC=" part of the OU, get the
             # current domain and use that.
-            $currDomain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
             $domainDN = $currDomain.GetDirectoryEntry().distinguishedName
             $OrganizationalUnit += ",$($domainDN)"
             Write-Verbose "Using `"$OrganizationalUnit`" as the fully-qualified Organizational Unit"
@@ -202,6 +219,10 @@ function New-DynamicObject {
                 return $null
             }
         } else {
+            if ($User -and $PromptForPassword) {
+                $Password = Read-Host -AsSecureString -Prompt "New Password"
+            }
+
             if (!$PSCmdlet.ShouldProcess($dn, "create object")) {
                 return $null
             }
@@ -215,18 +236,20 @@ function New-DynamicObject {
                 return $null
             }
 
-            if ($Contact -and -not $User) {
+            if ($Contact) {
                 $objUser.Put("objectClass", @('dynamicObject', 'contact'))
-            } elseif ($User -and -not $Contact) {
+            } elseif ($User) {
                 $objUser.Put("objectClass", @('dynamicObject', 'user'))
 
                 if ([String]::IsNullOrEmpty($SamAccountName)) {
                     $SamAccountName = $Name.Replace(" ", "")
                 }
                 $objUser.Put("sAmAccountName", "$SamAccountName")
-            } else {
-                Write-Error "Couldn't determine the type of dynamic object to create!"
-                return $null
+
+                if ([String]::IsNullOrEmpty($UserPrincipalName)) {
+                    $UserPrincipalName = $SamAccountName + "@" + $currDomain.Name
+                }
+                $objUser.Put("userPrincipalName", "$UserPrincipalName")
             }
 
             if ($ExchangeObject) {
@@ -283,7 +306,21 @@ function New-DynamicObject {
 
         # The following line is the Exchange equivalent of "Allowed Senders"
         # $objUser.Put("authOrig", @("CN=$($Name),$($ou)"))
-        # $objUser.SetInfo()
+
+        if ($User -and ![String]::IsNullOrEmpty($Password)) {
+            $bStr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($Password)
+            $objUser.SetPassword([Runtime.InteropServices.Marshal]::PtrToStringAuto($bStr))
+            [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bStr)
+
+            $objUser.InvokeSet("AccountDisabled", $false)
+            $objUser.InvokeSet("PasswordRequired", $true)
+
+            # The line below works just as well as the two above, but I think
+            # the lines above are more descriptive.
+            # $objUser.Put("userAccountControl", 512)
+            
+            $objUser.SetInfo()
+        }
 
         if (![String]::IsNullOrEmpty($error[0])) {
             Write-Error "Could not create or update object: $($error[0])"
@@ -302,17 +339,45 @@ function New-DynamicObject {
         Creates a dynamic object in Active Directory
 
         .DESCRIPTION
-        Creates a dynamic ojbect in Active Directory, as per RFC 2589.
-        See "Related Links" for more information.
+        Creates a dynamic object in Active Directory, as per RFC 2589.  See "Related Links" for more information.
 
         .INPUTS
-        New-DynamicObject can accept the a System.String from the pipeline that 
-        corresponds to the Common Name (CN) to use for the new objecg.
+        New-DynamicObject can accept the a System.String from the pipeline that corresponds to the name to use for the new object.
 
         .OUTPUTS
-        System.DirectoryServices.DirectoryEntry. New-DynamicObject returns the 
-        newly-created (or updated) dynamic object, or $null if an error 
-        occurred.
+        System.DirectoryServices.DirectoryEntry. New-DynamicObject returns the newly-created (or updated) dynamic object, or $null if an error occurred.
+
+        .EXAMPLE
+
+        C:\PS> $passwd = Read-Host -AsSecureString
+        *********
+        C:\PS> New-DynamicObject -User -Name "TestUser1" -Password $passwd
+
+        Confirm
+        Are you sure you want to perform this action?
+        Performing operation "create object" on Target "LDAP://CN=TestUser1,CN=Users,DC=contoso,DC=com".
+        [Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "Y"):
+
+
+        distinguishedName : {CN=TestUser1,CN=Users,DC=contoso,DC=com}
+        Path              : LDAP://CN=TestUser1,CN=Users,DC=contoso,DC=com
+        
+        .EXAMPLE
+        C:\PS> New-DynamicObject -Contact -Name "TestContact1" -EmailAddress "fdsa@asdf.com" -OrganizationalUnit "ou=DynamicObjects,ou=Test"
+        WARNING: An object with the same DN already exists
+        (LDAP://CN=TestContact1,ou=DynamicObjects,ou=Test,DC=contoso,DC=com).
+
+        Confirm
+        Are you sure you want to perform this action?
+        Performing operation "update Entry Time-To-Live" on Target
+        "LDAP://CN=TestContact1,ou=DynamicObjects,ou=Test,DC=contoso,DC=com".
+        [Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "Y"):
+
+
+        distinguishedName : {CN=TestContact1,OU=DynamicObjects,OU=Test,DC=contoso,DC=com}
+        Path              : LDAP://CN=TestContact1,ou=DynamicObjects,ou=Test,DC=contoso,DC=com
+
+
 
         .LINK
         http://www.ietf.org/rfc/rfc2589.txt
