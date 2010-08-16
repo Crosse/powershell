@@ -51,34 +51,73 @@ function Out-HtmlHelp {
         </head>
 
         <body>
-            <h1>$($HelpInfo.Name)</h1>
+            <h1>$(TidyString $HelpInfo.Name)</h1>
             <h2>SYNOPSIS</h2>
-                <div class="cmdSynopsis">$($HelpInfo.Synopsis)</div>
+                <div class="cmdSynopsis">$(TidyString $HelpInfo.Synopsis)</div>
             <h2>SYNTAX</h2>
-                <div class="cmdSyntax">$(ConvertTo-HtmlEntities $($HelpInfo.Syntax | Out-String -width 2000))</div>
-            <h2>DESCRIPTION</h2>
 "@ | Out-File $fileName
 
-        foreach ($d in $HelpInfo.description) {
-@"
-                <div class="cmdDescription">$(ConvertTo-HtmlEntities $d.Text)</div>
-"@ | Out-File $fileName -Append
+        foreach ($item in $HelpInfo.syntax.syntaxItem) {
+            $params = @"
+                <div class="cmdSyntax">
+                    $(TidyString $item.name) 
+"@
+            foreach ($p in $item.parameter) {
+                if ($p.required -ne "true") {
+                    $params += "["
+                }
 
+                $params += "-$(TidyString $p.name)"
+                if ($p.parameterValue -ne $null) {
+                    $params+= " &lt;$(TidyString $p.parameterValue)&gt;"
+                }
+
+                if ($p.required -ne "true") {
+                    $params += "]"
+                }
+
+                $params += " "
+            }
+            $params | Out-File $fileName -Append
 @"
-            <h2>PARAMETERS</h2>
+                </div>
+                <br />
 "@ | Out-File $fileName -Append
         }
+
+@"
+            <h2>DESCRIPTION</h2>
+            <div class="cmdDescription">
+"@ | Out-File $fileName -Append
+
+        foreach ($d in $HelpInfo.description) {
+            $desc = "                "
+            $desc += $d.Tag + $d.Text
+            $desc += "`n                <p />"
+            $desc | Out-File $fileName -Append
+        }
+
+@"
+            </div>
+            <h2>PARAMETERS</h2>
+"@ | Out-File $fileName -Append
 
 
         foreach ($p in $HelpInfo.parameters.parameter) {
 @"
             <div class="cmdParameter">
-                <div class="cmdParameterName">-$($p.name) [&lt;$($p.parameterValue)&gt;]</div>
+                <div class="cmdParameterName">-$(TidyString $p.name) [&lt;$(TidyString $p.parameterValue)&gt;]</div>
+                <div class="cmdParameterDesc">
 "@ | Out-File $fileName -Append
 
             foreach ($d in $p.description) {
+                $desc = "                "
+                $desc += $d.Tag + $d.Text
+                $desc += "`n                <br />"
+                $desc | Out-File $fileName -Append
+            }
 @"
-                <div class="cmdParameterDesc">$($d.Text)</div>
+                </div>
                 <table class="cmdParameterAttr">
                     <tr>
                         <td class="cmdParameterAttrName">Required?</td>
@@ -95,22 +134,38 @@ function Out-HtmlHelp {
                 </table>
             </div>
 "@ | Out-File $fileName -Append
-            }
         }
 
 @"
             <h2>INPUTS</h2>
-                <div class="cmdInputs">$(ConvertTo-HtmlEntities $HelpInfo.inputTypes.inputType.type.name)</div>
+                <div class="cmdInputs">$(TidyString $HelpInfo.inputTypes.inputType.type.name)</div>
             <h2>OUTPUTS</h2>
-                <div class="cmdOutputs">$(ConvertTo-HtmlEntities $HelpInfo.returnValues.returnValue.type.name)</div>
+                <div class="cmdOutputs">$(TidyString $HelpInfo.returnValues.returnValue.type.name)</div>
             <h2>EXAMPLES</h2>
 "@ | Out-File $fileName -Append
 
         foreach ($e in $HelpInfo.examples.example) {
-@"
-            <div class="cmdExample">$(ConvertTo-HtmlEntities ($e | Out-String -width 2000))</div>
-            </div>
-"@ | Out-File $fileName -Append
+            $example = @"
+                <div class="cmdExample">
+                    $(TidyString $e.title)<br />
+
+"@
+            foreach ($c in $e.code) {
+                $example += @"
+                    $(TidyString $c)<br />
+"@
+            }
+            
+            foreach ($r in $e.remarks) {
+                $example += @"
+                    $(TidyString $r.Text)<br />
+"@
+            }
+            
+            $example += @"
+                </div>
+"@
+            $example | Out-File $fileName -Append
         }
 
 @"
@@ -119,9 +174,14 @@ function Out-HtmlHelp {
 "@ | Out-File $fileName -Append
 
         foreach ($link in $HelpInfo.relatedLinks.navigationLink) {
+            if ([String]::IsNullOrEmpty($link.linkText)) { 
+                $linkText = TidyString $link.uri
+            } else { 
+                $linkText = TidyString $link.linkText
+            }
 @"
-                <a href="$($link.uri)" class="cmdRelatedLink">$(if ([String]::IsNullOrEmpty($link.linkText)) { $link.uri } else { $link.linkText })</a>
-                <br/>
+                <a href="$($link.uri)" class="cmdRelatedLink">$linkText</a>
+                <p />
 "@ | Out-File $fileName -Append
         }
 
@@ -132,6 +192,8 @@ function Out-HtmlHelp {
         </body>
     </html>
 "@ | Out-File $fileName -Append
+
+    Set-Encoding $fileName
     }
 
     END {
@@ -139,13 +201,27 @@ function Out-HtmlHelp {
     }
 }
 
-function ConvertTo-HtmlEntities {
+function TidyString {
     param (
-            [Parameter(Mandatory=$true,
-                ValueFromPipeline=$true)]
+            [Parameter(ValueFromPipeline=$true)]
             # The string to convert.
             $Object
           )
 
-        return $Object.ToString().Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("`n", "<p>")
+        if ($Object -eq $null) {
+            return $null
+        }
+
+        $retval = $Object.ToString()
+        $retval = $retval.Trim()
+        while ($retval[-1] -eq "`n") {
+            $retval.Remove($retval.Length -1, 1)
+        }
+        $retval = $retval.Replace("&", "&amp;")
+        $retval = $retval.Replace("<", "&lt;")
+        $retval = $retval.Replace(">", "&gt;")
+        $retval = $retval.Replace("`n", "<br />`n")
+
+        return $retval
 }
+
