@@ -27,7 +27,7 @@ CompanyName = 'James Madison University'
 Copyright = 'Copyright © 2010 Seth Wright <wrightst@jmu.edu>'
 
 # Description of the functionality provided by this module
-Description = 'Functions to work with Active Directory"
+Description = 'Functions to work with Active Directory'
 
 # Minimum version of the Windows PowerShell engine required by this module
 PowerShellVersion = '2.0'
