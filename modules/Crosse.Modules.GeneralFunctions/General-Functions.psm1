@@ -221,3 +221,100 @@ function New-Guid {
     #>
 
 }
+
+
+function Set-Encoding {
+    [CmdletBinding()]
+        param (
+                [Parameter(Position=0,Mandatory=$true,ValueFromPipeline=$true)]
+                [ValidateScript({ 
+                    if((resolve-path $_).Provider.Name -ne "FileSystem") {
+                        throw "Specified Path is not in the FileSystem: '$_'" 
+                    }
+                    return $true
+                    })]
+                [Alias("Fullname","Path")]
+                [string]
+                # The path to the file to be re-encoded.
+                $FilePath,
+
+                [switch]
+                # Outputs the file in Unicode format.
+                $Unicode,
+                
+                [switch]
+                # Outputs the file in UTF7 format.
+                $UTF7,
+
+                [switch]
+                # Outputs the file in UTF8 format.
+                $UTF8,
+
+                [switch]
+                # Outputs the file in UTF32 format.
+                $UTF32,
+
+                [switch]
+                # Outputs the file in ASCII format.
+                $ASCII,
+
+                [switch]
+                # Outputs the file in BigEndianUnicode format.
+                $BigEndianUnicode,
+
+                [switch]
+                # Uses the encoding of the system's current ANSI code page.
+                $Default,
+                
+                [switch]
+                # Uses the current original equipment manufacturer code page identifier for the operating system.
+                $OEM
+             )
+
+        BEGIN {
+            $Encoding = ""
+            switch(
+                    $Unicode,
+                    $UTF7,
+                    $UTF8,
+                    $UTF32,
+                    $ASCII, 
+                    $BigEndianUnicode,
+                    $Default, 
+                    $OEM
+                ) {
+                $Unicode { $Encoding = "Unicode" }
+                $UTF7 { $Encoding = "UTF7" }
+                $UTF8 { $Encoding = "UTF8" }
+                $UTF32 { $Encoding = "UTF32" }
+                $ASCII { $Encoding = "ASCII" } 
+                $BigEndianUnicode { $Encoding = "BigEndianUnicode" }
+                $Default { $Encoding = "Default" }
+                $OEM { $Encoding = "OEM" }
+            }
+
+        }
+
+    PROCESS {
+        (Get-Content $FilePath) | Out-File -FilePath $FilePath -Encoding $Encoding -Force
+    }
+
+    <#
+        .SYNOPSIS
+        Takes a Script file or any other text file into memory 
+        and Re-Encodes it in the format specified.
+
+        .EXAMPLE
+        ls *.ps1 | Set-Encoding -ASCII
+        
+        .DESCRIPTION
+        Written to provide an easy method to perform easy batch 
+        encoding, calls on the command Out-File with the -Encoding 
+        parameter and the -Force switch. Primarily to fix UnknownError
+        status received when trying to sign non-ascii format files with
+        digital signatures. Don't use on your MP3's or other non-text
+        files :)
+#>
+
+}
+
