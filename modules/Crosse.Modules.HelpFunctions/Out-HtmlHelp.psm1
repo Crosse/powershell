@@ -43,7 +43,7 @@ function Out-HtmlHelp {
 
     PROCESS {
         $fileName = $HelpInfo.Name + ".html"
-@"
+        $fileText = @"
         <html>
         <head>
             <title>$($HelpInfo.Name)</title>
@@ -55,7 +55,7 @@ function Out-HtmlHelp {
             <h2>SYNOPSIS</h2>
                 <div class="cmdSynopsis">$(TidyString $HelpInfo.Synopsis)</div>
             <h2>SYNTAX</h2>
-"@ | Out-File $fileName
+"@
 
         foreach ($item in $HelpInfo.syntax.syntaxItem) {
             $params = @"
@@ -78,45 +78,46 @@ function Out-HtmlHelp {
 
                 $params += " "
             }
-            $params | Out-File $fileName -Append
-@"
+            $fileText += $params
+            $fileText += @"
                 </div>
                 <br />
-"@ | Out-File $fileName -Append
+"@
         }
 
-@"
+        $fileText +=@"
             <h2>DESCRIPTION</h2>
             <div class="cmdDescription">
-"@ | Out-File $fileName -Append
+"@
 
         foreach ($d in $HelpInfo.description) {
             $desc = "                "
             $desc += $d.Tag + $d.Text
             $desc += "`n                <p />"
-            $desc | Out-File $fileName -Append
+            $fileText += $desc
         }
 
-@"
+        $fileText += @"
             </div>
             <h2>PARAMETERS</h2>
-"@ | Out-File $fileName -Append
+"@
 
 
         foreach ($p in $HelpInfo.parameters.parameter) {
-@"
+            $fileText += @"
             <div class="cmdParameter">
                 <div class="cmdParameterName">-$(TidyString $p.name) [&lt;$(TidyString $p.parameterValue)&gt;]</div>
                 <div class="cmdParameterDesc">
-"@ | Out-File $fileName -Append
+"@
 
             foreach ($d in $p.description) {
                 $desc = "                "
                 $desc += $d.Tag + $d.Text
                 $desc += "`n                <br />"
-                $desc | Out-File $fileName -Append
+                $fileText += $desc
             }
-@"
+
+            $fileText += @"
                 </div>
                 <table class="cmdParameterAttr">
                     <tr>
@@ -133,16 +134,17 @@ function Out-HtmlHelp {
                     </tr>
                 </table>
             </div>
-"@ | Out-File $fileName -Append
+"@
         }
 
-@"
+
+        $fileText += @"
             <h2>INPUTS</h2>
                 <div class="cmdInputs">$(TidyString $HelpInfo.inputTypes.inputType.type.name)</div>
             <h2>OUTPUTS</h2>
                 <div class="cmdOutputs">$(TidyString $HelpInfo.returnValues.returnValue.type.name)</div>
             <h2>EXAMPLES</h2>
-"@ | Out-File $fileName -Append
+"@
 
         foreach ($e in $HelpInfo.examples.example) {
             $example = @"
@@ -153,25 +155,27 @@ function Out-HtmlHelp {
             foreach ($c in $e.code) {
                 $example += @"
                     $(TidyString $c)<br />
+
 "@
             }
             
             foreach ($r in $e.remarks) {
                 $example += @"
                     $(TidyString $r.Text)<br />
+
 "@
             }
             
             $example += @"
                 </div>
 "@
-            $example | Out-File $fileName -Append
+            $fileText += $example
         }
 
-@"
+        $fileText += @"
             <h2>RELATED LINKS</h2>
             <div class="cmdRelatedLinks">
-"@ | Out-File $fileName -Append
+"@
 
         foreach ($link in $HelpInfo.relatedLinks.navigationLink) {
             if ([String]::IsNullOrEmpty($link.linkText)) { 
@@ -179,21 +183,22 @@ function Out-HtmlHelp {
             } else { 
                 $linkText = TidyString $link.linkText
             }
-@"
+
+            $fileText += @"
                 <a href="$($link.uri)" class="cmdRelatedLink">$linkText</a>
                 <p />
-"@ | Out-File $fileName -Append
+"@
         }
 
-@"
+        $fileText += @"
            </div>
            <br />
            <br />
         </body>
     </html>
-"@ | Out-File $fileName -Append
+"@
 
-    Set-Encoding $fileName
+        $fileText | Out-File $fileName -Encoding ASCII
     }
 
     END {
