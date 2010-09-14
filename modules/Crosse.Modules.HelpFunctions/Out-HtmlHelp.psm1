@@ -25,8 +25,8 @@ function Out-HtmlHelp {
     param (
             [Parameter(Mandatory=$true,
                 ValueFromPipeline=$true)]
-            # The Help info to process.
-            $HelpInfo,
+            # The command to process.
+            $Command,
 
             [string]
             # The output directory.
@@ -39,20 +39,48 @@ function Out-HtmlHelp {
 
     BEGIN {
         if ((Test-Path $OutputDir) -eq $false) {
-            Write-Host "Making output directory"
+            Write-Host "Making $OutputDir"
             mkdir $OutputDir | Out-Null
-            Write-Host "PSScriptRoot = $PSScriptRoot"
         }
 
         if ($CopyCssTemplate) {
-            Write-Host "Copying template CSS file to output directory"
+            Write-Host "Copying template CSS file to $OutputDir"
             copy "$PSScriptRoot\powershell-help.css" $OutputDir
         }
+
+        $indices = New-Object System.Collections.HashTable
+        $baseIndex = "modules.html"
     }
 
     PROCESS {
-        $fileName = Join-Path $OutputDir $($HelpInfo.Name + ".html")
-        Write-Host "Writing help for `"$($HelpInfo.Name)`" to file $fileName"
+        $HelpInfo = Get-Help $Command
+
+        Write-Host "Processing Help for command $($Command.Name)"
+
+        foreach ($c in [IO.Path]::GetInvalidFileNameChars()) {
+            if ($Command.Name.Contains($c)) {
+                Write-Warning "Invalid filename characters in command name `"$($Command.Name)`", skipping."
+                return
+            }
+        }
+
+        $finalDir = Join-Path $OutputDir $Command.ModuleName.Replace(".", "_")
+        if ((Test-Path $finalDir) -eq $false) {
+            Write-Host "Making $finalDir"
+            mkdir $finalDir | Out-Null
+        }
+
+        if ($CopyCssTemplate -and 
+                (Test-Path (Join-Path $finalDir "powershell-help.css")) -eq $false) {
+            Write-Host "Copying template CSS file to $finalDir"
+            copy "$PSScriptRoot\powershell-help.css" $finalDir
+        }
+
+        $fileName = Join-Path $finalDir $($HelpInfo.Name + ".html")
+
+        if ($Verbose) {
+            Write-Host "Writing help for `"$($HelpInfo.Name)`" to file $fileName"
+        }
 
         $doc = New-Object Crosse.Net.HtmlDocument
         $doc.Title = "$($HelpInfo.Name)"
@@ -218,13 +246,43 @@ function Out-HtmlHelp {
         }
         $doc.EndDiv()
 
-        $doc.WriteBreak();
-        $doc.WriteBreak();
-        
         $doc.ToString() | Out-File $fileName -Encoding ASCII
+
+        # See if there is a module document; if there is, add this command
+        # to it.
+        $moduleIndex = "$($Command.ModuleName.Replace('.', '_'))/index.html"
+
+        if ($indices[$baseIndex] -eq $null) {
+            $indices[$baseIndex] = New-Object Crosse.Net.HtmlDocument
+            $indices[$baseIndex].Title = "Master Index"
+            $indices[$baseIndex].Stylesheet = "powershell-help.css"
+        }
+
+        if ($indices[$moduleIndex] -eq $null) {
+            $indices[$moduleIndex] = New-Object Crosse.Net.HtmlDocument
+            $indices[$moduleIndex].Title = $Command.ModuleName
+            $indices[$moduleIndex].StyleSheet = "powershell-help.css"
+
+            $indices[$baseIndex].WriteLink($null, $moduleIndex, $Command.ModuleName, "command_list")
+            $indices[$baseIndex].NewParagraph()
+            $indices[$baseIndex].WriteLine()
+        }
+
+        $indices[$moduleIndex].WriteLink($null, "$($Command.Name).html", $Command.Name, "command_help")
+        $indices[$moduleIndex].NewParagraph()
+        $indices[$moduleIndex].WriteLine()
+
     }
 
     END {
+        Write-Host "Writing index pages..."
+        foreach ($key in $indices.Keys) {
+            $indices[$key].ToString() | Out-File (Join-Path $OutputDir $key) -Encoding ASCII
+        }
+
+        Write-Host "Copying master index page..."
+        copy "$PSScriptRoot\frames_template.html" "$OutputDir\index.html"
+
         Write-Host "Finished."
     }
 }
