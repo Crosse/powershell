@@ -241,7 +241,7 @@ function Out-HtmlHelp {
                 $linkText = $link.linkText
             }
 
-            $doc.WriteLink("cmdRelatedLink", $link.uri, $linkText)
+            $doc.WriteLink("cmdRelatedLink", $link.uri, $linkText, "_blank")
             $doc.NewParagraph()
         }
         $doc.EndDiv()
