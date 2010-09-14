@@ -69,21 +69,35 @@ function Add-RoomDelegate {
         }
 
     # Set the ResourceDelegates
-    $resourceDelegates = (Get-MailboxCalendarSettings -Identity $resource).ResourceDelegates
-        if ( !($resourceDelegates.Contains((Get-User $Delegate).DistinguishedName)) ) {
-            $resourceDelegates.Add( (Get-User $Delegate).DistinguishedName )
+    $resourceDelegates = (Get-CalendarProcessing -Identity $resource).ResourceDelegates
+    if ( !($resourceDelegates.Contains((Get-User $Delegate).DistinguishedName)) ) {
+        $resourceDelegates.Add( (Get-User $Delegate).DistinguishedName )
+    }
+
+    foreach ($i in 1..10) {
+        $error.Clear()
+        $resource | Set-CalendarProcessing -DomainController $DomainController `
+                    -ResourceDelegates $resourceDelegates -ErrorAction SilentlyContinue
+        if (![String]::IsNullOrEmpty($error[0])) {
+            Write-Host -NoNewLine "."
+            Start-Sleep $i
+        } else {
+            Write-Host "done."
+            break
         }
+    }    
 
     $resource | Set-Mailbox -DomainController $DomainController `
         -GrantSendOnBehalfTo $sobo
-
 
     <#
         .SYNOPSIS
         Adds a Delegate to a room resource in Microsoft Exchange.
 
         .DESCRIPTION
-        Adds a Delegate to a room resource in Microsoft Exchange.
+        Adds a Delegate to a room resource in Microsoft Exchange.  This entails
+        granting Send-As and SendOnBehalfOf rights and adding the user to the
+        resource's list of Resource Delegates.
 
         .INPUTS
         None.  Add-RoomDelegate does not accept any values from the pipeline.

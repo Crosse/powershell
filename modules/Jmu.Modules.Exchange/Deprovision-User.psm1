@@ -28,7 +28,7 @@ param ( $User="",
         [switch]$Confirm=$true,
         [string]$ExternalEmailAddress=$null,
         [switch]$Verbose=$false,
-        $DomainController="localhost",
+        [string]$DomainController=$null,
         $inputObject=$null )
 
 # This section executes only once, before the pipeline.

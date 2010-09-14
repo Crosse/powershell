@@ -35,7 +35,7 @@ if ($Delegate -eq '' -or $Identity -eq '') {
 # Change these to suit your environment
 $SmtpServer         = "it-exhub.ad.jmu.edu"
 $From               = "it-exmaint@jmu.edu"
-$Bcc                = "wrightst@jmu.edu, millerca@jmu.edu, najdziav@jmu.edu"
+$Bcc                = "wrightst@jmu.edu, millerca@jmu.edu, najdziav@jmu.edu, eckardsl@jmu.edu"
 $Fqdn               = "exchange.jmu.edu"
 ##################################
 $cwd                = [System.IO.Path]::GetDirectoryName(($MyInvocation.MyCommand).Definition)
@@ -79,14 +79,14 @@ if ($objUser.RecipientType -match 'MailUser' -or $objUser.RecipientType -match '
 
 if ( ($resource.RecipientTypeDetails -eq 'RoomMailbox') -or ($resource.RecipientTypeDetails -eq 'EquipmentMailbox') ) {
     # Set the ResourceDelegates
-    $resourceDelegates = (Get-MailboxCalendarSettings -Identity $resource).ResourceDelegates
+    $resourceDelegates = (Get-CalendarProcessing -Identity $resource).ResourceDelegates
     if ( !($resourceDelegates.Contains((Get-User $objUser).DistinguishedName)) ) {
         $resourceDelegates.Add( (Get-User $objUser).DistinguishedName )
     }
 
     foreach ($i in 1..10) {
         $error.Clear()
-        $resource | Set-MailboxCalendarSettings -DomainController $DomainController `
+        $resource | Set-CalendarProcessing -DomainController $DomainController `
                     -ResourceDelegates $resourceDelegates -ErrorAction SilentlyContinue
         if (![String]::IsNullOrEmpty($error[0])) {
             Write-Host -NoNewLine "."
@@ -172,3 +172,4 @@ helpdesk@jmu.edu, or by phone at 540-568-3555.
     & "$cwd\Send-Email.ps1" -From $From -To $To -Bcc $Bcc -Subject $Title -Body $Body -SmtpServer $SmtpServer
     Write-Output "Sent message to $To for resource `"$resource`""
 }
+
