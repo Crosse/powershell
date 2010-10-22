@@ -27,7 +27,24 @@
 
 
 function Get-DomainController {
-    return [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain().FindDomainController()
+    $dc = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain().FindDomainController()
+    $DomainController = New-Object PSObject
+    $DomainController = Add-Member -PassThru -InputObject $DomainController `
+        -MemberType NoteProperty -Name Name -Value $dc.Name
+
+    Add-Member -InputObject $DomainController -MemberType NoteProperty `
+        -Name IPAddress -Value $dc.IPAddress
+
+    Add-Member -InputObject $DomainController -MemberType NoteProperty `
+        -Name Domain -Value $dc.Domain
+
+    Add-Member -InputObject $DomainController -MemberType NoteProperty `
+        -Name Forest -Value $dc.Forest
+
+    Add-Member -InputObject $DomainController -MemberType NoteProperty `
+        -Name BaseObject -Value $dc
+
+    return $DomainController
 
     <#
         .SYNOPSIS
@@ -40,23 +57,20 @@ function Get-DomainController {
         Get-DomainController does not accept any input.
 
         .OUTPUTS
-        A System.DirectoryServices.ActiveDirectory.DomainController object.
+        An object containing frequently-used properties of the
+        System.DirectoryServices.ActiveDirectory.Domain class, plus a property
+        to access the base object.
 
         .EXAMPLE
 
         C:\PS> Get-DomainController
 
 
-        Forest                     : contoso.com
-        CurrentTime                : 9/1/2010 7:56:21 PM
-        HighestCommittedUsn        : 115168107
-        OSVersion                  : Windows Server 2003
-        Roles                      : {}
-        Domain                     : ad.contoso.com
-        IPAddress                  : 134.126.13.68
-        SiteName                   : Default-First-Site-Name
-        SyncFromAllServersCallback :
         Name                       : dc.ad.contoso.com
+        IPAddress                  : 10.10.10.1
+        Domain                     : ad.contoso.com
+        Forest                     : contoso.com
+        BaseObject                 : dc.ad.contoso.com
         
         .LINK
         http://msdn.microsoft.com/en-us/library/system.directoryservices.activedirectory.domaincontroller.getdomaincontroller.aspx
