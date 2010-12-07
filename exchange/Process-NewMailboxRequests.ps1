@@ -5,7 +5,7 @@ if ($files -eq $null) {
     $Subject = "Mailbox Provisioning:  Nothing to do!"
     $output = "No files to process."
 } else {
-    $users = gc $files | ConvertFrom-Csv -Header User,Date,Reason | % { $_.User } 
+    $users = gc $files | ConvertFrom-Csv -Header User,Date,Reason
 
     if ($users -eq $null) {
         $Subject = "Mailbox Provisioning: Nothing to do!"
