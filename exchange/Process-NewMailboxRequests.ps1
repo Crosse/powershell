@@ -42,7 +42,8 @@ if ($files -eq $null) {
             $result = Add-ProvisionedMailbox `
                         -Identity $user.User `
                         -MailboxLocation Local `
-                        -MailContactOrganizationalUnit 'ad.test.jmu.edu/ExchangeObjects/MailContacts'
+                        -MailContactOrganizationalUnit 'ad.test.jmu.edu/ExchangeObjects/MailContacts' `
+                        -Confirm:$false
 
             if ($result.ProvisioningSuccessful -eq $false) {
                 $user.Reason = $result.Error
@@ -50,9 +51,9 @@ if ($files -eq $null) {
                 $output += "FAILURE:  $($user.User):  $($user.Reason)`n"
             } else {
                 $user.Reason = $null
-                $output += "SUCCESS:  $($user.Name):  $($result.MailboxLocation) mailbox provisioned"
+                $output += "SUCCESS:  $($user.User):  $($result.MailboxLocation) mailbox provisioned"
                 if ($result.MailContactCreated -eq $true) {
-                    $output += "  (MailContact created)"
+                    $output += " (MailContact created to preserve previous MailUser info)"
                 }
                 $output += ".`n"
             }
@@ -63,7 +64,7 @@ if ($files -eq $null) {
                 -Encoding ASCII `
                 -Path (Join-Path $FilePath "errors_$(Get-Date -Format yyyy-MM-dd_HH-mm-ss).csv")
 
-        if ($errorCount -eq 0) {
+        if ($errorCount -gt 0) {
             $Subject = "Mailbox Provisioning: $errorCount errors detected"
         } else {
             $Subject = "Mailbox Provisioning: No errors detected"
