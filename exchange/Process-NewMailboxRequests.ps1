@@ -1,27 +1,80 @@
-cd E:\IDM\ExchangeCSV
+param (
+        [Parameter(Mandatory=$true)]
+        [ValidateScript({Test-Path $_})]
+        # Where to find the CSV files to process.
+        [string]
+        $FilePath,
 
-$files = gci *.csv
+        [Parameter(Mandatory=$true)]
+        [ValidateScript({(Test-Path $_) -and ($_ -ne $FilePath)})]
+        # Where to put the processed files.
+        [string]
+        $ProcessedPath
+      )
+
+Import-Module ..\modules\Crosse.PowerShell.Exchange\UserProvisioning.psm1
+
+$files = Get-ChildItem (Join-Path $FilePath "*.csv")
+
 if ($files -eq $null) {
     $Subject = "Mailbox Provisioning:  Nothing to do!"
     $output = "No files to process."
 } else {
-    $users = gc $files | ConvertFrom-Csv -Header User,Date,Reason
-
+    $users = $files | Import-Csv -Header User,Date,Reason
     if ($users -eq $null) {
         $Subject = "Mailbox Provisioning: Nothing to do!"
         $output = "Files existed, but were empty."
     } else {
-        $output = $users | E:\Scripts\Provision-User.ps1 -Automated:$true -DomainController jmuadc4.ad.jmu.edu
+        $errorCount = 0
+        $output = ""
+        foreach ($user in $users) {
+            if ($user.User -eq "User") {
+                # This is a header line, skip it.
+                $user.Reason = $null
+                continue
+            }
 
-        if ($? -eq $false) {
-            $Subject = "Mailbox Provisioning: errors detected"
+            try {
+                $user.Date = Get-Date -Format o $user.Date
+            } catch {
+                $user.Date = Get-Date -Format o
+            }
+            $result = Add-ProvisionedMailbox `
+                        -Identity $user.User `
+                        -MailboxLocation Local `
+                        -MailContactOrganizationalUnit 'ad.test.jmu.edu/ExchangeObjects/MailContacts'
+
+            if ($result.ProvisioningSuccessful -eq $false) {
+                $user.Reason = $result.Error
+                $errorCount++
+                $output += "FAILURE:  $($user.User):  $($user.Reason)`n"
+            } else {
+                $user.Reason = $null
+                $output += "SUCCESS:  $($user.Name):  $($result.MailboxLocation) mailbox provisioned"
+                if ($result.MailContactCreated -eq $true) {
+                    $output += "  (MailContact created)"
+                }
+                $output += ".`n"
+            }
+        }
+
+        $users | ? { $_.Reason -ne $null } | 
+            Export-Csv -NoTypeInformation `
+                -Encoding ASCII `
+                -Path (Join-Path $FilePath "errors_$(Get-Date -Format yyyy-MM-dd_HH-mm-ss).csv")
+
+        if ($errorCount -eq 0) {
+            $Subject = "Mailbox Provisioning: $errorCount errors detected"
         } else {
             $Subject = "Mailbox Provisioning: No errors detected"
         }
     }
 
-    move $files E:\IDM\ExchangeCSV\Processed
+    Move-Item $files $ProcessedPath
 }
 
-E:\Scripts\Send-Email.ps1 -From it-exmaint@jmu.edu -To "wrightst@jmu.edu,stockntl@jmu.edu,najdziav@jmu.edu" -Subject $Subject -Body $($output | Out-String) -SmtpServer it-exhub.ad.jmu.edu
+Write-Host $Subject
+Write-Host $output
+Send-MailMessage -From it-exmaint@test.jmu.edu -To "wrightst@jmu.edu" -Subject $Subject -Body $output -SmtpServer exchangetest.jmu.edu
+
 
