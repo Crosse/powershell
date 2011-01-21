@@ -50,8 +50,8 @@ if ($files -eq $null) {
                 $errorCount++
                 $output += "FAILURE:  $($user.User):  $($user.Reason)`n"
             } else {
-                $user.Reason = $null
-                $output += "SUCCESS:  $($user.User):  $($result.MailboxLocation) mailbox provisioned"
+                $user.Reason = $result.Error
+                $output += "SUCCESS:  $($user.User):  $($result.Error)"
                 if ($result.MailContactCreated -eq $true) {
                     $output += " (MailContact created to preserve previous MailUser info)"
                 }
