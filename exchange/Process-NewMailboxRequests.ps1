@@ -12,7 +12,7 @@ param (
         $ProcessedPath
       )
 
-Import-Module ..\modules\Crosse.PowerShell.Exchange\UserProvisioning.psm1
+Import-Module ..\modules\Crosse.PowerShell.Exchange\UserProvisioning.psm1 -Force
 
 $files = Get-ChildItem (Join-Path $FilePath "*.csv")
 
@@ -50,12 +50,12 @@ if ($files -eq $null) {
                 $errorCount++
                 $output += "FAILURE:  $($user.User):  $($user.Reason)`n"
             } else {
-                $user.Reason = $result.Error
+                $user.Reason = $null
                 $output += "SUCCESS:  $($user.User):  $($result.Error)"
                 if ($result.MailContactCreated -eq $true) {
                     $output += " (MailContact created to preserve previous MailUser info)"
                 }
-                $output += ".`n"
+                $output += "`n"
             }
         }
 
