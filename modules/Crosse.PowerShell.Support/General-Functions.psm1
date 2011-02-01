@@ -426,3 +426,89 @@ function Set-Encoding {
 
 }
 
+function Get-CurrentWeather {
+    param (
+            [Parameter(Mandatory=$true,
+                ValueFromPipeline=$true)]
+            [ValidateNotNullOrEmpty()]
+            [string]
+            # The ZIP Code, City, Personal Weather Station, or Airport Code to
+            # look up.
+            $Identity
+          )
+
+    $api = "http://api.wunderground.com/auto/wui/geo/WXCurrentObXML/index.xml?query="
+    $wc = New-Object System.Net.WebClient
+
+    $query = $api + $Identity
+    [xml]$weather = $wc.DownloadString($query)
+
+    $weather.current_observation
+
+    <#
+        .SYNOPSIS
+        Requests the current weather observations from Weather Underground 
+        for a particular airport, ZIP code, or personal weather station.
+
+        .DESCRIPTION
+        Requests the current weather observations from Weather Underground 
+        for a particular airport, ZIP code, or personal weather station.
+        Information on the API can be found at 
+        http://wiki.wunderground.com/index.php/API_-_XML
+
+        .OUTPUTS
+        Xml.XmlElement.  Get-CurrentWeather returns an XML fragment detailing
+        the current weather conditions.
+
+        .EXAMPLE
+        PS C:\Users\wrightst\Desktop> Get-CurrentWeather '22801'
+
+
+        credit                  : Weather Underground NOAA Weather Station
+        credit_URL              : http://wunderground.com/
+        termsofservice          : termsofservice
+        image                   : image
+        display_location        : display_location
+        observation_location    : observation_location
+        station_id              : KSHD
+        observation_time        : Last Updated on February 1, 5:20 PM EST
+        observation_time_rfc822 : Tue, 01 February 2011 22:20:00 GMT
+        observation_epoch       : 1296598800
+        local_time              : February 1, 5:27 PM EST
+        local_time_rfc822       : Tue, 01 February 2011 22:27:26 GMT
+        local_epoch             : 1296599246
+        weather                 : Overcast
+        temperature_string      : 46 F (8 C)
+        temp_f                  : 46
+        temp_c                  : 8
+        relative_humidity       : 76%
+        wind_string             : Calm
+        wind_dir                : North
+        wind_degrees            : 0
+        wind_mph                : 0
+        wind_gust_mph           :
+        pressure_string         : 30.05 in (1018 mb)
+        pressure_mb             : 1018
+        pressure_in             : 30.05
+        dewpoint_string         : 39 F (4 C)
+        dewpoint_f              : 39
+        dewpoint_c              : 4
+        heat_index_string       : NA
+        heat_index_f            : NA
+        heat_index_c            : NA
+        windchill_string        : NA
+        windchill_f             : NA
+        windchill_c             : NA
+        visibility_mi           : 10.0
+        visibility_km           : 16.1
+        icons                   : icons
+        icon_url_base           : http://icons-ecast.wxug.com/graphics/conds/
+        icon_url_name           : .GIF
+        icon                    : cloudy
+        forecast_url            : http://www.wunderground.com/US/VA/Harrisonburg.html
+        history_url             : http://www.wunderground.com/history/airport/KSHD/2011/2/1/DailyHistory.html
+        ob_url                  : http://www.wunderground.com/cgi-bin/findweather/getForecast?query=38.25999832,-78.90000153
+
+    #>
+}
+
