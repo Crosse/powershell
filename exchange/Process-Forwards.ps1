@@ -34,4 +34,4 @@ $forwarders | % {
         [Microsoft.Exchange.Data.SmtpAddress]::Parse(
                 $_.RedirectTo.Substring($_.RedirectTo.IndexOf(":") + 1).Replace("]", "")).Domain
     }
-} | Group -NoElement | Sort Count -Descending
+} | Group -NoElement | Sort Count -Descending | Select -First 10
