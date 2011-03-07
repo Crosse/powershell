@@ -12,7 +12,7 @@ param (
         $ProcessedPath
       )
 
-Import-Module ..\modules\Crosse.PowerShell.Exchange\UserProvisioning.psm1 -Force
+Import-Module .\UserProvisioning.psm1 -Force
 
 $files = Get-ChildItem (Join-Path $FilePath "*.csv")
 
