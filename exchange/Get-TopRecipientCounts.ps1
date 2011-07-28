@@ -25,7 +25,7 @@
 ################################################################################
 
 param ( $StartDate=(Get-Date).AddDays(-1),
-        $ResultsToReturn=10) { }
+        $ResultsToReturn=10)
 
 $hubs = Get-ExchangeServer | ? { $_.ServerRole -match "HubTransport" }
 $recipientCounts = New-Object System.Collections.Hashtable
@@ -39,7 +39,7 @@ foreach ($msg in $msgs) {
         if ($recipientCounts.Contains($sender)) {
             $recipientCounts[$sender] += $msg.RecipientCount
         } else { 
-            $recipientCounts.Add($sender, 1)
+            $null = $recipientCounts.Add($sender, 1)
         }
 }
 
