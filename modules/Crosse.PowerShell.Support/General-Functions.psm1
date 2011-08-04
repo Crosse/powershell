@@ -81,6 +81,8 @@ function Get-HexDump {
 
 }
 
+Set-Alias hd Get-HexDump
+
 function ConvertTo-Base64 {
     param
         (
@@ -512,3 +514,41 @@ function Get-CurrentWeather {
     #>
 }
 
+
+function Import-VMwareSnapin {
+    if ($(Get-PSSnapin -Registered VMware.VimAutomation.Core) -eq $null) {
+        Write-Host "Could not find VMware.VimAutomation.Core Snapin"
+    } else {
+        if ( $(Get-PSSnapin VMware.VimAutomation.Core -EA SilentlyContinue) -eq $null) {
+            Add-PSSnapin VMware.VimAutomation.Core
+            $global:shellType += "/VMware"
+        } else {
+            Write-Warning "Vmware.VimAutomation.Core already loaded"
+        }
+    }
+}
+
+function Connect-Exchange {
+    param (
+            [Parameter(Mandatory=$true)]
+            [string]
+            $Fqdn,
+
+            $Credential = $host.ui.PromptForCredential("Credentials for $Fqdn", 
+                "Please enter the credentials to connect to $Fqdn", 
+                "",
+                "NetBiosUserName")
+          )
+    
+    $Session = New-PSSession -ConfigurationName Microsoft.Exchange `
+                             -ConnectionUri "https://$($Fqdn)/PowerShell" `
+                             -Credential $Credential `
+                             -Authentication Basic `
+                             -AllowRedirection
+
+    if ($Session) {
+        Import-Session $Session -AllowClobber
+    } else {
+        Write-Error "Could not create session"
+    }
+}
