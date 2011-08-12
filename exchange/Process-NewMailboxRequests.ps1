@@ -9,7 +9,37 @@ param (
         [ValidateScript({(Test-Path $_) -and ($_ -ne $FilePath)})]
         # Where to put the processed files.
         [string]
-        $ProcessedPath
+        $ProcessedPath,
+
+        [Parameter(Mandatory=$false)]
+        [switch]
+        $SendEmail=$false,
+
+        [Parameter(Mandatory=$false)]
+        [ValidateScript({ 
+            if ($SendEmail -and [System.String]::IsNullOrEmpty($_)) { 
+                return $false
+            } else {
+                return $true
+            }})]
+        [string]
+        $From,
+
+        [Parameter(Mandatory=$false)]
+        [ValidateScript({ 
+            if ($SendEmail -and [System.String]::IsNullOrEmpty($_)) { 
+                return $false
+            } else {
+                return $true
+            }})]
+        [string[]]
+        $To,
+
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNull()]
+        # The SMTP server to use.
+        [string]
+        $SmtpServer
       )
 
 Import-Module .\UserProvisioning.psm1 -Force
@@ -74,8 +104,10 @@ if ($files -eq $null) {
     Move-Item $files $ProcessedPath
 }
 
+# Yes, I know this is ugly.  I don't care, because it works.
+$output = $output.Split("`n") | Sort -Unique
+$sortedOutput = [System.String]::Join("`n", $output)
+
 Write-Host $Subject
-Write-Host $output
-Send-MailMessage -From it-exmaint@test.jmu.edu -To "wrightst@jmu.edu" -Subject $Subject -Body $output -SmtpServer exchangetest.jmu.edu
-
-
+Write-Host $sortedOutput
+Send-MailMessage -From $From -To $To -Subject $Subject -Body $sortedOutput -SmtpServer $SmtpServer
