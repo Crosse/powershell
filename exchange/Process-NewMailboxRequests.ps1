@@ -16,8 +16,8 @@ param (
         $SendEmail=$false,
 
         [Parameter(Mandatory=$false)]
-        [ValidateScript({ 
-            if ($SendEmail -and [System.String]::IsNullOrEmpty($_)) { 
+        [ValidateScript({
+            if ($SendEmail -and [System.String]::IsNullOrEmpty($_)) {
                 return $false
             } else {
                 return $true
@@ -26,8 +26,8 @@ param (
         $From,
 
         [Parameter(Mandatory=$false)]
-        [ValidateScript({ 
-            if ($SendEmail -and [System.String]::IsNullOrEmpty($_)) { 
+        [ValidateScript({
+            if ($SendEmail -and [System.String]::IsNullOrEmpty($_)) {
                 return $false
             } else {
                 return $true
@@ -42,6 +42,7 @@ param (
         $SmtpServer
       )
 
+# TODO:  Verify that the module loads properly, and handle when it doesn't.
 Import-Module .\UserProvisioning.psm1 -Force
 $files = Get-ChildItem (Join-Path $FilePath "*.csv")
 
@@ -71,16 +72,17 @@ if ($files -eq $null) {
             $result = Add-ProvisionedMailbox `
                         -Identity $user.User `
                         -MailboxLocation Local `
-                        -MailContactOrganizationalUnit 'ad.test.jmu.edu/ExchangeObjects/MailContacts' `
+                        -MailContactOrganizationalUnit 'ad.jmu.edu/ExchangeObjects/MailContacts' `
+                        -SendEmailNotification:$false `
                         -Confirm:$false
 
             if ($result.ProvisioningSuccessful -eq $false) {
                 $user.Reason = $result.Error
                 $errorCount++
-                $output += "FAILURE: [{0,8}] - {1}`n" -f $user.User, $result.Error
+                $output += "FAILURE: [ {0,-8} ] - {1}`n" -f $user.User, $result.Error
             } else {
                 $user.Reason = $null
-                $output += "SUCCESS: [{0,8}] - {1}" -f $user.User, $result.Error
+                $output += "SUCCESS: [ {0,-8} ] - {1}" -f $user.User, $result.Error
                 if ($result.MailContactCreated -eq $true) {
                     $output += " (MailContact created to preserve previous MailUser info)"
                 }
@@ -88,7 +90,7 @@ if ($files -eq $null) {
             }
         }
 
-        $users | ? { $_.Reason -ne $null } | Sort User -Unique | 
+        $users | ? { $_.Reason -ne $null } | Sort User -Unique |
             Export-Csv -NoTypeInformation `
                 -Encoding ASCII `
                 -Path (Join-Path $FilePath "errors_$(Get-Date -Format yyyy-MM-dd_HH-mm-ss).csv")
@@ -110,3 +112,4 @@ $sortedOutput = [System.String]::Join("`n", $output)
 Write-Host $Subject
 Write-Host $sortedOutput
 Send-MailMessage -From $From -To $To -Subject $Subject -Body $sortedOutput -SmtpServer $SmtpServer
+
