@@ -84,18 +84,38 @@ function Get-HexDump {
 Set-Alias hd Get-HexDump
 
 function ConvertTo-Base64 {
+    [CmdletBinding()]
     param
         (
-         [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
-         [string]
+         [Parameter(ValueFromPipeline=$true)]
          # The string to convert.
-         $String
+         $InputObject
         );
 
-    $bytes  = [System.Text.Encoding]::UTF8.GetBytes($string);
-    $encoded = [System.Convert]::ToBase64String($bytes); 
+    BEGIN {
+        if ($InputObject -ne $null -and $InputObject.GetType() -eq [Object[]]) {
+            $strings = New-Object System.Collections.ArrayList
+        }
+    }
+    PROCESS {
+        Write-Verbose "InputObject is a $($InputObject.GetType())"
 
-    return $encoded;
+        if ($InputObject.GetType() -eq [Object[]]) {
+            foreach ($string in $InputObject) {
+                $strings.Add($string) | Out-Null
+            }
+        } elseif ($InputObject.GetType() -eq [System.IO.FileInfo]) {
+            $bytes = [System.IO.File]::ReadAllBytes($InputObject)
+            [System.Convert]::ToBase64String($bytes, "InsertLineBreaks");
+        }
+    }
+    END {
+        if ($InputObject.GetType() -eq [Object[]]) {
+            $joined = [String]::Join("`n", $strings.ToArray());
+            $bytes  = [System.Text.Encoding]::UTF8.GetBytes($joined);
+            [System.Convert]::ToBase64String($bytes, "InsertLineBreaks");
+        }
+    }
 
     <#
         .SYNOPSIS
@@ -119,16 +139,42 @@ function ConvertTo-Base64 {
 
 function ConvertFrom-Base64 {
         param (
-            [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
-            [string]
+            [Parameter(ValueFromPipeline=$true)]
+            [String[]]
             # The string to convert.
-            $String
+            $InputObject,
+
+            [String]
+            $OutputFile
           );
 
-    $bytes  = [System.Convert]::FromBase64String($string);
-    $decoded = [System.Text.Encoding]::UTF8.GetString($bytes); 
+    BEGIN {
+        if ($OutputFile -notlike "*\*") {
+            $OutputFile = "$pwd" + "\" + "$OutputFile"
+        } elseif ($OutputFile -like ".\*") {
+            $OutputFile = $OutputFile -replace "^\.",$pwd.Path
+        } elseif ($OutputFile -like "..\*") {
+            $OutputFile = $OutputFile -replace "^\.\.",$(get-item $pwd).Parent.FullName
+        } else {
+            throw "Cannot resolve path!"
+        }
 
-    return $decoded;
+        $strings = New-Object System.Collections.ArrayList
+    }
+    PROCESS {
+        foreach ($string in $InputObject) {
+            $strings.Add($string) | Out-Null
+        }
+    }
+    END {
+        $joined = [String]::Join("`n", $strings.ToArray())
+        $bytes  = [System.Convert]::FromBase64String($joined)
+        if ($OutputFile) {
+            [System.IO.File]::WriteAllBytes($OutputFile, $bytes)
+        } else {
+            [System.Text.Encoding]::UTF8.GetString($bytes);
+        }
+    }
 
     <#
         .SYNOPSIS
