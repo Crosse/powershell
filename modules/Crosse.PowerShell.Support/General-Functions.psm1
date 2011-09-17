@@ -1,10 +1,10 @@
 ################################################################################
-# 
+#
 # $URL$
 # $Author$
 # $Date$
 # $Rev$
-# 
+#
 # Copyright (c) 2009,2010 Seth Wright <wrightst@jmu.edu>
 #
 # Permission to use, copy, modify, and distribute this software for any
@@ -56,15 +56,15 @@ function Get-HexDump {
         Gets the contents of a file and displays it as a hex dump.
 
         .DESCRIPTION
-        Gets the contents of a file and displays it as a hex dump.  
+        Gets the contents of a file and displays it as a hex dump.
         The width and length of the dump can be configured.
 
         .INPUTS
-        A System.String describing the path to a file can be passed 
+        A System.String describing the path to a file can be passed
         via the pipeline.
 
         .OUTPUTS
-        System.String.  Get-HexDump returns a formatted hex dump of 
+        System.String.  Get-HexDump returns a formatted hex dump of
         the file specified.
 
         .EXAMPLE
@@ -204,7 +204,7 @@ function Get-EventLogSummary {
         } else {
             $logs = Get-WinEvent -FilterHashTable $eventParams
         }
-        
+
         if ($logs -eq $null) {
             return
         }
@@ -214,7 +214,7 @@ function Get-EventLogSummary {
         foreach ($event in $logs) {
             $dedupid = [String]::Format("{0}_{1}", $event.ProviderName , $event.Id)
 
-            if ($retval.Contains($dedupid)) { 
+            if ($retval.Contains($dedupid)) {
                 $retval[$dedupid].Count++
                 if ($retval[$dedupid].FirstTime -gt $event.TimeCreated) {
                     $retval[$dedupid].FirstTime = $event.TimeCreated
@@ -224,12 +224,12 @@ function Get-EventLogSummary {
                 }
             } else {
                 $defaultProperties = @('Count','ProviderName','Id','LevelDisplayName','SampleMessage')
-                $defaultDisplayPropertySet = 
+                $defaultDisplayPropertySet =
                     New-Object System.Management.Automation.PSPropertySet(
                             'DefaultDisplayPropertySet',
                             [string[]]$defaultProperties)
 
-                $PSStandardMembers = 
+                $PSStandardMembers =
                     [System.Management.Automation.PSMemberInfo[]]@($defaultDisplayPropertySet)
 
                 $obj = New-Object PSObject -Property @{
@@ -259,7 +259,7 @@ function Get-EventLogSummary {
 }
 
 
-function Get-RemoteFile { 
+function Get-RemoteFile {
     param (
             [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
             [string]
@@ -289,7 +289,7 @@ function Get-RemoteFile {
         Downloads a file from a remote URL.
 
         .DESCRIPTION
-        Downloads a file from a remote URL.  The file can either be saved or 
+        Downloads a file from a remote URL.  The file can either be saved or
         converted to a System.String.
 
         .INPUTS
@@ -337,9 +337,9 @@ function Set-Encoding {
     [CmdletBinding()]
         param (
                 [Parameter(Position=0,Mandatory=$true,ValueFromPipeline=$true)]
-                [ValidateScript({ 
+                [ValidateScript({
                     if((resolve-path $_).Provider.Name -ne "FileSystem") {
-                        throw "Specified Path is not in the FileSystem: '$_'" 
+                        throw "Specified Path is not in the FileSystem: '$_'"
                     }
                     return $true
                     })]
@@ -351,7 +351,7 @@ function Set-Encoding {
                 [switch]
                 # Outputs the file in Unicode format.
                 $Unicode,
-                
+
                 [switch]
                 # Outputs the file in UTF7 format.
                 $UTF7,
@@ -375,7 +375,7 @@ function Set-Encoding {
                 [switch]
                 # Uses the encoding of the system's current ANSI code page.
                 $Default,
-                
+
                 [switch]
                 # Uses the current original equipment manufacturer code page identifier for the operating system.
                 $OEM
@@ -388,16 +388,16 @@ function Set-Encoding {
                     $UTF7,
                     $UTF8,
                     $UTF32,
-                    $ASCII, 
+                    $ASCII,
                     $BigEndianUnicode,
-                    $Default, 
+                    $Default,
                     $OEM
                 ) {
                 $Unicode { $Encoding = "Unicode" }
                 $UTF7 { $Encoding = "UTF7" }
                 $UTF8 { $Encoding = "UTF8" }
                 $UTF32 { $Encoding = "UTF32" }
-                $ASCII { $Encoding = "ASCII" } 
+                $ASCII { $Encoding = "ASCII" }
                 $BigEndianUnicode { $Encoding = "BigEndianUnicode" }
                 $Default { $Encoding = "Default" }
                 $OEM { $Encoding = "OEM" }
@@ -411,15 +411,15 @@ function Set-Encoding {
 
     <#
         .SYNOPSIS
-        Takes a Script file or any other text file into memory 
+        Takes a Script file or any other text file into memory
         and Re-Encodes it in the format specified.
 
         .EXAMPLE
         ls *.ps1 | Set-Encoding -ASCII
-        
+
         .DESCRIPTION
-        Written to provide an easy method to perform easy batch 
-        encoding, calls on the command Out-File with the -Encoding 
+        Written to provide an easy method to perform easy batch
+        encoding, calls on the command Out-File with the -Encoding
         parameter and the -Force switch. Primarily to fix UnknownError
         status received when trying to sign non-ascii format files with
         digital signatures. Don't use on your MP3's or other non-text
@@ -449,13 +449,13 @@ function Get-CurrentWeather {
 
     <#
         .SYNOPSIS
-        Requests the current weather observations from Weather Underground 
+        Requests the current weather observations from Weather Underground
         for a particular airport, ZIP code, or personal weather station.
 
         .DESCRIPTION
-        Requests the current weather observations from Weather Underground 
+        Requests the current weather observations from Weather Underground
         for a particular airport, ZIP code, or personal weather station.
-        Information on the API can be found at 
+        Information on the API can be found at
         http://wiki.wunderground.com/index.php/API_-_XML
 
         .OUTPUTS
@@ -534,12 +534,12 @@ function Connect-Exchange {
             [string]
             $Fqdn,
 
-            $Credential = $host.ui.PromptForCredential("Credentials for $Fqdn", 
-                "Please enter the credentials to connect to $Fqdn", 
+            $Credential = $host.ui.PromptForCredential("Credentials for $Fqdn",
+                "Please enter the credentials to connect to $Fqdn",
                 "",
                 "NetBiosUserName")
           )
-    
+
     $Session = New-PSSession -ConfigurationName Microsoft.Exchange `
                              -ConnectionUri "https://$($Fqdn)/PowerShell" `
                              -Credential $Credential `
