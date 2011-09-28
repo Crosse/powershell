@@ -574,27 +574,3 @@ function Import-VMwareSnapin {
     }
 }
 
-function Connect-Exchange {
-    param (
-            [Parameter(Mandatory=$true)]
-            [string]
-            $Fqdn,
-
-            $Credential = $host.ui.PromptForCredential("Credentials for $Fqdn",
-                "Please enter the credentials to connect to $Fqdn",
-                "",
-                "NetBiosUserName")
-          )
-
-    $Session = New-PSSession -ConfigurationName Microsoft.Exchange `
-                             -ConnectionUri "https://$($Fqdn)/PowerShell" `
-                             -Credential $Credential `
-                             -Authentication Basic `
-                             -AllowRedirection
-
-    if ($Session) {
-        Import-Session $Session -AllowClobber
-    } else {
-        Write-Error "Could not create session"
-    }
-}
