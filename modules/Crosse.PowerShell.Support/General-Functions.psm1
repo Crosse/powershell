@@ -559,18 +559,3 @@ function Get-CurrentWeather {
 
     #>
 }
-
-
-function Import-VMwareSnapin {
-    if ($(Get-PSSnapin -Registered VMware.VimAutomation.Core) -eq $null) {
-        Write-Host "Could not find VMware.VimAutomation.Core Snapin"
-    } else {
-        if ( $(Get-PSSnapin VMware.VimAutomation.Core -EA SilentlyContinue) -eq $null) {
-            Add-PSSnapin VMware.VimAutomation.Core
-            $global:shellType += "/VMware"
-        } else {
-            Write-Warning "Vmware.VimAutomation.Core already loaded"
-        }
-    }
-}
-
