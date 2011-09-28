@@ -31,7 +31,6 @@ Write-Output "`nBreakdown of forwarding domains:"
 
 $forwarders | % {
     if ($_.RedirectTo -match "SMTP") {
-        [Microsoft.Exchange.Data.SmtpAddress]::Parse(
-                $_.RedirectTo.Substring($_.RedirectTo.IndexOf(":") + 1).Replace("]", "")).Domain
+        ([System.Net.Mail.MailAddress]($_.RedirectTo.Substring($_.RedirectTo.IndexOf(":") + 1).Replace("]", ""))).Host
     }
 } | Group -NoElement | Sort Count -Descending | Select -First 10
