@@ -47,7 +47,7 @@ function Get-ADAttribute {
         $int64Attributes = New-Object System.Collections.ArrayList
         foreach ($attribute in $Attributes) {
             if ($schema.FindProperty($attribute).Syntax -eq "Int64") {
-                $int64Attributes.add($attribute)
+                $null = $int64Attributes.add($attribute)
             }
         }
     }
@@ -61,12 +61,15 @@ function Get-ADAttribute {
             [System.DirectoryServices.AccountManagement.UserPrincipal]::FindByIdentity($pc, $Identity)
 
         if ($objUser -eq $null) {
-            Write-Error "Cannot find object $Identity in the current Active Directory domain."
-            return
-        } else {
-            $props.DistinguishedName = $objUser.DistinguishedName
-            Write-Verbose "Found DN: $($objUser.DistinguishedName)"
+            $objUser = [System.DirectoryServices.AccountManagement.ComputerPrincipal]::FindByIdentity($pc, $Identity)
+            if ($objUser -eq $null) {
+                Write-Error "Cannot find object $Identity in the current Active Directory domain."
+                return
+            }
         }
+
+        $props.DistinguishedName = $objUser.DistinguishedName
+        Write-Verbose "Found $($objUser.StructuralObjectClass) DN: $($objUser.DistinguishedName)"
 
         $dirEntry = $objUser.GetUnderlyingObject()
         foreach ($attribute in $Attributes) {
