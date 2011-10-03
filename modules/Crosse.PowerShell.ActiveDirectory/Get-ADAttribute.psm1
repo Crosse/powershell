@@ -74,7 +74,7 @@ function Get-ADAttribute {
         $dirEntry = $objUser.GetUnderlyingObject()
         foreach ($attribute in $Attributes) {
             $prop = $dirEntry.InvokeGet($attribute)
-            if ($int64Attributes.Contains($attribute)) {
+            if ($prop -ne $null -and $int64Attributes.Contains($attribute)) {
                 $prop = $dirEntry.ConvertLargeIntegerToInt64($prop)
             } elseif ($prop -ne $null -and $attribute -match 'Guid') {
                 $prop = [Guid]$prop
