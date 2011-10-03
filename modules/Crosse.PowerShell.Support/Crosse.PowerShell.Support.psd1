@@ -63,7 +63,7 @@ TypesToProcess = @()
 FormatsToProcess = @()
 
 # Modules to import as nested modules of the module specified in ModuleToProcess
-NestedModules = 'DNS-Functions.psm1', 'General-Functions.psm1', 'Get-DirectoryStatistics.psm1'
+NestedModules = 'DNS-Functions.psm1', 'General-Functions.psm1', 'Get-DirectoryStatistics.psm1', 'Speech.psm1'
 
 # Functions to export from this module
 FunctionsToExport = '*'
@@ -78,10 +78,10 @@ VariablesToExport = '*'
 AliasesToExport = '*'
 
 # List of all modules packaged with this module
-ModuleList = 'DNS-Functions.psm1', 'General-Functions.psm1', 'Get-DirectoryStatistics.psm1'
+ModuleList = 'DNS-Functions.psm1', 'General-Functions.psm1', 'Get-DirectoryStatistics.psm1', 'Speech.psm1'
 
 # List of all files packaged with this module
-FileList = 'DNS-Functions.psm1', 'General-Functions.psm1', 'Get-DirectoryStatistics.psm1'
+FileList = 'DNS-Functions.psm1', 'General-Functions.psm1', 'Get-DirectoryStatistics.psm1', 'Speech.psm1'
 
 # Private data to pass to the module specified in ModuleToProcess
 PrivateData = ''
