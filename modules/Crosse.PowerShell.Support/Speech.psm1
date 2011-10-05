@@ -20,4 +20,4 @@ function Out-TextToSpeech {
     }
 }
 
-New-Alias say Out-TextToSpeech -Scope Global
+Set-Alias say Out-TextToSpeech -Scope Global
