@@ -198,24 +198,53 @@ function New-Guid {
 
 }
 
-function Get-CurrentWeather {
+function Get-GeoLocation {
+    $wc = New-Object System.Net.WebClient
+    [xml]$response = $wc.DownloadString("http://freegeoip.net/xml/")
+    $wc.Dispose()
+
+    return $response.Response
+}
+
+function Get-Weather {
+    [CmdletBinding()]
     param (
-            [Parameter(Mandatory=$true,
+            [Parameter(Mandatory=$false,
                 ValueFromPipeline=$true)]
-            [ValidateNotNullOrEmpty()]
             [string]
             # The ZIP Code, City, Personal Weather Station, or Airport Code to
             # look up.
-            $Identity
+            $Location,
+
+            [switch]
+            $AsObject=$false
           )
+
+    if ([String]::IsNulLOrEmpty($Location)) {
+        $Location = (Get-GeoLocation).ZipCode
+        if ($Location -eq $null) {
+            Write-Error "Cannot dynamically determine Location."
+        }
+        Write-Verbose "Found location $Location"
+    }
 
     $api = "http://api.wunderground.com/auto/wui/geo/WXCurrentObXML/index.xml?query="
     $wc = New-Object System.Net.WebClient
+    $wc.Dispose()
 
-    $query = $api + $Identity
+    $query = $api + $Location
     [xml]$weather = $wc.DownloadString($query)
 
-    $weather.current_observation
+    if (!$AsObject) {
+        $result = "For {0} it is currently {1} degrees, with {2} skies." -f
+                        $weather.current_observation.observation_location.full,
+                        $weather.current_observation.temp_f,
+                        $weather.current_observation.weather.ToLower()
+    } else {
+        $result = $weather.current_observation
+    }
+
+    return $result
 
     <#
         .SYNOPSIS
