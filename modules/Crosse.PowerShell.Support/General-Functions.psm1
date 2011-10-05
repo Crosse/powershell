@@ -559,3 +559,32 @@ function Get-CurrentWeather {
 
     #>
 }
+
+function Get-Uptime {
+    param (
+            [switch]
+            $AsObject
+          )
+
+    # 2:31PM  up 5 days, 15:59, 2 users, load averages: 6.46, 6.65, 6.98
+    $prop = Get-WmiObject Win32_OperatingSystem -Property LastBootUpTime
+    $lastBootUpTime = $prop.ConvertToDateTime($prop.LastBootUpTime)
+    $uptime = (Get-Date) - $lastBootUpTime
+    $now = Get-Date
+    $unixString = "{0,7} up {1} days, {2}:{3:00}" -f 
+                    $now.ToString("h:mmtt"),
+                    $uptime.Days, 
+                    $uptime.Hours, 
+                    $uptime.Minutes
+
+    if (!$AsObject) {
+        $unixString
+    } else {
+        New-Object PSObject -Property @{ 
+            LastBootUpTime     = $lastBootUpTime
+            CurrentTime        = $now
+            UnixStyleString    = $unixString
+            UptimeTimeSpan     = $uptime
+        }
+    }
+}
