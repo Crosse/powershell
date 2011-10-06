@@ -10,7 +10,12 @@ function Out-TextToSpeech {
             $SpeakAsync=$false
           )
 
-    [Reflection.Assembly]::LoadWithPartialName('System.Speech') | Out-Null
+    # The Module Manifest for this module includes the System.Speech
+    # assembly in the list of assemblies to load when the module manifest
+    # loads.  If you don't want to do this, or want to use this as a
+    # standalone function, uncomment the next line.
+
+    # [Reflection.Assembly]::LoadWithPartialName('System.Speech') | Out-Null
     $synth = New-Object System.Speech.Synthesis.Speechsynthesizer
 
     if ($SpeakAsync) {
