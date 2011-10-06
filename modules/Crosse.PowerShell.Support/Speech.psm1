@@ -1,13 +1,12 @@
 function Out-TextToSpeech {
-    [CmdletBinding()]
     param (
             [Parameter(Mandatory=$true,
                 ValueFromPipeline=$true)]
             [string]
-            $TextToSpeak,
+            $Text,
 
             [switch]
-            $SpeakAsync=$false
+            $Async=$false
           )
 
     # The Module Manifest for this module includes the System.Speech
@@ -16,12 +15,12 @@ function Out-TextToSpeech {
     # standalone function, uncomment the next line.
 
     # [Reflection.Assembly]::LoadWithPartialName('System.Speech') | Out-Null
-    $synth = New-Object System.Speech.Synthesis.Speechsynthesizer
+    $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
 
-    if ($SpeakAsync) {
-        $synth.SpeakAsync($TextToSpeak)
+    if ($Async) {
+        $synth.SpeakAsync($Text)
     } else {
-        $synth.Speak($TextToSpeak)
+        $synth.Speak($Text)
     }
 }
 
