@@ -232,3 +232,63 @@ function New-CertificateRequest {
         return $csr
     }
 }
+
+function Complete-CertificateRequest {
+    [CmdletBinding()]
+    param (
+            [Parameter(Mandatory=$true,
+                ValueFromPipeline=$true)]
+            [string]
+            $CertificateRequestText,
+
+            [Parameter(Mandatory=$true)]
+            [ValidateNotNullOrEmpty()]
+            [System.IO.FileInfo]
+            $CACertificateResponse
+          )
+
+    BEGIN {
+        # The EncodingType enum value specifying that the encoding should
+        # be represented in a specified format.
+        #
+        # http://msdn.microsoft.com/en-us/library/windows/desktop/aa374936.aspx
+        $XCNCryptStringBase64RequestHeader = 0x3
+        $XCNCryptStringBase64Header = 0x0
+
+        # InstallResponseRestrictionFlags =
+        #   AllowNone                   = 0x00000000,
+        #   AllowNoOutstandingRequest   = 0x00000001,
+        #   AllowUntrustedCertificate   = 0x00000002,
+        #   AllowUntrustedRoot          = 0x00000004
+        #
+        # http://msdn.microsoft.com/en-us/library/windows/desktop/aa376782.aspx
+        $InstallResponseRestrictionFlags = 0x0
+    }
+
+    PROCESS {
+        if ((Test-Path $CACertificateResponse) -eq $false) {
+            Write-Error "$CACertificateResponse does not exist."
+            return
+        }
+        Write-Verbose "Found file $CACertificateResponse"
+        $response = Get-Content $CACertificateResponse
+
+        $csr = New-Object -ComObject "X509Enrollment.CX509CertificateRequestPkcs10.1"
+        $csr.InitializeDecode($CertificateRequestText, $XCNCryptStringBase64RequestHeader)
+        if ($csr.Subject -eq $null) {
+            Write-Error "Could not parse CSR"
+            return
+        }
+
+        $enrollment = New-Object -ComObject "X509Enrollment.CX509Enrollment.1"
+        $enrollment.InitializeFromRequest($csr)
+        # http://msdn.microsoft.com/en-us/library/windows/desktop/aa378051.aspx
+        # The $null value is the optional password field, which you typically
+        # don't want for a server certificate.
+        $enrollment.InstallResponse($InstallResponseRestrictionFlags,
+                                    $response,
+                                    $XCNCryptStringBase64Header,
+                                    $null)
+        Write-Verbose "Installed Response."
+    }
+}
