@@ -1,43 +1,57 @@
 function New-CertificateRequest {
     [CmdletBinding()]
     param (
-            [int]
+            [Parameter(Mandatory=$false)]
             [ValidateSet(2048, 4096, 8192, 16384)]
+            [int]
             # The length of the key.  The default is 2048.
             $KeyLength=2048,
 
-            [Parameter(Mandatory=$true)]
+            [Parameter(Mandatory=$true,
+                ParameterSetName="ExplicitDN")]
+            [ValidateNotNullOrEmpty()]
+            [string]
+            $SubjectName,
+
+            [Parameter(Mandatory=$true,
+                ParameterSetName="ImplicitDN")]
             [ValidateNotNullOrEmpty()]
             [string]
             # The "CN=" value of the certificates' Subject field.
             $CommonName,
 
-            [Parameter(Mandatory=$true)]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="ImplicitDN")]
             [ValidateNotNullOrEmpty()]
             [string]
             # The "OU=" value of the certificates' Subject field.
             $OrganizationalUnit,
 
-            [Parameter(Mandatory=$true)]
+            [Parameter(Mandatory=$false,
+                    ParameterSetName="ImplicitDN")]
             [ValidateNotNullOrEmpty()]
             [string]
             # The "O=" value of the certificate's Subject field.
             $Organization,
 
-            [Parameter(Mandatory=$true)]
+            [Parameter(Mandatory=$false,
+                    ParameterSetName="ImplicitDN")]
             [ValidateNotNullOrEmpty()]
             [string]
             # The "L=" value of the certificate's Subject field.
             $Locality,
 
-            [Parameter(Mandatory=$true)]
+            [Parameter(Mandatory=$false,
+                    ParameterSetName="ImplicitDN")]
             [ValidateNotNullOrEmpty()]
             [string]
             # The "S=" value of the certificate's Subject field.
             $State,
 
-            [Parameter(Mandatory=$true)]
+            [Parameter(Mandatory=$false,
+                    ParameterSetName="ImplicitDN")]
             [ValidateNotNullOrEmpty()]
+            [ValidateLength(2, 2)]
             [string]
             # The "C=" value of the certificate's Subject field.
             $Country,
@@ -57,14 +71,24 @@ function New-CertificateRequest {
             [Parameter(Mandatory=$false)]
             [string]
             # An option description of the certificate.
-            $Description
+            $Description,
+
+            [Parameter(Mandatory=$false)]
+            [ValidateSet("Machine", "User")]
+            [string]
+            $Context = "Machine"
+
+#            [Parameter(Mandatory=$false)]
+#            [ValidateSet("Server", "User", "SMIME")]
+#            [string]
+#            $Type = "Server"
           )
 
     BEGIN {
         # The "magic numbers" section.
-        # There is no really good reason for this to be in the BEGIN block,
-        # except that it sets these contant-value-type things apart from
-        # the actual code.
+        # There is no really good reason for all these to be in the BEGIN
+        # block, except that it sets these contant-value-type things apart
+        # from the actual code.
 
         # The name of the cryptographic provider.  Specifying this also sets the
         # key's ProviderType.  In this case, the ProviderType is
@@ -78,17 +102,20 @@ function New-CertificateRequest {
         # NT AUTHORITY\NETWORK SERVICE has Read, List, and Create Child rights.
         # See the big scariness here:
         # http://msdn.microsoft.com/en-us/library/windows/desktop/aa772285.aspx
-        $SecurityDescriptor = "D:PAI(A;;0xd01f01ff;;;SY)(A;;0xd01f01ff;;;BA)(A;;0x80120089;;;NS)"
+        $ServerCertificateSDDL = "D:PAI(A;;0xd01f01ff;;;SY)(A;;0xd01f01ff;;;BA)(A;;0x80120089;;;NS)"
 
         # This is a X509KeySpec enum value that states that the key can be
         # used for signing.
         # http://msdn.microsoft.com/en-us/library/windows/desktop/aa379409.aspx
         $X509KeySpecKeyExchange = 1
 
-        # The X509CertificateEnrollmentContext enum specifies that
-        # "ContextMachine" is 0x2, which means store the certificate in the
-        # Machine store.
+        # X509CertificateEnrollmentContext
+        #   ContextUser                        = 0x1,
+        #   ContextMachine                     = 0x2,
+        #   ContextAdministratorForceMachine   = 0x3
+        #
         # http://msdn.microsoft.com/en-us/library/windows/desktop/aa379399.aspx
+        $X509CertEnrollmentContextUser = 1
         $X509CertEnrollmentContextMachine = 2
 
         # Requested Extensions:
@@ -135,8 +162,19 @@ function New-CertificateRequest {
         $key.ProviderName = $ProviderName
         $key.KeySpec = $X509KeySpecKeyExchange
         $key.Length = $KeyLength
+        if ($Context -eq "Machine") {
+            $key.MachineContext = $true
+            # Use an SDDL appropriate for a server certificate.
+            $SecurityDescriptor = $ServerCertificateSDDL
+        } else {
+            $key.MachineContext = $false
+            # Get the default SDDL appropriate for a user certificate.
+            # http://msdn.microsoft.com/en-us/library/windows/desktop/aa376741.aspx
+            $info = New-Object -ComObject X509Enrollment.CCspInformation.1
+            $info.InitializeFromName($ProviderName)
+            $SecurityDescriptor = $info.GetDefaultSecurityDescriptor($false)
+        }
         $key.SecurityDescriptor = $SecurityDescriptor
-        $key.MachineContext = $true
 
         $key.Create()
         if (!$key.Opened) {
@@ -148,22 +186,47 @@ function New-CertificateRequest {
         # Initialize the Certificate Request.
         # http://msdn.microsoft.com/en-us/library/windows/desktop/aa377505.aspx
         $certreq = New-Object -ComObject "X509Enrollment.CX509CertificateRequestPkcs10.1"
-        $certreq.InitializeFromPrivateKey($X509CertEnrollmentContextMachine, $key, $null)
+        if ($Context -eq "Machine") {
+            $certreq.InitializeFromPrivateKey($X509CertEnrollmentContextMachine, $key, $null)
+        } else {
+            $certreq.InitializeFromPrivateKey($X509CertEnrollmentContextUser, $key, $null)
+        }
 
-        # Set the Subject.
-        $subject = "CN={0},OU={1},O={2},L={3},S={4},C={5}" -f
-                    $CommonName,
-                    $OrganizationalUnit,
-                    $Organization,
-                    $Locality,
-                    $State,
-                    $Country
+        # Build the Subject attribute.
+        if ($SubjectName -eq $null) {
+            $subject = "CN={0}" -f $CommonName
+
+            if ([String]::IsNullOrEmpty($OrganizationalUnit) -eq $false) {
+                $subject += ",OU={0}" -f $OrganizationalUnit
+            }
+
+            if ([String]::IsNullOrEmpty($Organization) -eq $false) {
+                $subject += ",O={0}" -f $Organization
+            }
+
+            if ([String]::IsNullOrEmpty($Locality) -eq $false) {
+                $subject += ",L={0}" -f $Locality
+            }
+
+            if ([String]::IsNullOrEmpty($State) -eq $false) {
+                $subject += ",S={0}" -f $State
+            }
+
+            if ([String]::IsNullOrEmpty($Country) -eq $false) {
+                $subject += ",C={0}" -f $Country
+            }
+        } else {
+            $subject = $SubjectName
+        }
+
         Write-Verbose "Subject: $Subject"
         $distinguishedName = New-Object -ComObject "X509Enrollment.CX500DistinguishedName.1"
         $distinguishedName.Encode($subject)
+        if ($distinguishedName.Name -eq $null) {
+            Write-Error "Could not encode Subject value.  Ensure that it is of the proper format."
+            return
+        }
         $certreq.Subject = $distinguishedName
-        # IIS sets this for some reason, so we will, too.
-        $certreq.SMimeCapabilities = $true
 
         $ExtensionKeyUsage = New-Object -ComObject "X509Enrollment.CX509ExtensionKeyUsage.1"
         $ExtensionKeyUsage.InitializeEncode($RequestedExtensions)
@@ -186,10 +249,6 @@ function New-CertificateRequest {
         if ($SubjectAlternateNames.Count -gt 0) {
             for ($i = 0; $i -lt $SubjectAlternateNames.Count; $i++) {
                 $name = $SubjectAlternateNames[$i]
-                if ([String]::IsNullOrEmpty($name)) {
-                    Write-Warning "Requested SAN entry with index of $i was null"
-                    continue
-                }
                 $altName = New-Object -ComObject "X509Enrollment.CAlternativeName.1"
                 $altName.InitializeFromString($XCNCertAltNameDnsName, $name)
                 if ($alternativeNames -eq $null) {
@@ -211,6 +270,10 @@ function New-CertificateRequest {
         # http://msdn.microsoft.com/en-us/library/windows/desktop/aa377809.aspx
         $enrollment = New-Object -ComObject "X509Enrollment.CX509Enrollment.1"
         $enrollment.InitializeFromRequest($certreq)
+        if ($enrollment.Request -eq $null) {
+            Write-Error $enrollment.Status.ErrorText
+            return
+        }
 
         if ([String]::IsNullOrEmpty($Description) -eq $false) {
             $enrollment.CertificateDescription = $Description
@@ -222,7 +285,12 @@ function New-CertificateRequest {
 
         Write-Verbose "Creating Certificate Request"
         $csr = $enrollment.CreateRequest($XCNCryptStringBase64RequestHeader)
-        Write-Verbose "Certificate Request created."
+        if ($csr -eq $null) {
+            Write-Error "Could not create the CSR: $($enrollment.Status.ErrorText)"
+            return
+        } else {
+            Write-Verbose "Certificate Request created."
+        }
 
         if ($key.Opened) {
             Write-Verbose "Closing private key"
