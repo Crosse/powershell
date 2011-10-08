@@ -236,23 +236,31 @@ function New-CertificateRequest {
 function Complete-CertificateRequest {
     [CmdletBinding()]
     param (
-            [Parameter(Mandatory=$true,
-                ValueFromPipeline=$true)]
-            [string]
-            $CertificateRequestText,
-
             [Parameter(Mandatory=$true)]
             [ValidateNotNullOrEmpty()]
             [System.IO.FileInfo]
-            $CACertificateResponse
+            # The path to a certificate response file received from a
+            # certification authority.
+            $CACertificateResponse,
+
+            [Parameter(Mandatory=$false)]
+            [ValidateSet("Machine", "User")]
+            [string]
+            $Context
           )
 
     BEGIN {
+        # The X509CertificateEnrollmentContext enum specifies that
+        # "ContextMachine" is 0x2, which means store the certificate in the
+        # Machine store.
+        # http://msdn.microsoft.com/en-us/library/windows/desktop/aa379399.aspx
+        $X509CertEnrollmentContextUser = 1
+        $X509CertEnrollmentContextMachine = 2
+
         # The EncodingType enum value specifying that the encoding should
         # be represented in a specified format.
         #
         # http://msdn.microsoft.com/en-us/library/windows/desktop/aa374936.aspx
-        $XCNCryptStringBase64RequestHeader = 0x3
         $XCNCryptStringBase64Header = 0x0
 
         # InstallResponseRestrictionFlags =
@@ -262,7 +270,7 @@ function Complete-CertificateRequest {
         #   AllowUntrustedRoot          = 0x00000004
         #
         # http://msdn.microsoft.com/en-us/library/windows/desktop/aa376782.aspx
-        $InstallResponseRestrictionFlags = 0x0
+        $InstallResponseRestrictionFlags = 0x4
     }
 
     PROCESS {
@@ -271,17 +279,16 @@ function Complete-CertificateRequest {
             return
         }
         Write-Verbose "Found file $CACertificateResponse"
+
         $response = Get-Content $CACertificateResponse
 
-        $csr = New-Object -ComObject "X509Enrollment.CX509CertificateRequestPkcs10.1"
-        $csr.InitializeDecode($CertificateRequestText, $XCNCryptStringBase64RequestHeader)
-        if ($csr.Subject -eq $null) {
-            Write-Error "Could not parse CSR"
-            return
+        $enrollment = New-Object -ComObject "X509Enrollment.CX509Enrollment.1"
+        if ($Context -eq "Machine") {
+            $enrollment.Initialize($X509CertEnrollmentContextMachine)
+        } else {
+            $enrollment.Initialize($X509CertEnrollmentContextUser)
         }
 
-        $enrollment = New-Object -ComObject "X509Enrollment.CX509Enrollment.1"
-        $enrollment.InitializeFromRequest($csr)
         # http://msdn.microsoft.com/en-us/library/windows/desktop/aa378051.aspx
         # The $null value is the optional password field, which you typically
         # don't want for a server certificate.
@@ -289,6 +296,11 @@ function Complete-CertificateRequest {
                                     $response,
                                     $XCNCryptStringBase64Header,
                                     $null)
-        Write-Verbose "Installed Response."
+
+        if ($enrollment.Status.ErrorText -match "successful") {
+            Write-Host "Certificate Request completed successfully."
+        } else {
+            Write-Host $enrollment.Status.ErrorText
+        }
     }
 }
