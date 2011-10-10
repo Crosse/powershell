@@ -324,16 +324,16 @@ function Get-Uptime {
     $lastBootUpTime = $prop.ConvertToDateTime($prop.LastBootUpTime)
     $uptime = (Get-Date) - $lastBootUpTime
     $now = Get-Date
-    $unixString = "{0,7} up {1} days, {2}:{3:00}" -f 
+    $unixString = "{0,7} up {1} days, {2}:{3:00}" -f
                     $now.ToString("h:mmtt"),
-                    $uptime.Days, 
-                    $uptime.Hours, 
+                    $uptime.Days,
+                    $uptime.Hours,
                     $uptime.Minutes
 
     if (!$AsObject) {
         $unixString
     } else {
-        New-Object PSObject -Property @{ 
+        New-Object PSObject -Property @{
             LastBootUpTime     = $lastBootUpTime
             CurrentTime        = $now
             UnixStyleString    = $unixString
