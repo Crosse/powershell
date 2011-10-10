@@ -63,7 +63,7 @@ TypesToProcess = @()
 FormatsToProcess = @()
 
 # Modules to import as nested modules of the module specified in ModuleToProcess
-NestedModules = 'DnsFunctions.psm1', 'GeneralFunctions.psm1', 'TextManipulation.psm1', 'Base64Functions.psm1', 'Get-DirectoryStatistics.psm1', 'Speech.psm1'
+NestedModules = 'DnsFunctions.psm1', 'GeneralFunctions.psm1', 'Publish-Item.psm1', 'TextManipulation.psm1', 'Base64Functions.psm1', 'Get-DirectoryStatistics.psm1', 'Speech.psm1'
 
 # Functions to export from this module
 FunctionsToExport = '*'
@@ -78,10 +78,10 @@ VariablesToExport = '*'
 AliasesToExport = '*'
 
 # List of all modules packaged with this module
-ModuleList = 'DnsFunctions.psm1', 'GeneralFunctions.psm1', 'TextManipulation.psm1', 'Base64Functions.psm1', 'Get-DirectoryStatistics.psm1', 'Speech.psm1'
+ModuleList = 'DnsFunctions.psm1', 'GeneralFunctions.psm1', 'Publish-Item.psm1', 'TextManipulation.psm1', 'Base64Functions.psm1', 'Get-DirectoryStatistics.psm1', 'Speech.psm1'
 
 # List of all files packaged with this module
-FileList = 'DnsFunctions.psm1', 'GeneralFunctions.psm1', 'TextManipulation.psm1', 'Base64Functions.psm1', 'Get-DirectoryStatistics.psm1', 'Speech.psm1'
+FileList = 'DnsFunctions.psm1', 'GeneralFunctions.psm1', 'Publish-Item.psm1', 'TextManipulation.psm1', 'Base64Functions.psm1', 'Get-DirectoryStatistics.psm1', 'Speech.psm1'
 
 # Private data to pass to the module specified in ModuleToProcess
 PrivateData = ''
