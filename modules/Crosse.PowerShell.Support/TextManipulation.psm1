@@ -122,5 +122,4 @@ function Set-Encoding {
         digital signatures. Don't use on your MP3's or other non-text
         files :)
 #>
-
 }
