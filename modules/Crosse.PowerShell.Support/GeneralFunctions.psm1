@@ -198,14 +198,6 @@ function New-Guid {
 
 }
 
-function Get-GeoLocation {
-    $wc = New-Object System.Net.WebClient
-    [xml]$response = $wc.DownloadString("http://freegeoip.net/xml/")
-    $wc.Dispose()
-
-    return $response.Response
-}
-
 function Get-Weather {
     [CmdletBinding()]
     param (
