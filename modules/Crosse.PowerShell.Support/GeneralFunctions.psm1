@@ -174,30 +174,30 @@ function Get-RemoteFile {
 }
 
 
+################################################################################
+<#
+    .SYNOPSIS
+    Generates a new Globally-Unique Identifier (GUID).
+
+    .DESCRIPTION
+    Generates a new Globally-Unique Identifier (GUID).
+
+    .INPUTS
+    None.  You cannot pipe objects to New-Guid.
+
+    .OUTPUTS
+    System.Guid.
+
+    .EXAMPLE
+    C:\PS> New-Guid
+
+    Guid
+    ----
+    f6bf4469-7419-4356-aac9-074de4e00a17
+#>
+################################################################################
 function New-Guid {
     return [System.Guid]::NewGuid()
-
-    <#
-        .SYNOPSIS
-        Generates a new Globally-Unique Identifier (GUID).
-
-        .DESCRIPTION
-        Generates a new Globally-Unique Identifier (GUID).
-
-        .INPUTS
-        None.  You cannot pipe objects to New-Guid.
-
-        .OUTPUTS
-        Returns a System.Guid.
-
-        .EXAMPLE
-        C:\PS> New-Guid
-
-        Guid
-        ----
-        f6bf4469-7419-4356-aac9-074de4e00a17
-    #>
-
 }
 
 function Get-Uptime {
