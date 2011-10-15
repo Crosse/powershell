@@ -15,7 +15,7 @@ ModuleToProcess = ''
 ModuleVersion = '1.0'
 
 # ID used to uniquely identify this module
-GUID = '696ffc46-85fa-4022-a538-db4ef4978927'
+GUID = '206a4cc7-1ff0-40ed-9a9e-df3cf99e7c4f'
 
 # Author of this module
 Author = 'Seth Wright'
