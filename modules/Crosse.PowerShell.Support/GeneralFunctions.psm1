@@ -67,7 +67,6 @@ function Get-RemoteFile {
     $wc.Dispose()
 }
 
-
 ################################################################################
 <#
     .SYNOPSIS
@@ -94,9 +93,45 @@ function New-Guid {
     return [System.Guid]::NewGuid()
 }
 
+################################################################################
+<#
+    .SYNOPSIS
+    Gets the current uptime for the local computer.
+
+    .DESCRIPTION
+    Gets the current uptime for the local computer.
+
+    .INPUTS
+    None.  You cannot pipe data into this cmdlet.
+
+    .OUTPUTS
+    A System.String Unix-style representation of the computer's uptime.  If
+    -AsObject is specified, a PSObject giving more information about the last
+    boot time of the computer.
+
+    .EXAMPLE
+    PS C:\> Get-Uptime
+    5:22PM up 1 days, 6:32
+
+    The above example returns a Unix-style string showing how long since the
+    computer last booted.
+
+    .EXAMPLE
+    PS C:\> Get-Uptime -AsObject | Format-List
+
+    UptimeTimeSpan  : 1.06:35:47.2401215
+    CurrentTime     : 10/15/2011 5:25:55 PM
+    LastBootUpTime  : 10/14/2011 10:50:08 AM
+    UnixStyleString :  5:25PM up 1 days, 6:35
+
+    The above example returns an object detailing how long since the computer
+    was last booted.
+#>
+################################################################################
 function Get-Uptime {
     param (
             [switch]
+            # Whether to return the data as an object or in a Unix-like string.
             $AsObject
           )
 
