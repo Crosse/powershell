@@ -1,7 +1,7 @@
 function Get-LdapUser {
     [CmdletBinding(SupportsShouldProcess=$true,
             ConfirmImpact="High")]
-    
+
     param (
             [Parameter(Mandatory=$true)]
             [string]
@@ -29,7 +29,7 @@ function Get-LdapUser {
             [String[]]
             $Attributes
           )
-            
+
     BEGIN {
         if ($LdapPath.StartsWith("LDAP://") -eq $false) {
             throw "Incorrect LDAP Path syntax"
