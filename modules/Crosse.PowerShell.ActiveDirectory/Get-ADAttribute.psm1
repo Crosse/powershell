@@ -58,12 +58,12 @@ function Get-ADAttribute {
                 ValueFromPipeline=$true)]
             [ValidateNotNullOrEmpty()]
             [string]
-            # Specifies the object should be modified.
+            # Specifies the object for which to search.
             $Identity,
 
             [Parameter(Mandatory=$true)]
             [string[]]
-            # Specifies which attribute to modify.
+            # Specifies which attributes to return.
             $Attributes
         )
 
