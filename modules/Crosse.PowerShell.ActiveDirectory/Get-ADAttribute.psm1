@@ -17,6 +17,39 @@
 ################################################################################
 
 
+################################################################################
+<#
+    .SYNOPSIS
+    Retrieves attributes from Active Directory for the specified object.
+
+    .DESCRIPTION
+    Retrieves attributes from Active Directory for the specified object. The
+    object specified by the "Identity" parameter is searched for first as a user,
+    then as a computer object.
+
+    .INPUTS
+    System.String.  The Identity (or Identities) for which to retrieve attributes
+    can be passed via the command line.
+
+    .OUTPUTS
+    A PSObject with the requested attributes for the Identity.
+
+    .EXAMPLE
+    PS C:\> Get-ADAttribute -Identity wrightst -Attributes mail | Format-List
+
+    Name              : wrightst
+    DistinguishedName : CN=wrightst,OU=Users,...
+    mail              : wrightst@jmu.edu
+
+    .EXAMPLE
+    PS C:\> Get-ADAttribute -Identity tex-vm -Attributes lastLogonTimestamp,pwdLastSet | Format-List
+
+    Name               : tex-vm
+    DistinguishedName  : CN=TEX-VM,OU=Desktops,...
+    lastLogonTimestamp : 10/14/2011 12:51:44 PM
+    pwdLastSet         : 9/14/2011 9:46:12 PM
+#>
+################################################################################
 function Get-ADAttribute {
     [CmdletBinding(SupportsShouldProcess=$true,
             ConfirmImpact="High")]
