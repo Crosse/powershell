@@ -16,7 +16,7 @@
 #
 ################################################################################
 
-############################################################################
+################################################################################
 <#
     .SYNOPSIS
     Creates a new certificate request.
@@ -85,7 +85,7 @@
     object- or code-signing certificate.  You can also use the
     New-CodeSigningCertificateRequst cmdlet as a convenience.
 #>
-############################################################################
+################################################################################
 function New-CertificateRequest {
     [CmdletBinding()]
     param (
@@ -559,7 +559,7 @@ function New-CertificateRequest {
     }
 }
 
-############################################################################
+################################################################################
 <#
     .SYNOPSIS
     Creates a new S/MIME certificate request.
@@ -588,7 +588,7 @@ function New-CertificateRequest {
     The above example generates a certificate request suitable for use as an
     S/MIME certificate for email protection.
 #>
-############################################################################
+################################################################################
 function New-SmimeCertificateRequest {
     [CmdletBinding()]
     param (
@@ -645,7 +645,7 @@ function New-SmimeCertificateRequest {
     New-CertificateRequest  -SmimeCertificate @PSBoundParameters
 }
 
-############################################################################
+################################################################################
 <#
     .SYNOPSIS
     Creates a new client certificate request.
@@ -674,7 +674,7 @@ function New-SmimeCertificateRequest {
     The above example generates a certificate request suitable for use as a
     client certificate.
 #>
-############################################################################
+################################################################################
 function New-ClientCertificateRequest {
     [CmdletBinding()]
     param (
@@ -728,7 +728,7 @@ function New-ClientCertificateRequest {
     New-CertificateRequest -ClientCertificate @PSBoundParameters
 }
 
-############################################################################
+################################################################################
 <#
     .SYNOPSIS
     Creates a new code-signing certificate request.
@@ -757,7 +757,7 @@ function New-ClientCertificateRequest {
     The above example generates a certificate request suitable for use as an
     S/MIME certificate for email protection.
 #>
-############################################################################
+################################################################################
 function New-CodeSigningCertificateRequest {
     [CmdletBinding()]
     param (
@@ -815,7 +815,7 @@ function New-CodeSigningCertificateRequest {
 }
 
 
-############################################################################
+################################################################################
 <#
     .SYNOPSIS
     Completes a pending certificate request.
@@ -836,7 +836,7 @@ function New-CodeSigningCertificateRequest {
     C:\PS> Complete-CertificateRequest -CACertificateResponse .\response.cer -CertificateStore Machine
     Certificate Request completed successfully.
 #>
-############################################################################
+################################################################################
 function Complete-CertificateRequest {
     [CmdletBinding()]
     param (
