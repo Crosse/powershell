@@ -1,15 +1,6 @@
 ################################################################################
-# 
-# $Id$
 #
-# DESCRIPTION: This script will create a new dynamic contact object in
-#              in Active Directory.  Please see 
-#              http://www.ietf.org/rfc/rfc2589.txt for more information.
-#              Note:  The target domain MUST be in a forest operating at the 
-#              Windows 2003 forest functional level!
-# 
-# 
-# Copyright (c) 2009,2010 Seth Wright <wrightst@jmu.edu>
+# Copyright (c) 2011 Seth Wright <wrightst@jmu.edu>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -26,6 +17,35 @@
 ################################################################################
 
 
+################################################################################
+<#
+    .SYNOPSIS
+    Finds a domain controller in the current domain.
+
+    .DESCRIPTION
+    Finds a domain controller in the current domain.
+
+    .INPUTS
+    None.  Get-DomainController does not accept any input.
+
+    .OUTPUTS
+    An object containing frequently-used properties of the
+    System.DirectoryServices.ActiveDirectory.Domain class, plus a property
+    to access the base object.
+
+    .EXAMPLE
+    C:\PS> Get-DomainController
+
+    Name                       : dc.ad.contoso.com
+    IPAddress                  : 10.10.10.1
+    Domain                     : ad.contoso.com
+    Forest                     : contoso.com
+    BaseObject                 : dc.ad.contoso.com
+
+    .LINK
+    http://msdn.microsoft.com/en-us/library/system.directoryservices.activedirectory.domaincontroller.getdomaincontroller.aspx
+#>
+################################################################################
 function Get-DomainController {
     $dc = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain().FindDomainController()
     $DomainController = New-Object PSObject
@@ -46,33 +66,4 @@ function Get-DomainController {
 
     return $DomainController
 
-    <#
-        .SYNOPSIS
-        Finds a domain controller in the current domain.
-
-        .DESCRIPTION
-        Finds a domain controller in the current domain.
-
-        .INPUTS
-        Get-DomainController does not accept any input.
-
-        .OUTPUTS
-        An object containing frequently-used properties of the
-        System.DirectoryServices.ActiveDirectory.Domain class, plus a property
-        to access the base object.
-
-        .EXAMPLE
-
-        C:\PS> Get-DomainController
-
-
-        Name                       : dc.ad.contoso.com
-        IPAddress                  : 10.10.10.1
-        Domain                     : ad.contoso.com
-        Forest                     : contoso.com
-        BaseObject                 : dc.ad.contoso.com
-        
-        .LINK
-        http://msdn.microsoft.com/en-us/library/system.directoryservices.activedirectory.domaincontroller.getdomaincontroller.aspx
-#>
 }
