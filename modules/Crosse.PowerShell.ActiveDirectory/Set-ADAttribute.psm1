@@ -1,6 +1,6 @@
 ################################################################################
 #
-# Copyright (c) 2009,2010 Seth Wright <wrightst@jmu.edu>
+# Copyright (c) 2009 - 2011 Seth Wright <wrightst@jmu.edu>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -17,6 +17,32 @@
 ################################################################################
 
 
+################################################################################
+<#
+    .SYNOPSIS
+    Modifies an attribute on an Active Directory object.
+
+    .DESCRIPTION
+    Modifies an attribute on an Active Directory object. This cmdlet must be run
+    as a user with rights to modify the attribute in Active Directory.
+
+    .INPUTS
+    System.String.  The Identity (or Identities) for which to modify attributes
+    can be passed via the command line.
+
+    .OUTPUTS
+    A PSObject with the requested attributes for the Identity.
+
+    .EXAMPLE
+    PS C:\> Set-ADAttribute -Identity wrightst -Attribute extensionAttribute2 -Value "hello" | Format-List
+
+    Name                : wrightst
+    DistinguishedName   : CN=wrightst,OU=Users,...
+    extensionAttribute2 : hello
+
+    The above example sets the "extensionAttribute2" attribute to the value "hello".
+#>
+################################################################################
 function Set-ADAttribute {
     [CmdletBinding(SupportsShouldProcess=$true,
             ConfirmImpact="High")]
@@ -25,27 +51,23 @@ function Set-ADAttribute {
                 ValueFromPipeline=$true)]
             [ValidateNotNullOrEmpty()]
             [string]
-            # Specifies the object should be modified.
+            # Specifies the object to modify.
             $Identity,
 
             [Parameter(Mandatory=$true)]
+            [ValidateNotNullOrEmpty()]
             [string]
             # Specifies which attribute to modify.
             $Attribute,
 
-            #[Parameter(Mandatory=$true)]
-            [string]
+            [Parameter(Mandatory=$true)]
+            [AllowNull()]
+            [object]
             # Specifies the value to assign to the attribute.
             $Value
         )
 
     BEGIN {
-        $assembly = [Reflection.Assembly]::LoadWithPartialName("System.DirectoryServices.AccountManagement")
-        if ($assembly -eq $null) {
-            Write-Error "Could not load the System.DirectoryServices.AccountManagement assembly"
-            return
-        }
-
         $pc = New-Object System.DirectoryServices.AccountManagement.PrincipalContext Domain
     }
     PROCESS {
@@ -68,10 +90,23 @@ function Set-ADAttribute {
         $dirEntry = $objUser.GetUnderlyingObject()
 
         $Error.Clear()
-        $dirEntry.InvokeSet($Attribute, $Value)
-        $dirEntry.PSBase.CommitChanges()
-        if ($? -eq $true) {
-            Write-Verbose "Set $Attribute to $Value"
+        if ($Value -eq $null) {
+            $desc = "Clear attribute $Attribute for object $Identity"
+            $caption = $desc
+            $warning = "Are you sure you want to perform this action?`n"
+            if ($PSCmdlet.ShouldProcess($desc, $warning, $caption)) {
+                $dirEntry.PSBase.Properties.Item($Attribute).Clear()
+                $dirEntry.PSBase.CommitChanges()
+                if ($? -eq $true) {
+                    Write-Verbose "Cleared $Attribute for $Identity"
+                }
+            }
+        } else {
+            $dirEntry.InvokeSet($Attribute, $Value)
+            $dirEntry.PSBase.CommitChanges()
+            if ($? -eq $true) {
+                Write-Verbose "Set $Attribute to $Value for $Identity"
+            }
         }
 
         try {
