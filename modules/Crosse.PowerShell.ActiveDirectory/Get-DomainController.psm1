@@ -48,22 +48,14 @@
 ################################################################################
 function Get-DomainController {
     $dc = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain().FindDomainController()
-    $DomainController = New-Object PSObject
-    $DomainController = Add-Member -PassThru -InputObject $DomainController `
-        -MemberType NoteProperty -Name Name -Value $dc.Name
 
-    Add-Member -InputObject $DomainController -MemberType NoteProperty `
-        -Name IPAddress -Value $dc.IPAddress
-
-    Add-Member -InputObject $DomainController -MemberType NoteProperty `
-        -Name Domain -Value $dc.Domain
-
-    Add-Member -InputObject $DomainController -MemberType NoteProperty `
-        -Name Forest -Value $dc.Forest
-
-    Add-Member -InputObject $DomainController -MemberType NoteProperty `
-        -Name BaseObject -Value $dc
+    $DomainController = New-Object PSObject -Property @{
+        "Name"          = $dc.Name
+        "IPAddress"     = $dc.IPAddress
+        "Domain"        = $dc.Domain
+        "Forest"        = $dc.Forest
+        "BaseObject"    = $dc
+    }
 
     return $DomainController
-
 }
