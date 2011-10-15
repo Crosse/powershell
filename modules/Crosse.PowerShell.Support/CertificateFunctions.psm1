@@ -542,6 +542,92 @@ function New-ClientCertificateRequest {
     New-CertificateRequest -ClientCertificate @PSBoundParameters
 }
 
+############################################################################
+<#
+    .SYNOPSIS
+    Creates a new code-signing certificate request.
+
+    .DESCRIPTION
+    Creates a new code-signing certificate request and returns the Base64-encoded
+    request text suitable for submitting to a third-party certificate authority.
+    The certificate request is also stored in the user's certificate store, and
+    can be completed using the Complete-CertificateRequest cmdlet.
+
+    .INPUTS
+    None
+        You cannot pipe objects to the cmdlet.
+
+    .OUTPUTS
+    System.String.  New-CodeSigningCertificateRequest returns the generated X509,
+    Base64-encoded certificate request that can be submitted to a third-
+    party certificate authority.
+
+    .EXAMPLE
+    C:\PS> New-CodeSigningCertificateRequest -EmailAddress "asdf@asdf.com" -CommonName "Joe User"
+    -----BEGIN NEW CERTIFICATE REQUEST-----
+    [...]
+    -----END NEW CERTIFICATE REQUEST-----
+
+    The above example generates a certificate request suitable for use as an
+    S/MIME certificate for email protection.
+#>
+############################################################################
+function New-CodeSigningCertificateRequest {
+    [CmdletBinding()]
+    param (
+            [Parameter(Mandatory=$true)]
+            [string]
+            # The user's email address.
+            $EmailAddress,
+
+            [Parameter(Mandatory=$true)]
+            [string]
+            # The user's full name.
+            $CommonName,
+
+            [Parameter(Mandatory=$false)]
+            [ValidateNotNullOrEmpty()]
+            [string]
+            # The department or organizational unit in charge of the entity.
+            $OrganizationalUnit,
+
+            [Parameter(Mandatory=$false)]
+            [ValidateNotNullOrEmpty()]
+            [string]
+            # The organzation or company in charge of the entity.
+            $Organization,
+
+            [Parameter(Mandatory=$false)]
+            [ValidateNotNullOrEmpty()]
+            [string]
+            # The city or locality in which the organization resides.
+            $Locality,
+
+            [Parameter(Mandatory=$false)]
+            [ValidateNotNullOrEmpty()]
+            [string]
+            # The non-abbreviated state or province in which the organization
+            # resides.
+            $State,
+
+            [Parameter(Mandatory=$false)]
+            [ValidateNotNullOrEmpty()]
+            [ValidateLength(2, 2)]
+            [string]
+            # The 2-letter abbreviation of the country in which the organization
+            # resides.
+            $Country,
+
+            [Parameter(Mandatory=$false)]
+            [ValidateSet(2048, 4096, 8192, 16384)]
+            [int]
+            # The length of the key.  The default is 2048.
+            $KeyLength=2048
+          )
+
+    New-CertificateRequest  -CodeSigningCertificate @PSBoundParameters
+}
+
 function Complete-CertificateRequest {
     [CmdletBinding()]
     param (
