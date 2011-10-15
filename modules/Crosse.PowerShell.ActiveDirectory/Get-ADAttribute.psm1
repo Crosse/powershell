@@ -75,7 +75,13 @@ function Get-ADAttribute {
         foreach ($attribute in $Attributes) {
             $prop = $dirEntry.InvokeGet($attribute)
             if ($prop -ne $null -and $int64Attributes.Contains($attribute)) {
+                Write-Verbose "Converting attribute $attribute to Int64"
                 $prop = $dirEntry.ConvertLargeIntegerToInt64($prop)
+                if ($attribute -match 'date' -or
+                        $attribute -match 'time' -or
+                        $attribute -match 'lastSet') {
+                    $prop = [DateTime]::FromFileTime($prop)
+                }
             } elseif ($prop -ne $null -and $attribute -match 'Guid') {
                 $prop = [Guid]$prop
             }
