@@ -29,7 +29,7 @@
     None.  You cannot pipe data into this cmdlet.
 
     .OUTPUTS
-    System.Xml.XmlElement.  Get-GeoLocation returns various details about the 
+    System.Xml.XmlElement.  Get-GeoLocation returns various details about the
     currentl location as based on the computer's IP address.
 
     .EXAMPLE
@@ -45,7 +45,7 @@
     Latitude    : 38.4409
     Longitude   : -78.8742
     MetroCode   : 569
-    
+
 #>
 ################################################################################
 function Get-GeoLocation {
