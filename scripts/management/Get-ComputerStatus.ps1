@@ -21,6 +21,8 @@ PROCESS {
     Add-Member -InputObject $result -MemberType NoteProperty -Name "Model" -Value $null
     Add-Member -InputObject $result -MemberType NoteProperty -Name "OSVersion" -Value $null
     Add-Member -InputObject $result -MemberType NoteProperty -Name "OSName" -Value $null
+    Add-Member -InputObject $result -MemberType NoteProperty -Name "PSRemotingStatus" -Value $null
+    Add-Member -InputObject $result -MemberType NoteProperty -Name "PSRemotingError" -Value $null
     
     try {
         $dns = [System.Net.Dns]::GetHostEntry($ComputerName)
@@ -62,6 +64,18 @@ PROCESS {
         $result.WmiStatus = "Success"
         $result.OSVersion = $operatingSystem.Version
         $result.OSName = $operatingSystem.Name.Split("|")[0]
+    }
+
+    $error.Clear()
+    $serverName = Invoke-Command -ComputerName $ComputerName `
+                    -ScriptBlock { Get-Item Env:ComputerName } `
+                    -ErrorAction SilentlyContinue
+    if ($serverName -eq $null) {
+        Write-Verbose "$ComputerName : Could not connect to server via Remote PowerShell"
+        $result.PSRemotingStatus = "Failed"
+        $result.PSRemotingError = $error[0].Exception
+    } else {
+        $result.PSRemotingStatus = "Success"
     }
 
     return $result
