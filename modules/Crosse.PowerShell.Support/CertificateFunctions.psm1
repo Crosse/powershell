@@ -1,93 +1,222 @@
+############################################################################
+<#
+    .SYNOPSIS
+    Creates a new certificate request.
+
+    .DESCRIPTION
+    Creates a new certificate request and returns the Base64-encoded request text
+    suitable for submitting to a third-party certificate authority.  The
+    certificate request is also stored in either the user's or the machine's
+    certificate store, and can be completed using the Complete-CertificateRequest
+    cmdlet.
+
+    .INPUTS
+    None
+        You cannot pipe objects to the cmdlet.
+
+    .OUTPUTS
+    System.String.  New-CertificateRequest returns the generated X509,
+    Base64-encoded certificate request that can be submitted to a third-
+    party certificate authority.
+
+    .EXAMPLE
+    C:\PS> New-CertificateRequest -ServerCertificate -CommonName "server.contoso.com"
+    -----BEGIN NEW CERTIFICATE REQUEST-----
+    [...]
+    -----END NEW CERTIFICATE REQUEST-----
+
+    The above example generates a certificate request suitable for use on a web
+    server named "server.contoso.com".
+
+    .EXAMPLE
+    C:\PS> New-CertificateRequest -ServerCertificate -KeyLength 4096 -CommonName "server.contoso.com"
+    -----BEGIN NEW CERTIFICATE REQUEST-----
+    [...]
+    -----END NEW CERTIFICATE REQUEST-----
+
+    The above example generates a certificate request suitable for use on a web
+    server named "server.contoso.com", and requests a key length of 4096 bits.
+
+    .EXAMPLE
+    C:\PS> New-CertificateRequest -ServerCertificate -SubjectName "CN=server.contoso.com, OU=IT Department, O=Contoso, L=Example City, S=Washington, C=US"
+    -----BEGIN NEW CERTIFICATE REQUEST-----
+    [...]
+    -----END NEW CERTIFICATE REQUEST-----
+
+    The above example generates a certificate request suitable for use on a web
+    server named "server.contoso.com".  It also shows how to manually specify the
+    SubjectName of the certificate instead of using the convenience parameters.
+
+    .EXAMPLE
+    C:\PS> New-CertificateRequest -SmimeCertificate -EmailAddress "asdf@asdf.com" -CommonName "Joe User"
+    -----BEGIN NEW CERTIFICATE REQUEST-----
+    [...]
+    -----END NEW CERTIFICATE REQUEST-----
+
+    The above example generates a certificate request suitable for use as an
+    S/MIME certificate for email protection.  You can also use the
+    New-SmimeCertificateRequest cmdlet as a convenience.
+
+    .EXAMPLE
+    C:\PS> New-CertificateRequest -CodeSigningCertificate -EmailAddress "asdf@asdf.com" -CommonName "Joe User"
+    -----BEGIN NEW CERTIFICATE REQUEST-----
+    [...]
+    -----END NEW CERTIFICATE REQUEST-----
+
+    The above example generates a certificate request suitable for use as an
+    object- or code-signing certificate.  You can also use the
+    New-CodeSigningCertificateRequst cmdlet as a convenience.
+#>
+############################################################################
 function New-CertificateRequest {
     [CmdletBinding()]
     param (
-            [Parameter(Mandatory=$false)]
-            [ValidateSet(2048, 4096, 8192, 16384)]
-            [int]
-            # The length of the key.  The default is 2048.
-            $KeyLength=2048,
-
             [Parameter(Mandatory=$true,
                 ParameterSetName="ServerCertificate")]
+            [Parameter(Mandatory=$true,
+                ParameterSetName="ServerCertificateExplicitSubject")]
             [switch]
             # Specifies that this should be a server certificate.
             $ServerCertificate,
 
             [Parameter(Mandatory=$true,
                 ParameterSetName="ClientCertificate")]
+            [Parameter(Mandatory=$true,
+                ParameterSetName="ClientCertificateExplicitSubject")]
             [switch]
             # Specifies that this should be a server certificate.
             $ClientCertificate,
 
             [Parameter(Mandatory=$true,
                 ParameterSetName="SmimeCertificate")]
+            [Parameter(Mandatory=$true,
+                ParameterSetName="SmimeCertificateExplicitSubject")]
             [switch]
             # Specifies that this should be a server certificate.
             $SmimeCertificate,
 
             [Parameter(Mandatory=$true,
                 ParameterSetName="CodeSigningCertificate")]
+            [Parameter(Mandatory=$true,
+                ParameterSetName="CodeSigningCertificateExplicitSubject")]
             [switch]
             # Specifies that this should be a server certificate.
             $CodeSigningCertificate,
 
             [Parameter(Mandatory=$false)]
+            [ValidateSet(2048, 4096, 8192, 16384)]
+            [int]
+            # The length of the key in bits.  The default is 2048.  Valid values are 2048, 4096, 8192, and 16384.
+            $KeyLength=2048,
+
+            [Parameter(Mandatory=$true,
+                ParameterSetName="ServerCertificateExplicitSubject")]
+            [Parameter(Mandatory=$true,
+                ParameterSetName="ClientCertificateExplicitSubject")]
+            [Parameter(Mandatory=$true,
+                ParameterSetName="SmimeCertificateExplicitSubject")]
+            [Parameter(Mandatory=$true,
+                ParameterSetName="CodeSigningCertificateExplicitSubject")]
             [ValidateNotNullOrEmpty()]
             [string]
-            # Used to manulally specify the full distinguished name that will
+            # Used to manually specify the full distinguished name that will
             # be used for the certificate's Subject field.
             $SubjectName,
 
+            [Parameter(Mandatory=$false,
+                ParameterSetName="ClientCertificate")]
             [Parameter(Mandatory=$true,
                 ParameterSetName="SmimeCertificate")]
             [ValidateNotNullOrEmpty()]
             [string]
-            # The email address to use for an S/MIME or code-signing certificate.
+            # The entity's email address.
             $EmailAddress,
 
-            [Parameter(Mandatory=$true)]
+            [Parameter(Mandatory=$true,
+                ParameterSetName="ServerCertificate")]
+            [Parameter(Mandatory=$true,
+                ParameterSetName="ClientCertificate")]
+            [Parameter(Mandatory=$true,
+                ParameterSetName="SmimeCertificate")]
+            [Parameter(Mandatory=$true,
+                ParameterSetName="CodeSigningCertificate")]
             [ValidateNotNullOrEmpty()]
             [string]
             # The common name of the entity.  For a server certificate, this
-            # would be the server name.  For a client certificate, this could
-            # be the user's email address.
+            # could be the server name.  For a client certificate, this could
+            # be the user's email address or user name.
             $CommonName,
 
-            [Parameter(Mandatory=$false)]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="ServerCertificate")]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="ClientCertificate")]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="SmimeCertificate")]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="CodeSigningCertificate")]
             [ValidateNotNullOrEmpty()]
             [string]
             # The department or organizational unit in charge of the entity.
             $OrganizationalUnit,
 
-            [Parameter(Mandatory=$false)]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="ServerCertificate")]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="ClientCertificate")]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="SmimeCertificate")]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="CodeSigningCertificate")]
             [ValidateNotNullOrEmpty()]
             [string]
             # The organzation or company in charge of the entity.
             $Organization,
 
-            [Parameter(Mandatory=$false)]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="ServerCertificate")]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="ClientCertificate")]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="SmimeCertificate")]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="CodeSigningCertificate")]
             [ValidateNotNullOrEmpty()]
             [string]
-            # The city or locality in which the organization resides.
+            # The city (or locality) in which the organization resides.
             $Locality,
 
-            [Parameter(Mandatory=$false)]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="ServerCertificate")]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="ClientCertificate")]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="SmimeCertificate")]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="CodeSigningCertificate")]
             [ValidateNotNullOrEmpty()]
             [string]
-            # The non-abbreviated state or province in which the organization
-            # resides.
+            # The non-abbreviated state or province in which the organization resides.
             $State,
 
-            [Parameter(Mandatory=$false)]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="ServerCertificate")]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="ClientCertificate")]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="SmimeCertificate")]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="CodeSigningCertificate")]
             [ValidateNotNullOrEmpty()]
             [ValidateLength(2, 2)]
             [string]
-            # The 2-letter abbreviation of the country in which the organization
-            # resides.
+            # The 2-letter abbreviation of the country in which the organization resides.
             $Country,
 
             [Parameter(Mandatory=$false,
                 ParameterSetName="ServerCertificate")]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="ServerCertificateExplicitSubject")]
             [ValidateNotNullOrEmpty()]
             [string[]]
             # An array of alternative DNS names that should be bound to the
@@ -412,7 +541,7 @@ function New-CertificateRequest {
     }
 }
 
-function New-SmimeCertificateRequest {
+############################################################################
 <#
     .SYNOPSIS
     Creates a new S/MIME certificate request.
@@ -420,28 +549,31 @@ function New-SmimeCertificateRequest {
     .DESCRIPTION
     Creates a new S/MIME certificate request and returns the Base64-encoded
     request text suitable for submitting to a third-party certificate authority.
+    The certificate request is also stored in the user's certificate store, and
+    can be completed using the Complete-CertificateRequest cmdlet.
 
     .INPUTS
-    Stuff
+    None
+        You cannot pipe objects to the cmdlet.
 
     .OUTPUTS
-    Things.
+    System.String.  New-SmimeCertificateRequest returns the generated X509,
+    Base64-encoded certificate request that can be submitted to a third-
+    party certificate authority.
 
     .EXAMPLE
     C:\PS> New-SmimeCertificateRequest -EmailAddress "asdf@asdf.com" -CommonName "Joe User"
     -----BEGIN NEW CERTIFICATE REQUEST-----
-    [...certificate request here...]
+    [...]
     -----END NEW CERTIFICATE REQUEST-----
 
+    The above example generates a certificate request suitable for use as an
+    S/MIME certificate for email protection.
 #>
+############################################################################
+function New-SmimeCertificateRequest {
     [CmdletBinding()]
     param (
-            [Parameter(Mandatory=$false)]
-            [ValidateSet(2048, 4096, 8192, 16384)]
-            [int]
-            # The length of the key.  The default is 2048.
-            $KeyLength=2048,
-
             [Parameter(Mandatory=$true)]
             [string]
             # The user's email address.
@@ -483,12 +615,48 @@ function New-SmimeCertificateRequest {
             [string]
             # The 2-letter abbreviation of the country in which the organization
             # resides.
-            $Country
+            $Country,
+
+            [Parameter(Mandatory=$false)]
+            [ValidateSet(2048, 4096, 8192, 16384)]
+            [int]
+            # The length of the key.  The default is 2048.
+            $KeyLength=2048
           )
 
     New-CertificateRequest  -SmimeCertificate @PSBoundParameters
 }
 
+############################################################################
+<#
+    .SYNOPSIS
+    Creates a new client certificate request.
+
+    .DESCRIPTION
+    Creates a new client certificate request and returns the Base64-encoded
+    request text suitable for submitting to a third-party certificate authority.
+    The certificate request is also stored in the user's certificate store, and
+    can be completed using the Complete-CertificateRequest cmdlet.
+
+    .INPUTS
+    None
+        You cannot pipe objects to the cmdlet.
+
+    .OUTPUTS
+    System.String.  New-ClientCertificateRequest returns the generated X509,
+    Base64-encoded certificate request that can be submitted to a third-
+    party certificate authority.
+
+    .EXAMPLE
+    C:\PS> New-ClientCertificateRequest -CommonName "Joe User"
+    -----BEGIN NEW CERTIFICATE REQUEST-----
+    [...]
+    -----END NEW CERTIFICATE REQUEST-----
+
+    The above example generates a certificate request suitable for use as a
+    client certificate.
+#>
+############################################################################
 function New-ClientCertificateRequest {
     [CmdletBinding()]
     param (
@@ -628,6 +796,29 @@ function New-CodeSigningCertificateRequest {
     New-CertificateRequest  -CodeSigningCertificate @PSBoundParameters
 }
 
+
+############################################################################
+<#
+    .SYNOPSIS
+    Completes a pending certificate request.
+
+    .DESCRIPTION
+    Completes a pending certificate request.  The pending request should be
+    stored in either the user's or the machine's certificate store.
+
+    .INPUTS
+    None
+        You cannot pipe objects to the cmdlet.
+
+    .OUTPUTS
+    System.String
+        An indication of whether the cmdlet was successful is printed.
+
+    .EXAMPLE
+    C:\PS> Complete-CertificateRequest -CACertificateResponse .\response.cer -CertificateStore Machine
+    Certificate Request completed successfully.
+#>
+############################################################################
 function Complete-CertificateRequest {
     [CmdletBinding()]
     param (
@@ -641,6 +832,7 @@ function Complete-CertificateRequest {
             [Parameter(Mandatory=$false)]
             [ValidateSet("Machine", "User")]
             [string]
+            # The certificate store in which to look for the pending certificate request.
             $CertifcateStore
           )
 
