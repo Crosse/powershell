@@ -1,4 +1,5 @@
 @{
+
 # Script module or binary module file associated with this manifest
 ModuleToProcess = ''
 
@@ -6,7 +7,7 @@ ModuleToProcess = ''
 ModuleVersion = '1.0'
 
 # ID used to uniquely identify this module
-GUID = '696ffc46-85fa-4022-a538-db4ef4978927'
+GUID = '644e2ae3-6006-4c6b-9a8e-8735f7363f5d'
 
 # Author of this module
 Author = 'Seth Wright'
@@ -18,7 +19,7 @@ CompanyName = 'James Madison University'
 Copyright = 'Copyright © 2011 Seth Wright <wrightst@jmu.edu>'
 
 # Description of the functionality provided by this module
-Description = 'Generic functions'
+Description = 'Trivial functions that do not belong anywhere else.'
 
 # Minimum version of the Windows PowerShell engine required by this module
 PowerShellVersion = '2.0'
@@ -42,7 +43,7 @@ ProcessorArchitecture = ''
 RequiredModules = @()
 
 # Assemblies that must be loaded prior to importing this module
-RequiredAssemblies = @('System.Speech')
+RequiredAssemblies = @()
 
 # Script files (.psm1) that are run in the caller's environment prior to importing this module
 ScriptsToProcess = @()
@@ -54,14 +55,8 @@ TypesToProcess = @()
 FormatsToProcess = @()
 
 # Modules to import as nested modules of the module specified in ModuleToProcess
-NestedModules = 'DnsFunctions.psm1',
-                'GeneralFunctions.psm1',
-                'Publish-Item.psm1',
-                'TextManipulation.psm1',
-                'Base64Functions.psm1',
-                'Get-DirectoryStatistics.psm1',
-                'EventLogSummary.psm1',
-                'Speech.psm1'
+NestedModules = 'GeoLocation.psm1',
+                'Weather.psm1'
 
 # Functions to export from this module
 FunctionsToExport = '*'
@@ -76,26 +71,13 @@ VariablesToExport = '*'
 AliasesToExport = '*'
 
 # List of all modules packaged with this module
-ModuleList =    'DnsFunctions.psm1',
-                'GeneralFunctions.psm1',
-                'Publish-Item.psm1',
-                'TextManipulation.psm1',
-                'Base64Functions.psm1',
-                'Get-DirectoryStatistics.psm1',
-                'EventLogSummary.psm1',
-                'Speech.psm1'
+ModuleList =    'GeoLocation.psm1',
+                'Weather.psm1'
 
 # List of all files packaged with this module
-FileList =      'DnsFunctions.psm1',
-                'GeneralFunctions.psm1',
-                'Publish-Item.psm1',
-                'TextManipulation.psm1',
-                'Base64Functions.psm1',
-                'Get-DirectoryStatistics.psm1',
-                'EventLogSummary.psm1',
-                'Speech.psm1'
+FileList =      'GeoLocation.psm1',
+                'Weather.psm1'
 
 # Private data to pass to the module specified in ModuleToProcess
 PrivateData = ''
-
 }

@@ -1,6 +1,6 @@
 ################################################################################
 #
-# Copyright (c) 2009,2010 Seth Wright <wrightst@jmu.edu>
+# Copyright (c) 2009 - 2011 Seth Wright <wrightst@jmu.edu>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -17,6 +17,46 @@
 ################################################################################
 
 
+################################################################################
+<#
+    .SYNOPSIS
+    Retrieves attributes from Active Directory for the specified object.
+
+    .DESCRIPTION
+    Retrieves attributes from Active Directory for the specified object. The
+    object specified by the "Identity" parameter is searched for first as a user,
+    then as a computer object.
+
+    .INPUTS
+    System.String.  The Identity (or Identities) for which to retrieve attributes
+    can be passed via the command line.
+
+    .OUTPUTS
+    A PSObject with the requested attributes for the Identity.
+
+    .EXAMPLE
+    PS C:\> Get-ADAttribute -Identity wrightst -Attributes mail | Format-List
+
+    Name              : wrightst
+    DistinguishedName : CN=wrightst,OU=Users,...
+    mail              : wrightst@jmu.edu
+
+    The above example illustrates how to retrieve attributes for a user.
+
+    .EXAMPLE
+    PS C:\> Get-ADAttribute -Identity tex-vm -Attributes lastLogonTimestamp,pwdLastSet | Format-List
+
+    Name               : tex-vm
+    DistinguishedName  : CN=TEX-VM,OU=Desktops,...
+    lastLogonTimestamp : 10/14/2011 12:51:44 PM
+    pwdLastSet         : 9/14/2011 9:46:12 PM
+
+    The above example illustrates how to retrieve attributes for a computer.
+    Notice is is the same as for a user.  Also, notice that attributes that should
+    be datetimes are returned as such instead of in the Int64 or LargeInteger
+    format.
+#>
+################################################################################
 function Get-ADAttribute {
     [CmdletBinding(SupportsShouldProcess=$true,
             ConfirmImpact="High")]
@@ -25,12 +65,12 @@ function Get-ADAttribute {
                 ValueFromPipeline=$true)]
             [ValidateNotNullOrEmpty()]
             [string]
-            # Specifies the object should be modified.
+            # Specifies the object for which to search.
             $Identity,
 
             [Parameter(Mandatory=$true)]
             [string[]]
-            # Specifies which attribute to modify.
+            # Specifies which attributes to return.
             $Attributes
         )
 
@@ -75,7 +115,13 @@ function Get-ADAttribute {
         foreach ($attribute in $Attributes) {
             $prop = $dirEntry.InvokeGet($attribute)
             if ($prop -ne $null -and $int64Attributes.Contains($attribute)) {
+                Write-Verbose "Converting attribute $attribute to Int64"
                 $prop = $dirEntry.ConvertLargeIntegerToInt64($prop)
+                if ($attribute -match 'date' -or
+                        $attribute -match 'time' -or
+                        $attribute -match 'lastSet') {
+                    $prop = [DateTime]::FromFileTime($prop)
+                }
             } elseif ($prop -ne $null -and $attribute -match 'Guid') {
                 $prop = [Guid]$prop
             }
