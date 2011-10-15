@@ -125,9 +125,31 @@ function Get-EventLogSummary {
 }
 
 
+################################################################################
+<#
+    .SYNOPSIS
+    Downloads a file from a remote URL.
+
+    .DESCRIPTION
+    Downloads a file from a remote URL.  The file can either be saved or
+    converted to a System.String.
+
+    .INPUTS
+    System.String.  The URL to retrieve can be passed via the pipeline.
+
+    .OUTPUTS
+    If -AsString is True, then return the contents of the remote file as
+    a System.String.  Otherwise, nothing is returned.
+
+    .EXAMPLE
+    C:\PS> Get-RemoteFile -Url http://checkip.dyndns.org -AsString
+    <html><head><title>Current IP Check</title></head><body>Current IP Address: 203.0.113.81</body></html>
+#>
+################################################################################
 function Get-RemoteFile {
     param (
-            [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
+            [Parameter(Mandatory=$true,
+                ValueFromPipeline=$true)]
             [string]
             # The URL to retrieve.
             $Url,
@@ -135,7 +157,7 @@ function Get-RemoteFile {
             [switch]
             # Whether to return save the file to disk or return
             # the data as a System.String. The default is False.
-            $AsString=$false
+            $AsString
           )
 
     # Attempt to download the file if a URL was specified.
@@ -149,26 +171,6 @@ function Get-RemoteFile {
                 $wc.DownloadFile($Url, $FileName)
         }
     $wc.Dispose()
-
-    <#
-        .SYNOPSIS
-        Downloads a file from a remote URL.
-
-        .DESCRIPTION
-        Downloads a file from a remote URL.  The file can either be saved or
-        converted to a System.String.
-
-        .INPUTS
-        The URL to retrieve can be passed via the pipeline.
-
-        .OUTPUTS
-        If -AsString is True, then return the contents of the remote file as
-        a System.String.  Otherwise, nothing is returned.
-
-        .EXAMPLE
-        C:\PS> Get-RemoteFile -Url http://checkip.dyndns.org -AsString
-        <html><head><title>Current IP Check</title></head><body>Current IP Address: 134.126.39.81</body></html>
-    #>
 }
 
 
