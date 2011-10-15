@@ -41,6 +41,8 @@
     DistinguishedName : CN=wrightst,OU=Users,...
     mail              : wrightst@jmu.edu
 
+    The above example illustrates how to retrieve attributes for a user.
+
     .EXAMPLE
     PS C:\> Get-ADAttribute -Identity tex-vm -Attributes lastLogonTimestamp,pwdLastSet | Format-List
 
@@ -48,6 +50,11 @@
     DistinguishedName  : CN=TEX-VM,OU=Desktops,...
     lastLogonTimestamp : 10/14/2011 12:51:44 PM
     pwdLastSet         : 9/14/2011 9:46:12 PM
+
+    The above example illustrates how to retrieve attributes for a computer.
+    Notice is is the same as for a user.  Also, notice that attributes that should
+    be datetimes are returned as such instead of in the Int64 or LargeInteger
+    format.
 #>
 ################################################################################
 function Get-ADAttribute {
