@@ -42,9 +42,13 @@ param (
         $SmtpServer
       )
 
-# TODO:  Verify that the module loads properly, and handle when it doesn't.
-Import-Module .\UserProvisioning.psm1 -Force
-$files = Get-ChildItem (Join-Path $FilePath "*.csv")
+$module = Import-Module -Force -PassThru .\UserProvisioning.psm1
+if ($module -eq $null) {
+    $Subject = "Mailbox Provisioning:  Could not load UserProvisioning Module!"
+    $output = "Could not import module UserProvisioning.psm1."
+    Send-MailMessage -From $From -To $To -Subject $Subject -Body $output -SmtpServer $SmtpServer
+    return
+}
 
 if ($files -eq $null) {
     $Subject = "Mailbox Provisioning:  Nothing to do!"
