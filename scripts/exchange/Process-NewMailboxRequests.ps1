@@ -85,6 +85,8 @@ if ($files -eq $null) {
             $result = Add-ProvisionedMailbox `
                         -Identity $user.User `
                         -MailboxLocation Local `
+                        -EnableForLync `
+                        -LyncRegistrarPool lyncpool.jmu.edu `
                         -MailContactOrganizationalUnit 'ad.jmu.edu/ExchangeObjects/MailContacts' `
                         -SendEmailNotification:$false `
                         -Confirm:$false
@@ -96,8 +98,12 @@ if ($files -eq $null) {
             } else {
                 $user.Reason = $null
                 $output += "SUCCESS: [ {0,-8} ] - {1}" -f $user.User, $result.Error
-                if ($result.MailContactCreated -eq $true) {
-                    $output += " (MailContact created to preserve previous MailUser info)"
+                if ($result.EnabledForLync -and $result.MailContactCreated) {
+                    $output += " (Lync Enabled / MailContact Created)"
+                } elseif ($result.EnabledForLync) {
+                    $output += " (Lync Enabled)"
+                } elseif ($result.MailContactCreated) {
+                    $output += " (MailContact Created)"
                 }
                 $output += "`n"
             }
