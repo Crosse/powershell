@@ -35,7 +35,7 @@ param (
         [string[]]
         $To,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$false)]
         [ValidateNotNull()]
         # The SMTP server to use.
         [string]
@@ -131,4 +131,6 @@ $sortedOutput = [System.String]::Join("`n", $output)
 Write-Host $Subject
 Write-Host $sortedOutput
 
-Send-MailMessage -From $From -To $To -Subject $Subject -Body $sortedOutput -SmtpServer $SmtpServer
+if ($SendEmail -eq $true) {
+    Send-MailMessage -From $From -To $To -Subject $Subject -Body $sortedOutput -SmtpServer $SmtpServer
+}
