@@ -50,6 +50,14 @@ if ($module -eq $null) {
     return
 }
 
+$module = Import-Module -Force -PassThru "C:\Program Files\Common Files\Microsoft Lync Server 2010\Modules\Lync\Lync.psd1"
+if ($module -eq $null) {
+    $Subject = "Mailbox Provisioning:  Could not load Lync Module!"
+    $output = "Could not import module Lync.psd1."
+    Send-MailMessage -From $From -To $To -Subject $Subject -Body $output -SmtpServer $SmtpServer
+    return
+}
+
 if ($files -eq $null) {
     $Subject = "Mailbox Provisioning:  Nothing to do!"
     $output = "No files to process."
