@@ -109,10 +109,13 @@ if ($files -eq $null) {
             }
         }
 
-        $users | ? { $_.Reason -ne $null } | Sort User -Unique |
-            Export-Csv -NoTypeInformation `
-                -Encoding ASCII `
-                -Path (Join-Path $FilePath "errors_$(Get-Date -Format yyyy-MM-dd_HH-mm-ss).csv")
+        $erroredOut = $users | ? { $_.Reason -ne $null } | Sort User -Unique
+        if ($erroredOut -ne $null) {
+            $erroredOut |
+                Export-Csv -NoTypeInformation `
+                    -Encoding ASCII `
+                    -Path (Join-Path $FilePath "errors_$(Get-Date -Format yyyy-MM-dd_HH-mm-ss).csv")
+        }
 
         if ($errorCount -gt 0) {
             $Subject = "Mailbox Provisioning: $errorCount errors detected"
