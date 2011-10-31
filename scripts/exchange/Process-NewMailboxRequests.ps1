@@ -58,6 +58,7 @@ if ($module -eq $null) {
     return
 }
 
+$files = Get-ChildItem (Join-Path $FilePath "*.csv")
 if ($files -eq $null) {
     $Subject = "Mailbox Provisioning:  Nothing to do!"
     $output = "No files to process."
@@ -123,5 +124,5 @@ $sortedOutput = [System.String]::Join("`n", $output)
 
 Write-Host $Subject
 Write-Host $sortedOutput
-Send-MailMessage -From $From -To $To -Subject $Subject -Body $sortedOutput -SmtpServer $SmtpServer
 
+Send-MailMessage -From $From -To $To -Subject $Subject -Body $sortedOutput -SmtpServer $SmtpServer
