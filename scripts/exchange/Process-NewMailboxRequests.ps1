@@ -36,7 +36,7 @@ param (
         $To,
 
         [Parameter(Mandatory=$false)]
-        [ValidateNotNull()]
+        [ValidateNotNullOrEmpty()]
         # The SMTP server to use.
         [string]
         $SmtpServer
@@ -46,15 +46,31 @@ $module = Import-Module -Force -PassThru .\UserProvisioning.psm1
 if ($module -eq $null) {
     $Subject = "Mailbox Provisioning:  Could not load UserProvisioning Module!"
     $output = "Could not import module UserProvisioning.psm1."
-    Send-MailMessage -From $From -To $To -Subject $Subject -Body $output -SmtpServer $SmtpServer
+    if ($SendEmail) {
+        Send-MailMessage -From $From -To $To -Subject $Subject -Body $output -SmtpServer $SmtpServer
+    }
     return
 }
 
-$module = Import-Module -Force -PassThru "C:\Program Files\Common Files\Microsoft Lync Server 2010\Modules\Lync\Lync.psd1"
-if ($module -eq $null) {
-    $Subject = "Mailbox Provisioning:  Could not load Lync Module!"
-    $output = "Could not import module Lync.psd1."
-    Send-MailMessage -From $From -To $To -Subject $Subject -Body $output -SmtpServer $SmtpServer
+if ($EnableForLync) {
+    $module = Import-Module -Force -PassThru Lync
+    if ($module -eq $null) {
+        $Subject = "Mailbox Provisioning:  Could not load Lync Module!"
+        $output = "Could not import module Lync.psd1."
+        if ($SendEmail) {
+            Send-MailMessage -From $From -To $To -Subject $Subject -Body $output -SmtpServer $SmtpServer
+        }
+        return
+    }
+}
+
+$dc = (Get-DomainController)[0].DnsHostName
+if ($dc -eq $null) {
+    $Subject = "No Domain Controllers found."
+    $Body = "Get-DomainController did not return any valid domain controllers."
+    if ($SendEmail) {
+        Send-MailMessage -From $From -To $To -Subject $Subject -Body $output -SmtpServer $SmtpServer
+    }
     return
 }
 
@@ -89,6 +105,7 @@ if ($files -eq $null) {
                         -LyncRegistrarPool lyncpool.jmu.edu `
                         -MailContactOrganizationalUnit 'ad.jmu.edu/ExchangeObjects/MailContacts' `
                         -SendEmailNotification:$false `
+                        -DomainController $dc `
                         -Confirm:$false
 
             if ($result.ProvisioningSuccessful -eq $false) {
