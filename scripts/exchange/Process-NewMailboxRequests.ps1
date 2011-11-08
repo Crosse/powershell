@@ -13,6 +13,10 @@ param (
 
         [Parameter(Mandatory=$false)]
         [switch]
+        $EnableForLync=$false,
+
+        [Parameter(Mandatory=$false)]
+        [switch]
         $SendEmail=$false,
 
         [Parameter(Mandatory=$false)]
@@ -101,8 +105,6 @@ if ($files -eq $null) {
             $result = Add-ProvisionedMailbox `
                         -Identity $user.User `
                         -MailboxLocation Local `
-                        -EnableForLync `
-                        -LyncRegistrarPool lyncpool.jmu.edu `
                         -MailContactOrganizationalUnit 'ad.jmu.edu/ExchangeObjects/MailContacts' `
                         -SendEmailNotification:$false `
                         -DomainController $dc `
@@ -113,11 +115,40 @@ if ($files -eq $null) {
                 $errorCount++
                 $output += "FAILURE: [ {0,-8} ] - {1}`n" -f $user.User, $result.Error
             } else {
+                # Enable the user for Lync ONLY if mailbox provisioning was successful.
+                if ($EnableForLync) {
+                    try {
+                        $retval = Get-CsUser -Identity $user `
+                                        -DomainController $dc `
+                                        -ErrorAction SilentlyContinue
+                        if ($retval -eq $null) {
+                            $retval = Enable-CsUser -Identity $user `
+                                        -RegistrarPool lyncpool.jmu.edu `
+                                        -SipAddressType SamAccountName `
+                                        -SipDomain jmu.edu `
+                                        -PassThru `
+                                        -DomainController $dc `
+                                        -ErrorAction Stop
+                            $lyncEnabled = $true
+                        }
+                    } catch {
+                        $result.Error = "Mailbox creation was successful, but an error occurred while running Enable-CsUser:  $_"
+                        $result.ProvisioningSuccessful = $false
+                        $lyncEnabled = $false
+                    }
+                }
+            }
+
+            if ($result.ProvisioningSuccessful -eq $false) {
+                $user.Reason = $result.Error
+                $errorCount++
+                $output += "FAILURE [ {0,-8} ] - {1}`n" -f $user.User, $result.Error
+
                 $user.Reason = $null
                 $output += "SUCCESS: [ {0,-8} ] - {1}" -f $user.User, $result.Error
-                if ($result.EnabledForLync -and $result.MailContactCreated) {
+                if ($lyncEnabled -and $result.MailContactCreated) {
                     $output += " (Lync Enabled / MailContact Created)"
-                } elseif ($result.EnabledForLync) {
+                } elseif ($lyncEnabled) {
                     $output += " (Lync Enabled)"
                 } elseif ($result.MailContactCreated) {
                     $output += " (MailContact Created)"
