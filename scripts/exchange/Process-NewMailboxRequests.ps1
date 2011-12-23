@@ -78,7 +78,7 @@ if ($dc -eq $null) {
     return
 }
 
-$files = Get-ChildItem (Join-Path $FilePath "*.csv")
+$files = Get-ChildItem (Join-Path $FilePath "*.csv") -Include ExchangeAdd*.csv, provisioning_errors*.csv
 if ($files -eq $null) {
     $Subject = "Mailbox Provisioning:  Nothing to do!"
     $output = "No files to process."
@@ -118,11 +118,11 @@ if ($files -eq $null) {
                 # Enable the user for Lync ONLY if mailbox provisioning was successful.
                 if ($EnableForLync) {
                     try {
-                        $retval = Get-CsUser -Identity $user `
+                        $retval = Get-CsUser -Identity $user.User `
                                         -DomainController $dc `
                                         -ErrorAction SilentlyContinue
                         if ($retval -eq $null) {
-                            $retval = Enable-CsUser -Identity $user `
+                            $retval = Enable-CsUser -Identity $user.User `
                                         -RegistrarPool lyncpool.jmu.edu `
                                         -SipAddressType SamAccountName `
                                         -SipDomain jmu.edu `
@@ -143,7 +143,7 @@ if ($files -eq $null) {
                 $user.Reason = $result.Error
                 $errorCount++
                 $output += "FAILURE [ {0,-8} ] - {1}`n" -f $user.User, $result.Error
-
+            } else {
                 $user.Reason = $null
                 $output += "SUCCESS: [ {0,-8} ] - {1}" -f $user.User, $result.Error
                 if ($lyncEnabled -and $result.MailContactCreated) {
@@ -162,7 +162,7 @@ if ($files -eq $null) {
             $erroredOut |
                 Export-Csv -NoTypeInformation `
                     -Encoding ASCII `
-                    -Path (Join-Path $FilePath "errors_$(Get-Date -Format yyyy-MM-dd_HH-mm-ss).csv")
+                    -Path (Join-Path $FilePath "provisioning_errors_$(Get-Date -Format yyyy-MM-dd_HH-mm-ss).csv")
         }
 
         if ($errorCount -gt 0) {
