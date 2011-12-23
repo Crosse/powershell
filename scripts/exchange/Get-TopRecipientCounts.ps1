@@ -1,14 +1,8 @@
 ################################################################################
 # 
-# $URL$
-# $Author$
-# $Date$
-# $Rev$
-# 
 # DESCRIPTION:  Gets the top senders, based on total number of recipients
-#
 # 
-# Copyright (c) 2009,2010 Seth Wright <wrightst@jmu.edu>
+# Copyright (c) 2009 - 2011 Seth Wright <wrightst@jmu.edu>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -24,23 +18,33 @@
 #
 ################################################################################
 
-param ( $StartDate=(Get-Date).AddDays(-1),
-        $ResultsToReturn=10)
+[CmdletBinding(SupportsShouldProcess=$true,
+        ConfirmImpact="High")]
+
+param (
+        [DateTime]
+        $Start=(Get-Date).AddMinutes(-10),
+
+        [int]
+        $ResultSize=10
+      )
+
+Write-Verbose "Start Date:  $Start"
+Write-Verbose "ResultSize:  $ResultSize"
 
 $hubs = Get-ExchangeServer | ? { $_.ServerRole -match "HubTransport" }
-$recipientCounts = New-Object System.Collections.Hashtable
+$recipientCounts = @{}
 
-$msgs = $hubs | Get-MessageTrackingLog -Start $StartDate -EventId RECEIVE `
+Write-Verbose "Hub Transports:  $([String]::Join(", ", $hubs))"
+$msgs = @($hubs | Get-MessageTrackingLog -Start $Start -EventId RECEIVE `
                     -ResultSize Unlimited | ? { 
-                        $_.Source -match 'STOREDRIVER' }
+                        $_.Source -match 'STOREDRIVER' })
+
+Write-Verbose "Found $($msgs.Count) messages that match"
 
 foreach ($msg in $msgs) { 
-    $sender = $msg.Sender
-        if ($recipientCounts.Contains($sender)) {
-            $recipientCounts[$sender] += $msg.RecipientCount
-        } else { 
-            $null = $recipientCounts.Add($sender, 1)
-        }
+    $recipientCounts[$msg.sender] += $msg.RecipientCount
+    #Write-Verbose "$($msg.sender): $($msg.RecipientCount)"
 }
 
-$recipientCounts.GetEnumerator() | Sort Value -Descending | Select -First $ResultsToReturn
+$recipientCounts.GetEnumerator() | Sort Value -Descending | Select -First $ResultSize
