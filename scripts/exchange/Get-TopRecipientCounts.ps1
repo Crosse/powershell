@@ -23,7 +23,7 @@
 
 param (
         [DateTime]
-        $Start=(Get-Date).AddMinutes(-10),
+        $Start=(Get-Date).AddDays(-1),
 
         [int]
         $ResultSize=10
