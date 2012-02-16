@@ -47,7 +47,7 @@ param (
 # Change these to suit your environment
 $SmtpServer = "mailgw.jmu.edu"
 $From       = "it-exmaint@jmu.edu"
-#$To         = @("wrightst@jmu.edu", "gumgs@jmu.edu", "liskeygn@jmu.edu", "stockntl@jmu.edu", "flynngn@jmu.edu", "najdziav@jmu.edu")
+#$To         = @("wrightst@jmu.edu", "gumgs@jmu.edu", "liskeygn@jmu.edu", "stockntl@jmu.edu", "najdziav@jmu.edu")
 $To         = "wrightst@jmu.edu"
 $Title      = "Exchange Statistics for $(Get-Date -Format d)"
 $MaxDatabaseSizeInBytes = 250*1GB
@@ -94,12 +94,15 @@ if ($IncludeDatabaseStatistics) {
         Add-Member -InputObject $dbInfo NoteProperty AvailableSpaceInMB $null
         Add-Member -InputObject $dbInfo NoteProperty CommitPercent $null
         Add-Member -InputObject $dbInfo NoteProperty BackupStatus $null
+        Add-Member -InputObject $dbInfo NoteProperty LastFullBackup $null
         Add-Member -InputObject $dbInfo NoteProperty MountedOnServer $db.MountedOnServer.Split(".")[0]
 
         if ($db.DatabaseSize -ne $null) {
             $dbInfo.EdbFileSizeInGB = [Math]::Round($db.DatabaseSize.ToBytes()/1GB, 0)
             $totalStorageBytes += $db.DatabaseSize.ToBytes()
         }
+
+        $dbInfo.LastFullBackup = $db.LastFullBackup
 
         if ($db.LastFullBackup -gt (Get-Date).AddDays(-1)) {
             $dbInfo.BackupStatus = "OK (<24h)"
@@ -163,6 +166,7 @@ if ($IncludeDatabaseStatistics) {
         Write-Verbose "Database Size: $($dbInfo.EdbFileSizeInGB)"
         Write-Verbose "Database Available Space: $($dbInfo.AvailableSpaceInMB)MB"
         Write-Verbose "Database Commit %: $($dbInfo.CommitPercent)"
+        Write-Verbose "Database Last Full Backup: $($dbInfo.LastFullBackup)"
         Write-Verbose "Database Backup Status: $($dbInfo.BackupStatus)"
         Write-Verbose "Database Mounted on:  $($dbInfo.MountedOnServer)"
         $null = $dbInfoArray.Add($dbInfo)
@@ -219,10 +223,10 @@ if ($IncludeMessageMetrics) {
                                 } | Measure-Object -Sum -Property TotalBytes
 
     $totalMessages = $messageStats.Count
-    $avgMessageSizeInKB = [Math]::Round(($messageStats.Sum / $totalMessages)/1KB, 0)
-    $avgMessagesPerMailbox = [Math]::Round(($totalMessages / $allMailboxes.Count), 0)
-    $iopsPerMailbox = [Math]::Round(($avgMessagesPerMailbox / 1000) * ($avgMessageSizeInKB/75), 2)
-    $totalIops = [Math]::Round($iopsPerMailbox * $allMailboxes.Count, 2)
+    $avgMessageSizeInKB = ($messageStats.Sum / $totalMessages)/1KB
+    $avgMessagesPerMailbox = $totalMessages / $allMailboxes.Count
+    $iopsPerMailbox = ($avgMessagesPerMailbox / 1000) * ($avgMessageSizeInKB/75)
+    $totalIops = $iopsPerMailbox * $allMailboxes.Count
 
     Write-Verbose "Total messages, last 24h:  $totalMessages"
     Write-Verbose "Average message size:  $avgMessageSizeInKB KB"
@@ -350,19 +354,19 @@ if ($IncludeMessageMetrics) {
         </tr>
         <tr class="alt">
             <td>Average Message Size</td>
-            <td>$avgMessageSizeInKB KB</td>
+            <td>$([Math]::Round($avgMessageSizeInKB, 0)) KB</td>
         </tr>
         <tr>
             <td>Average Messages Sent/Rec'd per Mailbox</td>
-            <td>$avgMessagesPerMailbox</td>
+            <td>$([Math]::Round($avgMessagesPerMailbox, 0))</td>
         </tr>
         <tr class="alt">
             <td>Predicted Total IOPS per Mailbox</td>
-            <td>$iopsPerMailbox</td>
+            <td>$([Math]::Round($iopsPerMailbox, 2))</td>
         </tr>
         <tr>
             <td>Predicted Total IOPS</td>
-            <td>$totalIops</td>
+            <td>$([Math]::Round($totalIops, 2))</td>
         </tr>
     </table>
 
@@ -456,6 +460,7 @@ if ($IncludeDatabaseStatistics) {
                 <th>EDB File Size</th>
                 <th>Available Space</th>
                 <th>Commit Percentage</th>
+                <th>Last Full Backup</th>
                 <th>Backup Status</th>
                 <th>Mounted On Server</th>
             </tr>
@@ -479,7 +484,7 @@ if ($IncludeDatabaseStatistics) {
             $Body += '<td>{0:N0}%</td>' -f $db.CommitPercent
         }
 
-        $Body += "`n"
+        $Body += "`n<td>$($db.LastFullBackup.ToString('M/d/yy HH:mm'))</td>`n"
 
         if ($db.BackupStatus -match 'NOT OK') {
             $Body += '<td class="warning">{0}</td>' -f $($db.BackupStatus)
