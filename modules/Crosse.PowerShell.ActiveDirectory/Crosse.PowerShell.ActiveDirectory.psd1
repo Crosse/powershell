@@ -56,7 +56,7 @@ FormatsToProcess = @()
 
 # Modules to import as nested modules of the module specified in ModuleToProcess
 NestedModules = 'New-DynamicObject.psm1',
-                'Get-DomainController.psm1',
+                #'Get-DomainController.psm1',
                 'Get-ADAttribute.psm1',
                 'Set-ADAttribute.psm1'
 
@@ -74,13 +74,13 @@ AliasesToExport = '*'
 
 # List of all modules packaged with this module
 ModuleList =    'New-DynamicObject.psm1',
-                'Get-DomainController.psm1',
+                #'Get-DomainController.psm1',
                 'Get-ADAttribute.psm1',
                 'Set-ADAttribute.psm1'
 
 # List of all files packaged with this module
 FileList =      'New-DynamicObject.psm1',
-                'Get-DomainController.psm1',
+                #'Get-DomainController.psm1',
                 'Get-ADAttribute.psm1',
                 'Set-ADAttribute.psm1'
 
