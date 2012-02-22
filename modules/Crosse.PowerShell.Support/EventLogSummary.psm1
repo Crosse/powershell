@@ -19,14 +19,37 @@
 ################################################################################
 <#
     .SYNOPSIS
+    Gets events from event logs on local and remote computers and summarizes the results.
 
     .DESCRIPTION
+    The Get-EventLogSummary cmdlet gets events from event logs such as the System
+    and Application logs and summarizes them by deduplicating events and only
+    returning the count of how many times each event occurred, along with other
+    summary data.
 
     .INPUTS
+    System.String.  You can pipe a ComputerName to Get-EventLogSummary.
 
     .OUTPUTS
+    An array of PSObjects containing summary data for each event.
 
     .EXAMPLE
+    PS C:\> Get-EventLogSummary -LogName Application -Start (Get-Date).AddDays(-1)
+
+
+    Dedupid          : SceCli_1704
+    Id               : 1704
+    Count            : 1
+    FirstTime        : 2/22/2012 7:01:20 AM
+    Level            : 4
+    TaskDisplayName  :
+    ProviderName     : SceCli
+    LogName          : Application
+    MachineName      : localdesktop.contoso.com
+    LevelDisplayName : Information
+    SampleMessage    : Security policy in the Group policy objects has been applied successfully.
+    LastTime         : 2/22/2012 7:01:20 AM
+
 #>
 ################################################################################
 function Get-EventLogSummary {
@@ -79,12 +102,15 @@ function Get-EventLogSummary {
     }
     PROCESS {
         if ([String]::IsNullOrEmpty($ComputerName) -eq $false) {
-            $logs = Get-WinEvent -ComputerName $ComputerName -FilterHashTable $eventParams
+            Write-Verbose "Getting specified events for $ComputerName"
+            $logs = Get-WinEvent -ComputerName $ComputerName -FilterHashTable $eventParams -Verbose:$false
         } else {
-            $logs = Get-WinEvent -FilterHashTable $eventParams
+            Write-Verbose "Getting specified events for local machine"
+            $logs = Get-WinEvent -FilterHashTable $eventParams -Verbose:$false
         }
 
         if ($logs -eq $null) {
+            Write-Verbose "No events returned."
             return
         }
 
