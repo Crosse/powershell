@@ -48,14 +48,14 @@ function Get-EventLogSummary {
             # Gets only the events that occur after the specified date and
             # time. Enter a DateTime object, such as the one returned by the
             # Get-Date cmdlet.
-            $StartTime,
+            $Start,
 
             [Parameter(Mandatory=$false)]
             [DateTime]
             # Gets only the events that occur before the specified date and
             # time. Enter a DateTime object, such as the one returned by the
             # Get-Date cmdlet.
-            $EndTime,
+            $End,
 
             [Parameter(Mandatory=$false)]
             [Int32[]]
@@ -66,11 +66,11 @@ function Get-EventLogSummary {
 
     BEGIN {
         $eventParams = @{ LogName=$LogName }
-        if ($StartTime -ne $null) {
-            $eventParams.Add('StartTime', $StartTime)
+        if ($Start -ne $null) {
+            $eventParams.Add('StartTime', $Start)
         }
-        if ($EndTime -ne $Null) {
-            $eventParams.Add('EndTime', $EndTime)
+        if ($End -ne $Null) {
+            $eventParams.Add('EndTime', $End)
         }
 
         if ($Level -ne $null) {
