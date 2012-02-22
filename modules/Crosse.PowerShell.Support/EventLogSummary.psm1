@@ -114,13 +114,13 @@ function Get-EventLogSummary {
             return
         }
 
-        $retval = New-Object System.Collections.HashTable
+        $retval = @{}
 
         foreach ($event in $logs) {
-            $dedupid = [String]::Format("{0}_{1}", $event.ProviderName , $event.Id)
+            $dedupid = [String]::Format("{0}_{1}", $event.ProviderName.Replace(" ", "_") , $event.Id)
 
             if ($retval.Contains($dedupid)) {
-                $retval[$dedupid].Count++
+                $retval[$dedupid].Count += 1
                 if ($retval[$dedupid].FirstTime -gt $event.TimeCreated) {
                     $retval[$dedupid].FirstTime = $event.TimeCreated
                 }
@@ -128,15 +128,16 @@ function Get-EventLogSummary {
                     $retval[$dedupid].LastTime = $event.TimeCreated
                 }
             } else {
-                $defaultProperties = @('Count','ProviderName','Id','LevelDisplayName','SampleMessage')
-                $defaultDisplayPropertySet =
-                    New-Object System.Management.Automation.PSPropertySet(
-                            'DefaultDisplayPropertySet',
-                            [string[]]$defaultProperties)
-
-                $PSStandardMembers =
-                    [System.Management.Automation.PSMemberInfo[]]@($defaultDisplayPropertySet)
-
+                # This stuff doesn't work in PowerShell 2.0.
+#                $defaultProperties = @('Count','ProviderName','Id','LevelDisplayName','SampleMessage')
+#                $defaultDisplayPropertySet =
+#                    New-Object System.Management.Automation.PSPropertySet(
+#                            'DefaultDisplayPropertySet',
+#                            [string[]]$defaultProperties)
+#
+#                $PSStandardMembers =
+#                    [System.Management.Automation.PSMemberInfo[]]@($defaultDisplayPropertySet)
+#
                 $obj = New-Object PSObject -Property @{
                     Count               = 1
                     ProviderName        = $event.ProviderName
@@ -149,16 +150,20 @@ function Get-EventLogSummary {
                     FirstTime           = $event.TimeCreated
                     LastTime            = $event.TimeCreated
                     SampleMessage       = $event.Message
+                    Dedupid             = $dedupid
                 }
 
-                Add-Member -InputObject $obj -MemberType MemberSet `
-                                             -Name PSStandardMembers `
-                                             -Value $PSStandardMembers
-
+#                Add-Member -InputObject $obj -MemberType MemberSet `
+#                                             -Name PSStandardMembers `
+#                                             -Value $PSStandardMembers
+                $retval[$dedupid] = $obj
             }
-            $retval[$dedupid] = $obj
+        }
+        return ,@($retval.Values)
+    }
+}
+
         }
 
-        $retval.GetEnumerator() | % { $_.Value }
     }
 }
