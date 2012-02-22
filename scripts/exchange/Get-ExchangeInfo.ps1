@@ -245,88 +245,36 @@ if ($IncludeMessageMetrics) {
     Write-Verbose "Total Predicted IOPS:  $totalIops"
 }
 
+$bodyStyle          = "font-family:sans-serif;color:black;background-color:white;"
+$tableBaseStyle     = "border:1px solid green;border-collapse:collapse;margin:25px;margin-botom:50px;float:left;"
+$tableStyle         = "$tableBaseStyle;width:350px;"
+$tableDatabaseStyle = "$tableBaseStyle;width:750px;"
+$captionStyle       = "border-style:none;border-collapse:collapse;text-align:center;font-weight:bold;font-size:1.2em;background-color:white;margin:4px;"
+$thStyle            = "border:1px solid green;border-collapse:collapse;text-align:center;margin:4px;color:#333333;"
+$trStyle            = "margin:4px;"
+$trAltStyle         = "margin:4px;background-color:#EAF2D3"
+$tdStyle            = "margin:4px;border:1px solid green;border-collapse:collapse;text-align:right;"
+$tdIdentityStyle    = "margin:4px;border:1px solid green;border-collapse:collapse;text-align:left;"
+$tdServerStyle      = "margin:4px;border:1px solid green;border-collapse:collapse;text-align:center;"
+$tdWarningStyle     = "margin:4px;border:1px solid green;border-collapse:collapse;background-color:yellow;"
+$tdErrorStyle       = "margin:4px;border:1px solid green;border-collapse:collapse;background-color:red;"
+$brClearStyle       = "clear:both;"
+
 $Body  = @"
 <!DOCTYPE html PUBLIC "-//W3C/DTD XHTML 1.0 Tranisional//EN"
     "http://www.w3.org/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>
     <head>
-        <style type="text/css">
-            body {
-                font-family:sans-serif;
-                color:black;
-                background-color:white;
-            }
-            table {
-                border:1px solid green;
-                border-collapse:collapse;
-                margin:25px;
-                margin-botom:50px;
-                width:350px;
-                float:left;
-            }
-            table.database {
-                width:750px;
-            }
-            caption {
-                border-style:none;
-                border-collapse:collapse;
-                text-align:center;
-                font-weight:bold;
-                font-size:1.2em;
-                background-color:white;
-                margin:4px;
-            }
-            th {
-                border:1px solid green;
-                border-collapse:collapse;
-                text-align:center;
-                margin:4px;
-                /* background-color:#A7C942; */
-                color:#333333;
-            }
-            tr {
-                margin:4px;
-            }
-            tr.alt {
-                background-color:#EAF2D3;
-                margin:4px;
-            }
-            td {
-                border:1px solid green;
-                border-collapse:collapse;
-                text-align:right;
-                margin:4px;
-            }
-            td.identity {
-                margin:4px;
-                text-align:left;
-            }
-            td.server {
-                margin:4px;
-                text-align:center;
-            }
-            td.warning {
-                margin:4px;
-                background-color:yellow;
-            }
-            td.error {
-                margin:4px;
-                background-color:red;
-            }
-            br.clear {
-                clear:both;
-            }
-        </style>
+        <title>$Title</title>
     </head>
-    <body>
-
+    <body style="$bodyStyle">
     <h1>Exchange Statistics for $(Get-Date -Format d)</h1>
 
-    <table>
-        <caption>User Statistics</caption>
-        <tr>
-            <th>Metric</th>
-            <th>Value</th>
+    <table style="$tableStyle">
+        <caption style="$captionStyle">User Statistics</caption>
+        <tr style="$trStyle">
+            <th style="$thStyle">Metric</th>
+            <th style="$thStyle">Value</th>
         </tr>
 
 "@
@@ -334,15 +282,15 @@ $Body  = @"
 $i = 0
 foreach ($key in $statsArray.Keys) {
     if (($i % 2) -eq 0) {
-        $alt = 'class="alt"'
+        $style = $trAltStyle
     } else {
-        $alt = ""
+        $style = $tr
     }
 
     $Body += @"
-        <tr $alt>
-            <td>$($key)</td>
-            <td>$($statsArray[$key])</td>
+        <tr style="$style">
+            <td style="$tdStyle">$($key)</td>
+            <td style="$tdStyle">$($statsArray[$key])</td>
         </tr>
 
 "@
@@ -356,27 +304,27 @@ $Body += @"
 
 if ($IncludeMessageMetrics) {
     $Body += @"
-    <table>
-        <caption>Message Statistics</caption>
-        <tr>
-            <th>Metric</th>
-            <th>Value</th>
+    <table style="$tableStyle">
+        <caption style="$captionStyle">Message Statistics</caption>
+        <tr style="$trStyle">
+            <th style="$thStyle">Metric</th>
+            <th style="$thStyle">Value</th>
         </tr>
-        <tr class="alt">
-            <td>Average Message Size</td>
-            <td>$([Math]::Round($avgMessageSizeInKB, 0)) KB</td>
+        <tr style="$trAltStyle">
+            <td style="$tdStyle">Average Message Size</td>
+            <td style="$tdStyle">$([Math]::Round($avgMessageSizeInKB, 0)) KB</td>
         </tr>
-        <tr>
-            <td>Average Messages Sent/Rec'd per Mailbox</td>
-            <td>$([Math]::Round($avgMessagesPerMailbox, 0))</td>
+        <tr style="$trStyle">
+            <td style="$tdStyle">Average Messages Sent/Rec'd per Mailbox</td>
+            <td style="$tdStyle">$([Math]::Round($avgMessagesPerMailbox, 0))</td>
         </tr>
-        <tr class="alt">
-            <td>Predicted Total IOPS per Mailbox</td>
-            <td>$([Math]::Round($iopsPerMailbox, 2))</td>
+        <tr style="$trAltStyle">
+            <td style="$tdStyle">Predicted Total IOPS per Mailbox</td>
+            <td style="$tdStyle">$([Math]::Round($iopsPerMailbox, 2))</td>
         </tr>
-        <tr>
-            <td>Predicted Total IOPS</td>
-            <td>$([Math]::Round($totalIops, 2))</td>
+        <tr style="$trStyle">
+            <td style="$tdStyle">Predicted Total IOPS</td>
+            <td style="$tdStyle">$([Math]::Round($totalIops, 2))</td>
         </tr>
     </table>
 
@@ -384,31 +332,31 @@ if ($IncludeMessageMetrics) {
 }
 
 $Body += @"
-    <br class="clear"/>
+    <br style="$brClearStyle" />
 
 "@
 
 if ($IncludeTopRecipients) {
     $Body += @"
-    <table>
-        <caption>Top Senders by Recipient Count</caption>
-        <tr>
-            <th>Sender</th>
-            <th>Recipients</th>
+    <table style="$tableStyle">
+        <caption style="$captionStyle">Top Senders by Recipient Count</caption>
+        <tr style="$trStyle">
+            <th style="$thStyle">Sender</th>
+            <th style="$thStyle">Recipients</th>
         </tr>
 
 "@
     for ($i = 0; $i -lt $recipientCounts.Count; $i++) {
         if (($i % 2) -eq 0) {
-            $alt = 'class="alt"'
+            $style = $trAltStyle
         } else {
-            $alt = ""
+            $style = $tr
         }
 
         $Body += @"
-        <tr $alt>
-            <td class="identity">$($recipientCounts[$i].Key)</td>
-            <td>$($recipientCounts[$i].Value)</td>
+        <tr style="$style">
+            <td style="$tdIdentityStyle">$($recipientCounts[$i].Key)</td>
+            <td style="$tdStyle">$($recipientCounts[$i].Value)</td>
         </tr>
 
 "@
@@ -421,11 +369,11 @@ if ($IncludeTopRecipients) {
 
 if ($IncludeTopStorageUsers) {
     $Body += @"
-    <table>
-        <caption>Top Users by Mailbox Size</caption>
-        <tr>
-            <th>User</th>
-            <th>Mailbox Size</th>
+    <table style="$tableStyle">
+        <caption style="$captionStyle">Top Users by Mailbox Size</caption>
+        <tr style="$trStyle">
+            <th style="$thStyle">User</th>
+            <th style="$thStyle">Mailbox Size</th>
         </tr>
 
 "@
@@ -433,15 +381,15 @@ if ($IncludeTopStorageUsers) {
     $i = 0
     foreach ($user in ($userInfoArray.GetEnumerator() | Sort Value -Descending | Select -First 10)) {
         if (($i % 2) -eq 0) {
-            $alt = 'class="alt"'
+            $style = $trAltStyle
         } else {
-            $alt = ""
+            $style = $tr
         }
 
         $Body += @"
-        <tr $alt>
-            <td class="identity">$($user.Name)</td>
-            <td>$([Math]::Round($user.Value/1MB, 0)) MB</td>
+        <tr style="$style">
+            <td style="$tdIdentityStyle">$($user.Name)</td>
+            <td style="$tdStyle">$([Math]::Round($user.Value/1MB, 0)) MB</td>
         </tr>
 
 "@
@@ -455,56 +403,58 @@ if ($IncludeTopStorageUsers) {
 
 }
 $Body += @"
-    <br class="clear"/>
+    <br style="$brClearStyle" />
 
 "@
 
 
 if ($IncludeDatabaseStatistics) {
     $Body += @"
-        <table class="database">
-            <caption>Database Information</caption>
-            <tr>
-                <th>Database</th>
-                <th>Mailbox Count</th>
-                <th>EDB File Size</th>
-                <th>Available Space</th>
-                <th>Commit Percentage</th>
-                <th>Last Full Backup</th>
-                <th>Backup Status</th>
-                <th>Mounted On Server</th>
+        <table style="$tableDatabaseStyle">
+            <caption style="$captionStyle">Database Information</caption>
+            <tr style="$trStyle">
+                <th style="$thStyle">Database</th>
+                <th style="$thStyle">Mailbox Count</th>
+                <th style="$thStyle">EDB File Size</th>
+                <th style="$thStyle">Available Space</th>
+                <th style="$thStyle">Commit Percentage</th>
+                <th style="$thStyle">Last Full Backup</th>
+                <th style="$thStyle">Backup Status</th>
+                <th style="$thStyle">Mounted On Server</th>
             </tr>
 
 "@
 
     foreach ($db in $dbInfoArray) {
         $Body += @"
-            <tr>
-                <td class="identity">$($db.Identity)</td>
-                <td>$($db.Mailboxes)</td>
-                <td>$($db.EdbFileSizeInGB) GB</td>
-                <td>$($db.AvailableSpaceInMB) MB</td>
+            <tr style="$trStyle">
+                <td style="$tdIdentityStyle">$($db.Identity)</td>
+                <td style="$tdStyle">$($db.Mailboxes)</td>
+                <td style="$tdStyle">$($db.EdbFileSizeInGB) GB</td>
+                <td style="$tdStyle">$($db.AvailableSpaceInMB) MB</td>
 
 "@
-        if ($db.CommitPercent -gt 100) {
-            $Body += '<td class="warning">{0:N0}%</td>' -f $db.CommitPercent
+        if ($db.CommitPercent -eq "unlimited") {
+            $Body += "<td style=`"$tdStyle`">{0}</td>" -f $db.CommitPercent
+        } elseif ($db.CommitPercent -gt 100) {
+            $Body += "<td style=`"$tdWarningStyle`">{0:N0}%</td>" -f $db.CommitPercent
         } elseif ($db.CommitPercent -gt 150) {
-            $Body += '<td class="error">{0:N0}%</td>' -f $db.CommitPercent
+            $Body += "<td style=`"$tdErrorStyle`">{0:N0}%</td>" -f $db.CommitPercent
         } else {
-            $Body += '<td>{0:N0}%</td>' -f $db.CommitPercent
+            $Body += "<td style=`"$tdStyle`">{0:N0}%</td>" -f $db.CommitPercent
         }
 
-        $Body += "`n<td>$($db.LastFullBackup.ToString('M/d/yy HH:mm'))</td>`n"
+        $Body += "`n<td style=`"$tdStyle`">$($db.LastFullBackup.ToString('M/d/yy HH:mm'))</td>`n"
 
-        if ($db.BackupStatus -match 'NOT OK') {
-            $Body += '<td class="warning">{0}</td>' -f $($db.BackupStatus)
+        if ($db.BackupStatus -match "NOT OK") {
+            $Body += "<td style=`"$tdWarningStyle`">{0}</td>" -f $($db.BackupStatus)
         } else {
-            $Body += '<td>{0}</td>' -f $($db.BackupStatus)
+            $Body += "<td style=`"$tdStyle`">{0}</td>" -f $($db.BackupStatus)
         }
 
         $Body += @"
 
-                <td class="server">$($db.MountedOnServer.ToLower())</td>
+                <td style="$tdServerStyle">$($db.MountedOnServer.ToLower())</td>
             </tr>
 
 "@
