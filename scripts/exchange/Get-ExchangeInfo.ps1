@@ -69,11 +69,11 @@ $userInfoArray = @{}
 $statsArray = @{}
 
 Write-Host "Discovering all mailboxes..."
-$allMailboxes = $(adfind -csv -q -f '(&(!(cn=SystemMailbox*))(homeMDB=*))' sAMAccountName homeMDB msExchRecipientTypeDetails userAccountControl mDBUseDefaults | ConvertFrom-Csv)
+$allMailboxes = $(adfind -csv -q -f '(&(!(cn=SystemMailbox*))(homeMDB=*)(objectClass=user))' sAMAccountName homeMDB msExchRecipientTypeDetails userAccountControl mDBUseDefaults | ConvertFrom-Csv)
 Write-Verbose "Found $($allMailboxes.Count) mailboxes"
 
 if ($IncludeDatabaseStatistics) {
-    $dbs = @(Get-MailboxDatabase -Status) | Sort whenCreated
+    $dbs = @(Get-MailboxDatabase -Status | Sort whenCreated)
     $dbCount = $dbs.Count
     $i = 1
     $dstart = Get-Date
@@ -114,19 +114,25 @@ if ($IncludeDatabaseStatistics) {
         $dbUsers = @($allMailboxes | ? { $_.homeMDB -match "CN=$($db.Name)," })
         $dbInfo.Mailboxes = $dbUsers.Count
 
-        [UInt64]$totalDbUserQuota = 0
-        $dbQuota = $db.ProhibitSendReceiveQuota.Value.ToBytes()
+        if ($db.ProhibitSendReceiveQuota -eq "unlimited") {
+            Write-Verbose "Database quota set to unlimited"
+        } else {
+            [UInt64]$totalDbUserQuota = 0
+            $dbQuota = $db.ProhibitSendReceiveQuota.Value.ToBytes()
+        }
 
         $usersCount = $dbUsers.Count
         $j = 0
         $startTime = Get-Date
         foreach ($user in $dbUsers) {
-            if ($user.mDBUseDefaults -eq $true) {
-                $totalDbUserQuota += $dbQuota
-            } else {
-                $userQuota = (Get-Mailbox $user.sAMAccountName).ProhibitSendReceiveQuota
-                if ($userQuota.IsUnlimited -eq $false) {
-                    $totalDbUserQuota += $userQuota.Value.ToBytes()
+            if ($db.ProhibitSendReceiveQuota -ne "unlimited") {
+                if ($user.mDBUseDefaults -eq $true) {
+                    $totalDbUserQuota += $dbQuota
+                } else {
+                    $userQuota = (Get-Mailbox $user.sAMAccountName).ProhibitSendReceiveQuota
+                    if ($userQuota.IsUnlimited -eq $false) {
+                        $totalDbUserQuota += $userQuota.Value.ToBytes()
+                    }
                 }
             }
 
@@ -160,7 +166,11 @@ if ($IncludeDatabaseStatistics) {
         }
         Write-Progress -Activity "Gathering User Statistics" -Status "Finished" -Id 2 -ParentId 1 -Completed
 
-        $dbInfo.CommitPercent = [Math]::Round(($totalDbUserQuota/$MaxDatabaseSizeInBytes*100), 0)
+        if ($db.ProhibitSendReceiveQuota -eq "unlimited") {
+            $dbInfo.CommitPercent = "unlimited"
+        } else {
+            $dbInfo.CommitPercent = [Math]::Round(($totalDbUserQuota/$MaxDatabaseSizeInBytes*100), 0)
+        }
 
         Write-Verbose "Database Name: $($dbInfo.Identity)"
         Write-Verbose "Database Size: $($dbInfo.EdbFileSizeInGB)"
@@ -200,7 +210,7 @@ $statsArray["Disabled Mailboxes"] = @($allMailboxes | ? { $_.msExchRecipientType
 Write-Verbose "Found $($statsArray['Disabled Mailboxes']) Disabled Mailboxes"
 
 Write-Host "Getting MailUser count..."
-$statsArray["Mail Users"] = @(adfind -csv -q -b 'OU=JMUma,dc=ad,dc=jmu,dc=edu' -f '(&(!(homeMDB=*))(targetAddress=*))' cn | ConvertFrom-Csv).Count
+$statsArray["Mail Users"] = (adfind -c -q -f '(&(!(homeMDB=*))(targetAddress=*)(objectClass=user))')[1].Split(" ")[0]
 Write-Verbose "Found $($statsArray['Mail Users']) MailUsers"
 
 Write-Host "Getting Distribution Group count..."
