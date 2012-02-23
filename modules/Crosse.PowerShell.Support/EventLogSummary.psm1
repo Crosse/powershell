@@ -101,22 +101,14 @@ function Get-EventLogSummary {
         }
     }
     PROCESS {
-        if ([String]::IsNullOrEmpty($ComputerName) -eq $false) {
-            Write-Verbose "Getting specified events for $ComputerName"
-            $logs = Get-WinEvent -ComputerName $ComputerName -FilterHashTable $eventParams -Verbose:$false
-        } else {
-            Write-Verbose "Getting specified events for local machine"
-            $logs = Get-WinEvent -FilterHashTable $eventParams -Verbose:$false
+        if ([String]::IsNullOrEmpty($ComputerName)) {
+            $ComputerName = "localhost"
         }
-
-        if ($logs -eq $null) {
-            Write-Verbose "No events returned."
-            return
-        }
+        Write-Verbose "Getting specified events for $ComputerName"
 
         $retval = @{}
 
-        foreach ($event in $logs) {
+        foreach ($event in (Get-WinEvent -ComputerName $ComputerName -FilterHashTable $eventParams -Verbose:$false)) {
             $dedupid = [String]::Format("{0}_{1}", $event.ProviderName.Replace(" ", "_") , $event.Id)
 
             if ($retval.Contains($dedupid)) {
