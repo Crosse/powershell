@@ -278,7 +278,13 @@ function Send-EventLogSummaryMailMessage {
             }
         }
 
+        $message = $null
+        $message = $Events[$i].SampleMessage
+        if ($message.Length -gt 1024) {
+            $message = $message.Substring(0, 1024)
+            $message += " [...]"
         }
+        $message = [System.Web.HttpUtility]::HtmlEncode($message)
 
         $Body += "
         <tr style=`"$style`">
@@ -295,7 +301,7 @@ function Send-EventLogSummaryMailMessage {
                 $Events[$i].Count,
                 $Events[$i].LevelDisplayName,
                 $Events[$i].LogName,
-                [System.Web.HttpUtility]::HtmlEncode($Events[$i].SampleMessage.Split("`n")[0])
+                $message
     }
 
     $Body += @"
@@ -306,5 +312,6 @@ function Send-EventLogSummaryMailMessage {
 
     $Body = [String]::Join("`n", $Body)
 
+    Write-Verbose "Sending Email"
     Send-MailMessage -Body $Body -BodyAsHtml -From $From -To $To -SmtpServer $SmtpServer -Subject $Subject -UseSsl
 }
