@@ -215,25 +215,38 @@ function Send-EventLogSummaryMailMessage {
 
     Add-Type -AssemblyName System.Web
 
-    $BodyStyle      = "font-family:sans-serif;color:black;background-color:white;"
-    $baseStyle      = "border:1px solid green;border-collapse:collapse;padding:6px;"
-    $tableStyle     = "$baseStyle;margin-left:auto;margin-right:auto;width:90%;"
-    $captionStyle   = "border-style:none;border-collapse:collapse;text-align:center;font-weight:bold;font-size:1.2em;background-color:white;padding-left:6px;padding-right:6px;"
-    $trStyle        = $baseStyle
-    $trAltStyle     = "$trStyle;background-color:#EAF2D3;"
-    $thStyle        = "$baseStyle;white-space:nowrap;text-align:center;color:#333333;"
-    $tdStyle        = "$baseStyle;white-space:nowrap;"
-    $tdEventIdStyle = $baseStyle
-    $tdMessageStyle = $baseStyle
+    # This is ugly.
+    $fontStyle      = "font-family:sans-serif;color:black;"
+    $borderStyle    = "border:1px solid green;border-collapse:collapse;"
+    $bodyStyle      = "$fontStyle;background-color:white;"
+    $tableStyle     = "$bodyStyle;$borderStyle;margin-left:auto;margin-right:auto;width:90%;"
+    $captionStyle   = "$fontStyle;border-style:none;border-collapse:collapse;text-align:center;font-weight:bold;font-size:1.2em;padding-left:6px;padding-right:6px;"
+    $baseTrStyle    = "$fontStyle;$borderStyle;padding:6px;"
+    $trStyle        = "$baseTrStyle;background-color:white;"
+    $trAltStyle     = "$baseTrStyle;background-color:#EAF2D3;"
+    $thStyle        = "$trStyle;$white-space:nowrap;text-align:center;"
+
+    $trCriticalStyle    = "$baseTrStyle;background:rgba(255, 0, 0, 0.4);"
+    $trCriticalAltStyle = "$baseTrStyle;background:rgba(255, 0, 0, 0.2);"
+
+    $trErrorStyle       = "$baseTrStyle;background:rgba(255, 71, 25, 0.4);"
+    $trErrorAltStyle    = "$baseTrStyle;background:rgba(255, 71, 25, 0.2);"
+
+    $trWarningStyle     = "$baseTrStyle;background:rgba(255, 255, 143, 0.4);"
+    $trWarningAltStyle  = "$baseTrStyle;background:rgba(255, 255, 143, 0.2);"
+
+    $trInfoStyle        = "$baseTrStyle;background:rgba(0, 0, 255, 0.4);"
+    $trInfoAltStyle     = "$baseTrStyle;background:rgba(0, 0, 255, 0.2);"
+
 
     $Body = @"
-<!DOCTYPE html PUBLIC "-//W3C/DTD XHTML 1.0 Tranisional//EN"
+<!DOCTYPE html PUBLIC "-//W3C/DTD XHTML 1.0 Transitional//EN"
 "http://www.w3.org/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>
 <head>
     <title>$Subject</title>
 </head>
-<body style="$BodyStyle">
+<body style="$bodyStyle">
     <table style="$tableStyle">
         <caption style="$captionStyle">Event Log Summary Report</caption>
         <tr style="$trStyle">
@@ -248,19 +261,33 @@ function Send-EventLogSummaryMailMessage {
 
     for ($i = 0; $i -lt $Events.Count; $i++) {
         if ($i % 2) {
-            $style = $trStyle
+            switch ($Events[$i].Level) {
+                1 { $style = $trCriticalStyle; break }
+                2 { $style = $trErrorStyle; break }
+                3 { $style = $trWarningStyle; break }
+                4 { $style = $trInfoStyle; break }
+                default { $style = $trStyle; break }
+            }
         } else {
-            $style = $trAltStyle
+            switch ($Events[$i].Level) {
+                1 { $style = $trCriticalAltStyle; break }
+                2 { $style = $trErrorAltStyle; break }
+                3 { $style = $trWarningAltStyle; break }
+                4 { $style = $trInfoAltStyle; break }
+                default { $style = $trAltStyle; break }
+            }
+        }
+
         }
 
         $Body += "
         <tr style=`"$style`">
-            <td style=`"$tdStyle`">{0}</td>
-            <td style=`"$tdEventIdStyle`">{1} {2}</td>
-            <td style=`"$tdStyle`">{3}</td>
-            <td style=`"$tdStyle`">{4}</td>
-            <td style=`"$tdStyle`">{5}</td>
-            <td style=`"$tdMessageStyle`">{6}</td>
+            <td style=`"$style;white-space:nowrap;`">{0}</td>
+            <td style=`"$style`">{1} {2}</td>
+            <td style=`"$style;white-space:nowrap;text-align:right;`">{3}</td>
+            <td style=`"$style;white-space:nowrap;`">{4}</td>
+            <td style=`"$style;white-space:nowrap;`">{5}</td>
+            <td style=`"$style`">{6}</td>
         </tr>
         " -f $Events[$i].MachineName.ToLower(),
                 $Events[$i].ProviderName,
