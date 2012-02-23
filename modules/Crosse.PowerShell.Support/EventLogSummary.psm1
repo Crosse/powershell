@@ -82,9 +82,12 @@ function Get-EventLogSummary {
 
             [Parameter(Mandatory=$false)]
             [Int32[]]
-            # Gets only the events that correspond to the specified log
-            # level(s).
-            $Level
+            # Gets only the events that correspond to the specified log level(s).
+            $Level,
+
+            [switch]
+            # Output the events as a single object down the pipeline instead of individually.
+            $AsSingleObject
         )
 
     BEGIN {
@@ -151,7 +154,12 @@ function Get-EventLogSummary {
                 $retval[$dedupid] = $obj
             }
         }
-        return ,@($retval.Values)
+
+        if ($AsSingleObject) {
+            return ,@($retval.Values)
+        } else {
+            return @($retval.Values)
+        }
     }
 }
 
