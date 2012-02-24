@@ -75,7 +75,7 @@ function Get-HexDump {
     #>
 
 }
-Set-Alias hd Get-HexDump
+Set-Alias hd Get-HexDump -Scope Global
 
 function Set-Encoding {
     [CmdletBinding()]
