@@ -141,11 +141,10 @@ function Out-PackageFile {
                     $destStream.Close()
                 }
                 if ($interrupted) {
-                    Write-Warning "Operation interrupted."
                     if ($package -ne $null) {
                         $package.Close()
                     }
-                    return
+                    throw "Operation interrupted."
                 }
             }
         }
