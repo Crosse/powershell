@@ -1,4 +1,34 @@
-function Out-PackageFile {
+################################################################################
+#
+# Copyright (c) 2012 Seth Wright <wrightst@jmu.edu>
+#
+# Permission to use, copy, modify, and distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#
+################################################################################
+<#
+    .SYNOPSIS
+
+    .DESCRIPTION
+
+    .INPUTS
+
+    .OUTPUTS
+
+    .EXAMPLE
+
+    .EXAMPLE
+#>
+function Out-Package {
     [CmdletBinding()]
     param (
             [Parameter(Mandatory=$true)]
@@ -16,7 +46,7 @@ function Out-PackageFile {
 
             [Parameter(Mandatory=$false)]
             [int]
-            $BufferSize = 1 * 1024 * 1024,
+            $BufferSize = 1MB,
 
             [Parameter(Mandatory=$false,
                 ValueFromPipeline=$true)]
@@ -29,12 +59,6 @@ function Out-PackageFile {
 
     BEGIN {
         Write-Verbose "Performing initialization actions"
-        $assembly = Get-ChildItem -Path 'C:\Program Files\Reference Assemblies\Microsoft\Framework' -Filter "WindowsBase.dll" -Recurse
-        if ($assembly -eq $null) {
-            throw New-Object System.IO.FileNotFoundException "Cannot find WindowsBase.dll"
-        }
-        Add-Type -Path $assembly.FullName
-
         try {
             if ($AddOrUpdate) {
                 $fileMode = "OpenOrCreate"
@@ -51,9 +75,7 @@ function Out-PackageFile {
             $package = [System.IO.Packaging.Package]::Open($packagePath, $fileMode)
             $basePath = $null
         } catch {
-            if ($package -ne $null) {
-                $package.Close()
-            }
+            Close-Package $package
             throw $_
         }
 
@@ -141,9 +163,7 @@ function Out-PackageFile {
                     $destStream.Close()
                 }
                 if ($interrupted) {
-                    if ($package -ne $null) {
-                        $package.Close()
-                    }
+                    Close-Package $package
                     throw "Operation interrupted."
                 }
             }
@@ -152,9 +172,7 @@ function Out-PackageFile {
 
     END {
         Write-Verbose "Cleaning up"
-        if ($package -ne $null) {
-            $package.Close()
-        }
+        Close-Package $package
         if ($ShowProgress) {
             Write-Progress "Creating package $FilePath" -Activity "Done." -Completed
         }
