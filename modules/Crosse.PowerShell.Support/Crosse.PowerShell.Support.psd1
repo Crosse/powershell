@@ -62,8 +62,7 @@ NestedModules = 'DnsFunctions.psm1',
                 'Get-DirectoryStatistics.psm1',
                 'EventLogSummary.psm1',
                 'Speech.psm1',
-                'Connect-RemoteServer.psm1',
-                'PackageHandling.psm1'
+                'Connect-RemoteServer.psm1'
 
 # Functions to export from this module
 FunctionsToExport = '*'
@@ -86,8 +85,7 @@ ModuleList =    'DnsFunctions.psm1',
                 'Get-DirectoryStatistics.psm1',
                 'EventLogSummary.psm1',
                 'Speech.psm1',
-                'Connect-RemoteServer.psm1',
-                'PackageHandling.psm1'
+                'Connect-RemoteServer.psm1'
 
 # List of all files packaged with this module
 FileList =      'DnsFunctions.psm1',
@@ -98,8 +96,7 @@ FileList =      'DnsFunctions.psm1',
                 'Get-DirectoryStatistics.psm1',
                 'EventLogSummary.psm1',
                 'Speech.psm1',
-                'Connect-RemoteServer.psm1',
-                'PackageHandling.psm1'
+                'Connect-RemoteServer.psm1'
 
 # Private data to pass to the module specified in ModuleToProcess
 PrivateData = ''
