@@ -37,7 +37,7 @@
 #Requires -Version 2.0
 #>
 
-function Get-PackageChildItem {
+function Get-PackageItem {
     [CmdletBinding()]
     param (
             [Parameter(Mandatory=$true,
@@ -63,7 +63,18 @@ function Get-PackageChildItem {
             if ([String]::IsNullOrEmpty($Name) -eq $false) {
                 $Package = Open-Package $Name
             }
-            $Package.Package.GetParts()
+
+            # This is so we don't get "Collection modified" errors when
+            # being piped to Remove-PackageItem.
+            $parts = @()
+            foreach ($part in $Package.Package.GetParts()) {
+                if ($part.Uri -like "/_rels*" -or
+                        $part.Uri -like "/package/services/metadata/core-properties*") {
+                    continue
+                }
+                $parts += $part
+            }
+            $parts
         } catch {
             if (![String]::IsNullOrEmpty($Name) -and $Package -ne $null) {
                 Close-Package $Package

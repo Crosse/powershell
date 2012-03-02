@@ -86,7 +86,7 @@ NestedModules = @(
     'Close-Package.psm1',
     'Get-PackageProperty.psm1',
     'Set-PackageProperty.psm1',
-    'Get-PackageChildItem.psm1',
+    'Get-PackageItem.psm1',
     'Out-Package.psm1'
                  )
 
@@ -112,7 +112,7 @@ ModuleList = @(
     'Close-Package.psm1',
     'Get-PackageProperty.psm1',
     'Set-PackageProperty.psm1',
-    'Get-PackageChildItem.psm1',
+    'Get-PackageItem.psm1',
     'Out-Package.psm1'
               )
 
@@ -123,7 +123,7 @@ FileList = @(
     'Close-Package.psm1',
     'Get-PackageProperty.psm1',
     'Set-PackageProperty.psm1',
-    'Get-PackageChildItem.psm1',
+    'Get-PackageItem.psm1',
     'Out-Package.psm1'
             )
 
