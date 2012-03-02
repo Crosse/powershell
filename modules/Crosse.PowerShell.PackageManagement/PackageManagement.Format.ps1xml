@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!-- *******************************************************************
+Copyright (c) 2012 Seth Wright <wrightst@jmu.edu>
+
+Permission to use, copy, modify, and distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+******************************************************************** -->
+
+<Configuration>
+    <ViewDefinitions>
+        <View>
+            <Name>Crosse.PowerShell.PackageManagement.PackageFile</Name>
+            <ViewSelectedBy>
+                <TypeName>Crosse.PowerShell.PackageManagement.PackageFile</TypeName>
+            </ViewSelectedBy>
+            <TableControl>
+                <TableHeaders>
+                    <TableColumnHeader>
+                        <Label>Name</Label>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                        <Label>Creator</Label>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                        <Label>ItemsInPackage</Label>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                        <Label>FullName</Label>
+                    </TableColumnHeader>
+                </TableHeaders>
+                <TableRowEntries>
+                    <TableRowEntry>
+                        <TableColumnItems>
+                            <TableColumnItem>
+                                <ScriptBlock>$_.Package.PackageProperties.Title</ScriptBlock>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <ScriptBlock>$_.Package.PackageProperties.Creator</ScriptBlock>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <ScriptBlock>@($_.Package.GetParts()).Count</ScriptBlock>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>FileName</PropertyName>
+                            </TableColumnItem>
+                        </TableColumnItems>
+                    </TableRowEntry>
+                </TableRowEntries>
+            </TableControl>
+        </View>
+        <View>
+            <Name>Crosse.PowerShell.PackageManagement.PackageFile</Name>
+            <ViewSelectedBy>
+                <TypeName>Crosse.PowerShell.PackageManagement.PackageFile</TypeName>
+            </ViewSelectedBy>
+            <ListControl>
+                <ListEntries>
+                    <ListEntry>
+                        <ListItems>
+                            <ListItem>
+                                <Label>Name</Label>
+                                <ScriptBlock>$_.Package.PackageProperties.Title</ScriptBlock>
+                            </ListItem>
+                            <ListItem>
+                                <Label>ItemsInPackage</Label>
+                                <ScriptBlock>@($_.Package.GetParts()).Count</ScriptBlock>
+                            </ListItem>
+                            <ListItem>
+                                <Label>Creator</Label>
+                                <ScriptBlock>$_.Package.PackageProperties.Creator</ScriptBlock>
+                            </ListItem>
+                            <ListItem>
+                                <Label>Description</Label>
+                                <ScriptBlock>$_.Package.PackageProperties.Description</ScriptBlock>
+                            </ListItem>
+                            <ListItem>
+                                <Label>Version</Label>
+                                <ScriptBlock>$_.Package.PackageProperties.Version</ScriptBlock>
+                            </ListItem>
+                            <ListItem>
+                                <Label>Revision</Label>
+                                <ScriptBlock>$_.Package.PackageProperties.Revision</ScriptBlock>
+                            </ListItem>
+                            <ListItem>
+                                <Label>Created</Label>
+                                <ScriptBlock>$_.Package.PackageProperties.Created</ScriptBlock>
+                            </ListItem>
+                            <ListItem>
+                                <Label>Modified</Label>
+                                <ScriptBlock>$_.Package.PackageProperties.Modified</ScriptBlock>
+                            </ListItem>
+                            <ListItem>
+                                <Label>LastModifiedBy</Label>
+                                <ScriptBlock>$_.Package.PackageProperties.LastModifiedBy</ScriptBlock>
+                            </ListItem>
+                            <ListItem>
+                                <PropertyName>FileName</PropertyName>
+                            </ListItem>
+                        </ListItems>
+                    </ListEntry>
+                </ListEntries>
+            </ListControl>
+        </View>
+    </ViewDefinitions>
+</Configuration>

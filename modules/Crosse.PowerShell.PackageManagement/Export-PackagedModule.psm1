@@ -15,19 +15,31 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 ################################################################################
+
 <#
     .SYNOPSIS
+    Closes a package file.
 
     .DESCRIPTION
+    Closes a package file.
 
     .INPUTS
+    A System.IO.Packaging.Package object.
 
     .OUTPUTS
+    None.
 
     .EXAMPLE
+    Close-Package $package
 
-    .EXAMPLE
+    This example illustrates closing a package that had previously been
+    opened and saved into the variable "$package".
+
+    .LINK
+
+#Requires -Version 2.0
 #>
+
 function Export-PackagedModule {
     [CmdletBinding()]
     param (

@@ -15,19 +15,31 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 ################################################################################
+
 <#
     .SYNOPSIS
+    Closes a package file.
 
     .DESCRIPTION
+    Closes a package file.
 
     .INPUTS
+    A System.IO.Packaging.Package object.
 
     .OUTPUTS
+    None.
 
     .EXAMPLE
+    Close-Package $package
 
-    .EXAMPLE
+    This example illustrates closing a package that had previously been
+    opened and saved into the variable "$package".
+
+    .LINK
+
+#Requires -Version 2.0
 #>
+
 function Out-Package {
     [CmdletBinding()]
     param (
@@ -129,7 +141,7 @@ function Out-Package {
 
                 $totalBytesRead = 0
                 while ( ($bytesRead = $srcStream.Read($buff, 0, $buffLength)) -gt 0) {
-                    if ($ShowProgress -and 
+                    if ($ShowProgress -and
                             $totalObjects -gt 1 -and
                             $len -gt $buffLength) {
                         Write-Progress -Activity "Compressing $relPath" `
@@ -159,7 +171,7 @@ function Out-Package {
                 if ($srcStream -ne $null) {
                     $srcStream.Close()
                 }
-                if ($destStream -ne $null) { 
+                if ($destStream -ne $null) {
                     $destStream.Close()
                 }
                 if ($interrupted) {

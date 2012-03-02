@@ -15,27 +15,59 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 ################################################################################
+
 <#
     .SYNOPSIS
+    Creates a new package file.
 
     .DESCRIPTION
+    Creates a new package file.
 
     .INPUTS
+    A System.IO.Packaging.Package object.
 
     .OUTPUTS
+    If -PassThru is specified, New-Package returns a Crosse.PowerShell.PackageManagement.PackageFile
+    object referencing the open package.  Otherwise, New-Package returns nothing.
 
     .EXAMPLE
+    New-Package test.zip
+
+    This example illustrates creating a new package.
 
     .EXAMPLE
+    $pack = New-Package test.zip -PassThru
+
+    This example illustrates creating a new package and using the -PassThru option
+    to keep a reference to the package.
+
+    .EXAMPLE
+    New-Package test.zip -Force
+
+    This example illustrates creating a new package by overwriting any previous
+    package file with the same name.  This will still fail is the existing package
+    is currently open.
+
+    .LINK
+
+#Requires -Version 2.0
 #>
+
 function New-Package {
     [CmdletBinding()]
     param (
             [Parameter(Mandatory=$true)]
             [string]
+            # The path to the package file to create.
             $Name,
 
             [switch]
+            # Specifies that a reference to the package should be returned.
+            $PassThru,
+
+            [switch]
+            # Specifies that if a package with the same name already exists,
+            # it should be overwritten.
             $Force
           )
     try {
@@ -49,10 +81,26 @@ function New-Package {
             throw "File $packagePath already exists."
         }
 
-        $package = [System.IO.Packaging.Package]::Open($packagePath, "Create")
+        $package = New-Object Crosse.PowerShell.PackageManagement.PackageFile($packagePath, "Create")
+        $creator = (Get-Item Env:\USERNAME).Value
+        $now = Get-Date
+        Set-PackageProperty -Package $package `
+                            -Creator $creator `
+                            -Title (Split-Path -Leaf $packagePath) `
+                            -Version "1.0" `
+                            -Created $now `
+                            -Modified $now `
+                            -LastModifiedBy $creator
     } catch {
         Close-Package $package
         throw $_
+    } finally {
+        if ($PassThru -eq $false) {
+            Close-Package $package
+        }
     }
-    return $package
+
+    if ($PassThru) {
+        return $package
+    }
 }

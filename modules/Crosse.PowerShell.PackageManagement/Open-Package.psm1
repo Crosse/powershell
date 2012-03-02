@@ -15,28 +15,38 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 ################################################################################
+
 <#
     .SYNOPSIS
+    Opens a package file.
 
     .DESCRIPTION
+    Opens a package file and returns a reference to it.
 
     .INPUTS
+    The path to the package file to open.
 
     .OUTPUTS
+    A Crosse.PowerShell.PackageManagement.PackageFile pointing to the package.
 
     .EXAMPLE
+    $pack = Open-Package .\test.zip
 
-    .EXAMPLE
+    This example illustrates opening a package file.
+
+    .LINK
+
+#Requires -Version 2.0
 #>
+
 function Open-Package {
     [CmdletBinding()]
     param (
             [Parameter(Mandatory=$true)]
+            [string]
+            # The path to the package file to open.
             $Name
           )
-
-    BEGIN {
-    }
 
     PROCESS {
         try {
@@ -47,14 +57,10 @@ function Open-Package {
                     (Join-Path (Get-Location -PSProvider "FileSystem") $Name) -ErrorAction Stop
             }
 
-            $package = [System.IO.Packaging.Package]::Open($packagePath, "Open")
+            New-Object Crosse.PowerShell.PackageManagement.PackageFile($packagePath, "Open")
         } catch {
             Close-Package $package
             throw $_
         }
-        return $package
-    }
-
-    END {
     }
 }

@@ -46,13 +46,13 @@ function Close-Package {
             [Parameter(Mandatory=$true,
                 ValueFromPipeline=$true)]
             [AllowNull()]
-            [System.IO.Packaging.Package]
+            [Crosse.PowerShell.PackageManagement.PackageFile]
             $Name
           )
 
     try {
-        if ($Name -ne $null) {
-            $Name.Close()
+        if ($Name -ne $null -and $Name.Package -ne $null) {
+            $Name.Package.Close()
             $Name = $null
         }
     } catch {
