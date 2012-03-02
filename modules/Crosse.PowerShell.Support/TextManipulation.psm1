@@ -64,14 +64,14 @@ function Get-HexDump {
 
         .EXAMPLE
         C:\PS> Get-HexDump $Env:WINDIR\explorer.exe -Width 15 -Bytes 150
-        4d 5a 90 00 03 00 00 00 04 00 00 00 ff ff 00 MZ..........ÿÿ.
+        4d 5a 90 00 03 00 00 00 04 00 00 00 ff ff 00 MZ..........??.
         00 b8 00 00 00 00 00 00 00 40 00 00 00 00 00 ...............
-        e8 00 00 00 0e 1f ba 0e 00 b4 09 cd 21 b8 01 è.....º....Í...
-        4c cd 21 54 68 69 73 20 70 72 6f 67 72 61 6d LÍ.This.program
+        e8 00 00 00 0e 1f ba 0e 00 b4 09 cd 21 b8 01 ?.....?....?...
+        4c cd 21 54 68 69 73 20 70 72 6f 67 72 61 6d L?.This.program
         20 63 61 6e 6e 6f 74 20 62 65 20 72 75 6e 20 .cannot.be.run.
         69 6e 20 44 4f 53 20 6d 6f 64 65 2e 0d 0d 0a in.DOS.mode....
-        24 00 00 00 00 00 00 00 e2 b1 38 08 a6 d0 56 ........â.8..ÐV
-        5b a6 d0 56 5b a6 d0 56 5b af a8 d2 5b ef d0 ..ÐV..ÐV...Ò.ïÐ
+        24 00 00 00 00 00 00 00 e2 b1 38 08 a6 d0 56 ........?.8..?V
+        5b a6 d0 56 5b a6 d0 56 5b af a8 d2 5b ef d0 ..?V..?V...?.??
     #>
 
 }
@@ -94,7 +94,7 @@ function Set-Encoding {
 
                 [Parameter(Mandatory=$false)]
                 [ValidateSet(   "Unicode", "UTF7", "UTF8", "UTF32",
-                                "ASCII", "BigEndianUnicode", "Default", 
+                                "ASCII", "BigEndianUnicode", "Default",
                                 "OEM")]
                 [string]
                 # Specifies the type of character encoding used in the file.
@@ -122,4 +122,24 @@ function Set-Encoding {
         digital signatures. Don't use on your MP3's or other non-text
         files :)
 #>
+}
+
+function Remove-ExtraWhitespace {
+    [CmdletBinding()]
+    param (
+            [Parameter(Position=0,Mandatory=$true,ValueFromPipeline=$true)]
+            [ValidateScript({
+                if ((Resolve-Path $_).Provider.Name -ne "FileSystem") {
+                    throw "Specified Path is not in the FileSystem: '$_'"
+                }
+                return $true})]
+            [Alias("Fullname","Path")]
+            [string]
+            # The path to the file to be stripped of hanging whitespace.
+            $FilePath
+          )
+
+    PROCESS {
+        (Get-Content $FilePath | % { $_.TrimEnd() }) | Out-File -FilePath $FilePath -Force -Encoding ASCII
+    }
 }
