@@ -35,7 +35,7 @@
 
     This example illustrates how to add a file to a package if the source already
     exists in the package.
-    
+
     .LINK
 
 #Requires -Version 2.0
