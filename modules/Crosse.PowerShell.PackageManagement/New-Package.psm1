@@ -61,6 +61,10 @@ function New-Package {
             # The path to the package file to create.
             $Name,
 
+            [Guid]
+            # A globally-unique identifier (GUID) used to identify the package.
+            $Identifier = [Guid]::NewGuid(),
+
             [switch]
             # Specifies that a reference to the package should be returned.
             $PassThru,
@@ -90,6 +94,7 @@ function New-Package {
                             -Version "1.0" `
                             -Created $now `
                             -Modified $now `
+                            -Identifier $Identifier `
                             -LastModifiedBy $creator
     } catch {
         Close-Package $package
