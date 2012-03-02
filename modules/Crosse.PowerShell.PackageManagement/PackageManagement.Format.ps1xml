@@ -25,32 +25,39 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
             <TableControl>
                 <TableHeaders>
                     <TableColumnHeader>
-                        <Label>Name</Label>
+                        <Label>Title</Label>
                     </TableColumnHeader>
                     <TableColumnHeader>
                         <Label>Creator</Label>
                     </TableColumnHeader>
                     <TableColumnHeader>
-                        <Label>ItemsInPackage</Label>
+                        <Label>Version</Label>
                     </TableColumnHeader>
                     <TableColumnHeader>
-                        <Label>FullName</Label>
+                        <Label>ItemsInPackage</Label>
+                        <Width>14</Width>
+                        <Alignment>Right</Alignment>
                     </TableColumnHeader>
                 </TableHeaders>
                 <TableRowEntries>
                     <TableRowEntry>
                         <TableColumnItems>
                             <TableColumnItem>
-                                <ScriptBlock>$_.Package.PackageProperties.Title</ScriptBlock>
+                                <PropertyName>Title</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
-                                <ScriptBlock>$_.Package.PackageProperties.Creator</ScriptBlock>
+                                <PropertyName>Creator</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
-                                <ScriptBlock>@($_.Package.GetParts()).Count</ScriptBlock>
+                                <PropertyName>Version</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
-                                <PropertyName>FileName</PropertyName>
+                                <ScriptBlock>
+                                    @($_.Package.GetParts() | ? {
+                                        $_.Uri -notlike "/_rels*" -and
+                                        $_.Uri -notlike "/package/services/metadata/core-properties*"
+                                    }).Count
+                                </ScriptBlock>
                             </TableColumnItem>
                         </TableColumnItems>
                     </TableRowEntry>
@@ -67,40 +74,49 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
                     <ListEntry>
                         <ListItems>
                             <ListItem>
-                                <Label>Name</Label>
-                                <ScriptBlock>$_.Package.PackageProperties.Title</ScriptBlock>
+                                <PropertyName>Creator</PropertyName>
+                            </ListItem>
+                            <ListItem>
+                                <PropertyName>Title</PropertyName>
+                            </ListItem>
+                            <ListItem>
+                                <PropertyName>Subject</PropertyName>
+                            </ListItem>
+                            <ListItem>
+                                <PropertyName>Category</PropertyName>
+                            </ListItem>
+                            <ListItem>
+                                <PropertyName>Keywords</PropertyName>
+                            </ListItem>
+                            <ListItem>
+                                <PropertyName>Description</PropertyName>
+                            </ListItem>
+                            <ListItem>
+                                <PropertyName>Version</PropertyName>
+                            </ListItem>
+                            <ListItem>
+                                <PropertyName>Revision</PropertyName>
+                            </ListItem>
+                            <ListItem>
+                                <PropertyName>Created</PropertyName>
+                            </ListItem>
+                            <ListItem>
+                                <PropertyName>Modified</PropertyName>
+                            </ListItem>
+                            <ListItem>
+                                <PropertyName>LastModifiedBy</PropertyName>
+                            </ListItem>
+                            <ListItem>
+                                <PropertyName>Identifier</PropertyName>
                             </ListItem>
                             <ListItem>
                                 <Label>ItemsInPackage</Label>
-                                <ScriptBlock>@($_.Package.GetParts()).Count</ScriptBlock>
-                            </ListItem>
-                            <ListItem>
-                                <Label>Creator</Label>
-                                <ScriptBlock>$_.Package.PackageProperties.Creator</ScriptBlock>
-                            </ListItem>
-                            <ListItem>
-                                <Label>Description</Label>
-                                <ScriptBlock>$_.Package.PackageProperties.Description</ScriptBlock>
-                            </ListItem>
-                            <ListItem>
-                                <Label>Version</Label>
-                                <ScriptBlock>$_.Package.PackageProperties.Version</ScriptBlock>
-                            </ListItem>
-                            <ListItem>
-                                <Label>Revision</Label>
-                                <ScriptBlock>$_.Package.PackageProperties.Revision</ScriptBlock>
-                            </ListItem>
-                            <ListItem>
-                                <Label>Created</Label>
-                                <ScriptBlock>$_.Package.PackageProperties.Created</ScriptBlock>
-                            </ListItem>
-                            <ListItem>
-                                <Label>Modified</Label>
-                                <ScriptBlock>$_.Package.PackageProperties.Modified</ScriptBlock>
-                            </ListItem>
-                            <ListItem>
-                                <Label>LastModifiedBy</Label>
-                                <ScriptBlock>$_.Package.PackageProperties.LastModifiedBy</ScriptBlock>
+                                <ScriptBlock>
+                                    @($_.Package.GetParts() | ? {
+                                        $_.Uri -notlike "/_rels*" -and
+                                        $_.Uri -notlike "/package/services/metadata/core-properties*"
+                                    }).Count
+                                </ScriptBlock>
                             </ListItem>
                             <ListItem>
                                 <PropertyName>FileName</PropertyName>
@@ -121,14 +137,24 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
                         <Label>Uri</Label>
                     </TableColumnHeader>
                     <TableColumnHeader>
+                        <Label>UncompressedLength</Label>
+                        <Alignment>Right</Alignment>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
                         <Label>CompressionOption</Label>
+                        <Alignment>Right</Alignment>
                     </TableColumnHeader>
                 </TableHeaders>
                 <TableRowEntries>
                     <TableRowEntry>
                         <TableColumnItems>
                             <TableColumnItem>
-                                <ScriptBlock>$_.Uri</ScriptBlock>
+                                <ScriptBlock>[Uri]::UnescapeDataString($_.Uri)</ScriptBlock>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <ScriptBlock>
+                                    $stream = $_.GetStream("Open", "Read"); $l = $stream.Length; $stream.Close(); return $l
+                                </ScriptBlock>
                             </TableColumnItem>
                             <TableColumnItem>
                                 <PropertyName>CompressionOption</PropertyName>
@@ -137,6 +163,33 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
                     </TableRowEntry>
                 </TableRowEntries>
             </TableControl>
+        </View>
+        <View>
+            <Name>System.IO.Packaging.ZipPackagePart</Name>
+            <ViewSelectedBy>
+                <TypeName>System.IO.Packaging.ZipPackagePart</TypeName>
+            </ViewSelectedBy>
+            <ListControl>
+                <ListEntries>
+                    <ListEntry>
+                        <ListItems>
+                            <ListItem>
+                                <Label>Uri</Label>
+                                <ScriptBlock>[Uri]::UnescapeDataString($_.Uri)</ScriptBlock>
+                            </ListItem>
+                            <ListItem>
+                                <Label>UncompressedLength</Label>
+                                <ScriptBlock>
+                                    $stream = $_.GetStream("Open", "Read"); $l = $stream.Length; $stream.Close(); return $l
+                                </ScriptBlock>
+                            </ListItem>
+                            <ListItem>
+                                <PropertyName>CompressionOption</PropertyName>
+                            </ListItem>
+                        </ListItems>
+                    </ListEntry>
+                </ListEntries>
+            </ListControl>
         </View>
     </ViewDefinitions>
 </Configuration>
