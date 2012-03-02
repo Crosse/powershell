@@ -110,5 +110,33 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
                 </ListEntries>
             </ListControl>
         </View>
+        <View>
+            <Name>System.IO.Packaging.ZipPackagePart</Name>
+            <ViewSelectedBy>
+                <TypeName>System.IO.Packaging.ZipPackagePart</TypeName>
+            </ViewSelectedBy>
+            <TableControl>
+                <TableHeaders>
+                    <TableColumnHeader>
+                        <Label>Uri</Label>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                        <Label>CompressionOption</Label>
+                    </TableColumnHeader>
+                </TableHeaders>
+                <TableRowEntries>
+                    <TableRowEntry>
+                        <TableColumnItems>
+                            <TableColumnItem>
+                                <ScriptBlock>$_.Uri</ScriptBlock>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>CompressionOption</PropertyName>
+                            </TableColumnItem>
+                        </TableColumnItems>
+                    </TableRowEntry>
+                </TableRowEntries>
+            </TableControl>
+        </View>
     </ViewDefinitions>
 </Configuration>
