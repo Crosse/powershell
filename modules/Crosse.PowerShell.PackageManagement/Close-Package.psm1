@@ -44,18 +44,29 @@ function Close-Package {
     [CmdletBinding()]
     param (
             [Parameter(Mandatory=$true,
-                ValueFromPipeline=$true)]
+                Position=0,
+                ParameterSetName="File")]
+            [string]
+            # The path to a package file.
+            $Name,
+
+            [Parameter(Mandatory=$true,
+                Position=0,
+                ParameterSetName="Package")]
             [AllowNull()]
             [Crosse.PowerShell.PackageManagement.PackageFile]
-            $Name
+            # A PackageFile object.
+            $Package
           )
 
-    try {
-        if ($Name -ne $null -and $Name.Package -ne $null) {
-            $Name.Package.Close()
-            $Name = $null
+    switch ($PSCmdlet.ParameterSetName) {
+        "File" {
+            [GC]::Collect()
         }
-    } catch {
-        throw
+        "Package" {
+            if ($Package -ne $null -and $Package.Package -ne $null) {
+                $Package.Close()
+            }
+        }
     }
 }
