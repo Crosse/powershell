@@ -45,6 +45,7 @@ function Close-Package {
     param (
             [Parameter(Mandatory=$true,
                 Position=0,
+                ValueFromPipeline=$true,
                 ParameterSetName="File")]
             [string]
             # The path to a package file.
@@ -52,6 +53,7 @@ function Close-Package {
 
             [Parameter(Mandatory=$true,
                 Position=0,
+                ValueFromPipeline=$true,
                 ParameterSetName="Package")]
             [AllowNull()]
             [Crosse.PowerShell.PackageManagement.PackageFile]
