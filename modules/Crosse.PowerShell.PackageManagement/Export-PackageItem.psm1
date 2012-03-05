@@ -72,8 +72,15 @@ function Export-PackageItem {
             # The item to export from the package.
             $Path,
 
+            [Parameter(Mandatory=$false)]
             [string]
+            # The optional destination for the item.
             $Destination,
+
+            [Parameter(Mandatory=$false)]
+            [ValidateScript({ Test-Path $_ -PathType Container })]
+            [System.IO.DirectoryInfo]
+            $BasePath,
 
             [int]
             $BufferSize = 1MB
@@ -99,13 +106,21 @@ function Export-PackageItem {
         }
 
         $normalizedPath = [Uri]::UnescapeDataString($Path)
+        if ([String]::IsNullOrEmpty($BasePath)) {
+            $base = $PWD
+        } else {
+            $base = $BasePath
+        }
 
         if ([String]::IsNullOrEmpty($Destination)) {
-            $dest = Join-Path $PWD $normalizedPath
+            $dest = Join-Path $base $normalizedPath
         } elseif (Split-Path -IsAbsolute $Destination) {
+            if ($BasePath) {
+                throw "Cannot specify -BasePath with an explicit Destination."
+            }
             $dest = $Destination
         } else {
-            $dest = Join-Path $PWD $Destination
+            $dest = Join-Path $base $Destination
         }
 
         Write-Verbose "Exporting $normalizedPath as $dest"
