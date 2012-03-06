@@ -46,6 +46,9 @@ param (
         $SmtpServer
       )
 
+
+Start-Transcript -Append -Path "E:\TaskLogs\NewMailboxes\ProcessMailboxRequests_$(Get-Date -Format yyyy-MM-dd_HH-mm-ss).log"
+
 $module = Import-Module -Force -PassThru .\UserProvisioning.psm1
 if ($module -eq $null) {
     $Subject = "Mailbox Provisioning:  Could not load UserProvisioning Module!"
@@ -68,7 +71,11 @@ if ($EnableForLync) {
     }
 }
 
-$dc = (Get-DomainController)[0].DnsHostName
+$domain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
+Write-Verbose "Identified domain as $($domain.Name)"
+
+$dc = $domain.FindDomainController().Name
+
 if ($dc -eq $null) {
     $Subject = "No Domain Controllers found."
     $Body = "Get-DomainController did not return any valid domain controllers."
@@ -106,9 +113,12 @@ if ($files -eq $null) {
                         -Identity $user.User `
                         -MailboxLocation Local `
                         -MailContactOrganizationalUnit 'ad.jmu.edu/ExchangeObjects/MailContacts' `
-                        -SendEmailNotification:$false `
+                        -SendEmailNotification:$true `
+                        -EmailNotificationPath 'E:\IDM\EmailNotifications' `
                         -DomainController $dc `
+                        -Verbose `
                         -Confirm:$false
+            $result
 
             if ($result.ProvisioningSuccessful -eq $false) {
                 $user.Reason = $result.Error
@@ -202,3 +212,6 @@ if ($disabledUsers -ne $null) {
         Send-MailMessage -From $From -To $To -Subject $Subject -Body $Body -SmtpServer $SmtpServer
     }
 }
+
+Stop-Transcript
+
