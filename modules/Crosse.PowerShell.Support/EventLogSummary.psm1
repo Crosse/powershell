@@ -217,7 +217,7 @@ function Send-EventLogSummaryMailMessage {
 
     # This is ugly.
     $fontStyle      = "font-family:sans-serif;color:black;"
-    $borderStyle    = "border:1px solid green;border-collapse:collapse;"
+    $borderStyle    = "border:1px solid black;border-collapse:collapse;"
     $bodyStyle      = "$fontStyle;background-color:white;"
     $tableStyle     = "$bodyStyle;$borderStyle;margin-left:auto;margin-right:auto;width:90%;"
     $captionStyle   = "$fontStyle;border-style:none;border-collapse:collapse;text-align:center;font-weight:bold;font-size:1.2em;padding-left:6px;padding-right:6px;"
