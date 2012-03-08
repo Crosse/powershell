@@ -187,6 +187,7 @@ if ($IncludeDatabaseStatistics) {
     Write-Progress -Activity "Gathering Database Statistics" -Status "Finished" -Id 1 -Completed
 }
 
+# Misnomer, really.  This gets the top senders by recipient count.
 if ($IncludeTopRecipients) {
     Write-Host "Getting Top Recipient Counts"
     $recipientCounts = & "$cwd\Get-TopRecipientCounts.ps1" -Start $Start -Verbose:$Verbose
@@ -231,6 +232,8 @@ if ($IncludeMessageMetrics) {
                                     $_.EventID -eq 'RECEIVE')
                                 } | Measure-Object -Sum -Property TotalBytes
 
+    # IOPS calculations taken from here:
+    # http://technet.microsoft.com/en-us/library/ee832791.aspx
     $totalMessages = $messageStats.Count
     $avgMessageSizeInKB = ($messageStats.Sum / $totalMessages)/1KB
     $avgMessagesPerMailbox = $totalMessages / $allMailboxes.Count
