@@ -5,7 +5,7 @@
 # DESCRIPTION:  Sends an email with relevant Exchange statistics to various
 #               users.
 #
-# Copyright (c) 2009,2010 Seth Wright <wrightst@jmu.edu>
+# Copyright (c) 2009-2012 Seth Wright <wrightst@jmu.edu>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -47,8 +47,7 @@ param (
 # Change these to suit your environment
 $SmtpServer = "mailgw.jmu.edu"
 $From       = "it-exmaint@jmu.edu"
-#$To         = @("wrightst@jmu.edu", "gumgs@jmu.edu", "liskeygn@jmu.edu", "stockntl@jmu.edu", "najdziav@jmu.edu")
-$To         = "wrightst@jmu.edu"
+$To         = @("wrightst@jmu.edu")
 $Title      = "Exchange Statistics for $(Get-Date -Format d)"
 $MaxDatabaseSizeInBytes = 250*1GB
 
