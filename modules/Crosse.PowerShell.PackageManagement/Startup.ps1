@@ -69,8 +69,8 @@ namespace Crosse.PowerShell.PackageManagement {
 }
 "@
     try {
-        Write-Warning "Could not find $dll.  Compiling..."
-        Add-Type -TypeDefinition $code -OutputAssembly $dll -ReferencedAssemblies $assembly.FullName
+        Write-Warning "Could not find types.dll.  Compiling..."
+        Add-Type -Language CSharpVersion3 -TypeDefinition $code -OutputAssembly $dll -ReferencedAssemblies $assembly.FullName
         Add-Type -Path $dll
     } catch {
         throw
