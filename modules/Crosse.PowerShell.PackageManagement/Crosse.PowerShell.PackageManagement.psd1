@@ -56,7 +56,7 @@ PowerShellVersion = '2.0'
 # PowerShellHostVersion = ''
 
 # Minimum version of the .NET Framework required by this module
-DotNetFrameworkVersion = '3.0'
+DotNetFrameworkVersion = ''
 
 # Minimum version of the common language runtime (CLR) required by this module
 # CLRVersion = ''
@@ -71,7 +71,7 @@ DotNetFrameworkVersion = '3.0'
 # RequiredAssemblies = @()
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module
-ScriptsToProcess = @("Startup.ps1")
+ScriptsToProcess = @('Startup.ps1')
 
 # Type files (.ps1xml) to be loaded when importing this module
 # TypesToProcess = @()
@@ -84,8 +84,6 @@ NestedModules = @(
     'New-Package.psm1',
     'Open-Package.psm1',
     'Close-Package.psm1',
-    'Get-PackageProperty.psm1',
-    'Set-PackageProperty.psm1',
     'Get-PackageItem.psm1',
     'Add-PackageItem.psm1',
     'Remove-PackageItem.psm1',
@@ -113,8 +111,6 @@ ModuleList = @(
     'New-Package.psm1',
     'Open-Package.psm1',
     'Close-Package.psm1',
-    'Get-PackageProperty.psm1',
-    'Set-PackageProperty.psm1',
     'Get-PackageItem.psm1',
     'Add-PackageItem.psm1',
     'Remove-PackageItem.psm1',
@@ -127,8 +123,6 @@ FileList = @(
     'New-Package.psm1',
     'Open-Package.psm1',
     'Close-Package.psm1',
-    'Get-PackageProperty.psm1',
-    'Set-PackageProperty.psm1',
     'Get-PackageItem.psm1',
     'Add-PackageItem.psm1',
     'Remove-PackageItem.psm1',
