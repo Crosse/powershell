@@ -49,7 +49,7 @@
 #Requires -Version 2.0
 #>
 
-function Set-PackageProperty {
+function Set-Package {
     [CmdletBinding()]
     param (
             [Parameter(Mandatory=$true,
@@ -118,56 +118,46 @@ function Set-PackageProperty {
                 $Package = Open-Package $packagePath
             }
 
-            if ($package.Package.PackageProperties -ne $null) {
-                if ([String]::IsNullOrEmpty($Creator) -eq $false) {
-                    Write-Verbose "Setting Creator to $Creator"
-                    $package.Package.PackageProperties.Creator = $Creator
-                }
-                if ([String]::IsNullOrEmpty($Title) -eq $false) {
-                    Write-Verbose "Setting Title to $Title"
-                    $package.Package.PackageProperties.Title = $Title
-                }
-                if ([String]::IsNullOrEmpty($Description) -eq $false) {
-                    Write-Verbose "Setting Description to $Description"
-                    $package.Package.PackageProperties.Description = $Description
-                }
-                if ([String]::IsNullOrEmpty($Version) -eq $false) {
-                    Write-Verbose "Setting Version to $Version"
-                    $package.Package.PackageProperties.Version = $Version
-                }
-                if ([String]::IsNullOrEmpty($Revision) -eq $false) {
-                    Write-Verbose "Setting Revision to $Revision"
-                    $package.Package.PackageProperties.Revision = $Revision
-                }
-                if ($Created) {
-                    Write-Verbose "Setting Created to $Created"
-                    $package.Package.PackageProperties.Created = $Created
-                }
-                if ($Modified) {
-                    Write-Verbose "Setting Modified to $Modified"
-                    $package.Package.PackageProperties.Modified = $Modified
-                }
-                if ([String]::IsNullOrEmpty($LastModifiedBy) -eq $false) {
-                    Write-Verbose "Setting LastModifiedBy to $LastModifiedBy"
-                    $package.Package.PackageProperties.LastModifiedBy = $LastModifiedBy
-                }
-                if ([String]::IsNullOrEmpty($Identifier) -eq $false) {
-                    Write-Verbose "Setting Identifier to $Identifier"
-                    $package.Package.PackageProperties.Identifier = $Identifier
-                }
+            if ($Creator -ne $null) {
+                Write-Verbose "Setting Creator to $Creator"
+                $package.Creator = $Creator
+            }
+            if ($Title -ne $null) {
+                Write-Verbose "Setting Title to $Title"
+                $package.Title = $Title
+            }
+            if ($Description -ne $null) {
+                Write-Verbose "Setting Description to $Description"
+                $package.Description = $Description
+            }
+            if ($Version -ne $null) {
+                Write-Verbose "Setting Version to $Version"
+                $package.Version = $Version
+            }
+            if ($Revision -ne $null) {
+                Write-Verbose "Setting Revision to $Revision"
+                $package.Revision = $Revision
+            }
+            if ($Created) {
+                Write-Verbose "Setting Created to $Created"
+                $package.Created = $Created
+            }
+            if ($Modified) {
+                Write-Verbose "Setting Modified to $Modified"
+                $package.Modified = $Modified
+            }
+            if ($LastModifiedBy -ne $null) {
+                Write-Verbose "Setting LastModifiedBy to $LastModifiedBy"
+                $package.LastModifiedBy = $LastModifiedBy
+            }
+            if ($Identifier -ne $null) {
+                Write-Verbose "Setting Identifier to $Identifier"
+                $package.Identifier = $Identifier
+            }
 
-                $package.Package.Flush()
-            }
+            $package.Flush()
         } catch {
-            if (![String]::IsNullOrEmpty($Name) -and $Package -ne $null) {
-                Close-Package $Package
-            }
             throw $_
-        }
-        finally {
-            if (![String]::IsNullOrEmpty($Name)) {
-                Close-Package $Package
-            }
         }
     }
 }

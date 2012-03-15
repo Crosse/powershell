@@ -1,125 +1,78 @@
 using System;
 using System.IO;
 using System.IO.Packaging;
+using System.Linq;
 
 namespace Crosse.PowerShell.PackageManagement {
-    public class PackageFile : IDisposable {
+    public class PackageFile {
 
-# region PackageProperties
-        public string Category {
-            get { return package.PackageProperties.Category; }
-            set { package.PackageProperties.Category = value; }
-        }
-
-
-        public string ContentStatus {
-            get { return package.PackageProperties.ContentStatus; }
-            set { package.PackageProperties.ContentStatus = value; }
-        }
-
-
-        public string ContentType {
-            get { return package.PackageProperties.ContentType; }
-            set { package.PackageProperties.ContentType = value; }
-        }
-
-
-        public DateTime? Created {
-            get { return package.PackageProperties.Created; }
-            set { package.PackageProperties.Created = value; }
-        }
-
-
-        public string Creator {
-            get { return package.PackageProperties.Creator; }
-            set { package.PackageProperties.Creator = value; }
-        }
-
-
-        public string Description {
-            get { return package.PackageProperties.Description; }
-            set { package.PackageProperties.Description = value; }
-        }
-
-
-        public string Identifier {
-            get { return package.PackageProperties.Identifier; }
-            set { package.PackageProperties.Identifier = value; }
-        }
-
-
-        public string Keywords {
-            get { return package.PackageProperties.Keywords; }
-            set { package.PackageProperties.Keywords = value; }
-        }
-
-
-        public string Language {
-            get { return package.PackageProperties.Language; }
-            set { package.PackageProperties.Language = value; }
-        }
-
-
-        public string LastModifiedBy {
-            get { return package.PackageProperties.LastModifiedBy; }
-            set { package.PackageProperties.LastModifiedBy = value; }
-        }
-
-
-        public DateTime? LastPrinted {
-            get { return package.PackageProperties.LastPrinted; }
-            set { package.PackageProperties.LastPrinted = value; }
-        }
-
-
-        public DateTime? Modified {
-            get { return package.PackageProperties.Modified; }
-            set { package.PackageProperties.Modified = value; }
-        }
-
-
-        public string Revision {
-            get { return package.PackageProperties.Revision; }
-            set { package.PackageProperties.Revision = value; }
-        }
-
-
-        public string Subject {
-            get { return package.PackageProperties.Subject; }
-            set { package.PackageProperties.Subject = value; }
-        }
-
-
-        public string Title {
-            get { return package.PackageProperties.Title; }
-            set { package.PackageProperties.Title = value; }
-        }
-
-
-        public string Version {
-            get { return package.PackageProperties.Version; }
-            set { package.PackageProperties.Version = value; }
-        }
+# region Properties that mirror Package.PackageProperties
+        public  string      Category        { get; set; }
+        public  string      ContentStatus   { get; set; }
+        public  string      ContentType     { get; set; }
+        public  DateTime?   Created         { get; set; }
+        public  string      Creator         { get; set; }
+        public  string      Description     { get; set; }
+        public  string      Identifier      { get; set; }
+        public  string      Keywords        { get; set; }
+        public  string      Language        { get; set; }
+        public  string      LastModifiedBy  { get; set; }
+        public  DateTime?   LastPrinted     { get; set; }
+        public  DateTime?   Modified        { get; set; }
+        public  string      Revision        { get; set; }
+        public  string      Subject         { get; set; }
+        public  string      Title           { get; set; }
+        public  string      Version         { get; set; }
 #endregion
 
-        public string FileName { get; internal set; }
-        private Package package;
+        public  string      FileName        { get; internal set; }
+        public  int         ItemCount       { get; internal set; }
 
         public PackageFile(string fileName, FileMode mode) {
-            package = Package.Open(fileName, mode);
             FileName = fileName;
-        }
+            using (Package package = Package.Open(fileName, mode)) {
+                Category = package.PackageProperties.Category;
+                ContentStatus = package.PackageProperties.ContentStatus;
+                ContentType = package.PackageProperties.ContentType;
+                Created = package.PackageProperties.Created;
+                Creator = package.PackageProperties.Creator;
+                Description = package.PackageProperties.Description;
+                Identifier = package.PackageProperties.Identifier;
+                Keywords = package.PackageProperties.Keywords;
+                Language = package.PackageProperties.Language;
+                LastModifiedBy = package.PackageProperties.LastModifiedBy;
+                LastPrinted = package.PackageProperties.LastPrinted;
+                Modified = package.PackageProperties.Modified;
+                Revision = package.PackageProperties.Revision;
+                Subject = package.PackageProperties.Subject;
+                Title = package.PackageProperties.Title;
+                Version = package.PackageProperties.Version;
 
-        public void Close() {
-            if (package != null) {
-                package.Close();
+                ItemCount = package.GetParts().Count();
             }
-            package = null;
-            FileName = null;
         }
 
-        public void Dispose() {
-            Close();
+        public void Flush() {
+            using (Package package = Package.Open(FileName, FileMode.Open)) {
+                package.PackageProperties.Category = Category;
+                package.PackageProperties.ContentStatus = ContentStatus;
+                package.PackageProperties.ContentType = ContentType;
+                package.PackageProperties.Created = Created;
+                package.PackageProperties.Creator = Creator;
+                package.PackageProperties.Description = Description;
+                package.PackageProperties.Identifier = Identifier;
+                package.PackageProperties.Keywords = Keywords;
+                package.PackageProperties.Language = Language;
+                package.PackageProperties.LastModifiedBy = LastModifiedBy;
+                package.PackageProperties.LastPrinted = LastPrinted;
+                package.PackageProperties.Modified = Modified;
+                package.PackageProperties.Revision = Revision;
+                package.PackageProperties.Subject = Subject;
+                package.PackageProperties.Title = Title;
+                package.PackageProperties.Version = Version;
+
+                ItemCount = package.GetParts().Count();
+            }
         }
     }
 }

@@ -28,11 +28,8 @@ if (Test-Path $dll) {
     Remove-Variable assembly, dll
 } else {
     try {
-        #Write-Warning "Could not find types.dll.  Compiling..."
         $code = [String]::Join("`n", (Get-Content (Join-Path $PSScriptRoot "Package.cs")))
-        #Add-Type -Language CSharpVersion3 -TypeDefinition $code -OutputAssembly $dll -ReferencedAssemblies $assembly.FullName
         Add-Type -Language CSharpVersion3 -TypeDefinition $code -ReferencedAssemblies $assembly.FullName
-        #Add-Type -Path $dll
     } catch {
         throw
     } finally {

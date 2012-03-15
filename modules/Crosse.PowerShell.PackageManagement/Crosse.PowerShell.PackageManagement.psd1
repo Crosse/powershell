@@ -83,7 +83,7 @@ FormatsToProcess = @('PackageManagement.Format.ps1xml')
 NestedModules = @(
     'New-Package.psm1',
     'Open-Package.psm1',
-    'Close-Package.psm1',
+    'Set-Package.psm1',
     'Get-PackageItem.psm1',
     'Add-PackageItem.psm1',
     'Remove-PackageItem.psm1',
@@ -110,7 +110,7 @@ AliasesToExport = '*'
 ModuleList = @(
     'New-Package.psm1',
     'Open-Package.psm1',
-    'Close-Package.psm1',
+    'Set-Package.psm1',
     'Get-PackageItem.psm1',
     'Add-PackageItem.psm1',
     'Remove-PackageItem.psm1',
@@ -122,7 +122,7 @@ ModuleList = @(
 FileList = @(
     'New-Package.psm1',
     'Open-Package.psm1',
-    'Close-Package.psm1',
+    'Set-Package.psm1',
     'Get-PackageItem.psm1',
     'Add-PackageItem.psm1',
     'Remove-PackageItem.psm1',

@@ -27,19 +27,13 @@
     A System.IO.Packaging.Package object.
 
     .OUTPUTS
-    If -PassThru is specified, New-Package returns a Crosse.PowerShell.PackageManagement.PackageFile
-    object referencing the open package.  Otherwise, New-Package returns nothing.
+    New-Package returns a Crosse.PowerShell.PackageManagement.PackageFile
+    object referencing the open package.
 
     .EXAMPLE
     New-Package test.zip
 
     This example illustrates creating a new package.
-
-    .EXAMPLE
-    $pack = New-Package test.zip -PassThru
-
-    This example illustrates creating a new package and using the -PassThru option
-    to keep a reference to the package.
 
     .EXAMPLE
     New-Package test.zip -Force
@@ -52,11 +46,11 @@
 
 #Requires -Version 2.0
 #>
-
 function New-Package {
     [CmdletBinding()]
     param (
             [Parameter(Mandatory=$true)]
+            [ValidateNotNullOrEmpty()]
             [string]
             # The path to the package file to create.
             $Name,
@@ -66,17 +60,14 @@ function New-Package {
             $Identifier = [Guid]::NewGuid(),
 
             [switch]
-            # Specifies that a reference to the package should be returned.
-            $PassThru,
-
-            [switch]
             # Specifies that if a package with the same name already exists,
             # it should be overwritten.
             $Force
           )
+
     try {
         if ((Split-Path -IsAbsolute $Name) -eq $true) {
-            $packagePath = $Name
+            $packagePath = Resolve-Path $Name
         } else {
             $packagePath = Join-Path (Get-Location -PSProvider "FileSystem") $Name
         }
@@ -88,24 +79,59 @@ function New-Package {
         $package = New-Object Crosse.PowerShell.PackageManagement.PackageFile($packagePath, "Create")
         $creator = (Get-Item Env:\USERNAME).Value
         $now = Get-Date
-        Set-PackageProperty -Package $package `
-                            -Creator $creator `
-                            -Title (Split-Path -Leaf $packagePath) `
-                            -Version "1.0" `
-                            -Created $now `
-                            -Modified $now `
-                            -Identifier $Identifier `
-                            -LastModifiedBy $creator
+        Set-Package -Package $package `
+                    -Creator $creator `
+                    -Title $Name `
+                    -Version "1.0" `
+                    -Created $now `
+                    -Modified $now `
+                    -Identifier $Identifier `
+                    -LastModifiedBy $creator
+        Get-Package $package
     } catch {
-        Close-Package $package
-        throw $_
-    } finally {
-        if ($PassThru -eq $false) {
-            Close-Package $package
+        throw
+    }
+}
+
+function Get-Package {
+    [CmdletBinding()]
+    param (
+            [Parameter(Mandatory=$true,
+                ValueFromPipeline=$true,
+                Position=0,
+                ParameterSetName="File")]
+            [string]
+            # The path to a package file.
+            $Name,
+
+            [Parameter(Mandatory=$true,
+                ValueFromPipeline=$true,
+                Position=0,
+                ParameterSetName="Package")]
+            [ValidateNotNull()]
+            [Crosse.PowerShell.PackageManagement.PackageFile]
+            # A PackageFile object.
+            $Package
+          )
+
+    if ([String]::IsNullOrEmpty($Name) -eq $true) {
+        $packagePath = $Package.FileName
+    } else {
+        if ((Split-Path -IsAbsolute $Name) -eq $true) {
+            $packagePath = Resolve-Path $Name -ErrorAction Stop
+        } else {
+            $packagePath = Resolve-Path `
+                (Join-Path (Get-Location -PSProvider "FileSystem") $Name) -ErrorAction Stop
         }
     }
 
-    if ($PassThru) {
-        return $package
+    if ((Test-Path $packagePath) -eq $false) {
+        throw "File $packagePath does not exist."
+    }
+
+    try {
+        New-Object Crosse.PowerShell.PackageManagement.PackageFile($packagePath, "Open")
+    } catch { 
+        throw
     }
 }

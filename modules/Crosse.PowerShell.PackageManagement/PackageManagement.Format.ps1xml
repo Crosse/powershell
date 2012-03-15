@@ -34,7 +34,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
                         <Label>Version</Label>
                     </TableColumnHeader>
                     <TableColumnHeader>
-                        <Label>ItemsInPackage</Label>
+                        <Label>ItemCount</Label>
                         <Width>14</Width>
                         <Alignment>Right</Alignment>
                     </TableColumnHeader>
@@ -52,12 +52,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
                                 <PropertyName>Version</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
-                                <ScriptBlock>
-                                    @($_.Package.GetParts() | ? {
-                                        $_.Uri -notlike "/_rels*" -and
-                                        $_.Uri -notlike "/package/services/metadata/core-properties*"
-                                    }).Count
-                                </ScriptBlock>
+                                <PropertyName>ItemCount</PropertyName>
                             </TableColumnItem>
                         </TableColumnItems>
                     </TableRowEntry>
@@ -110,13 +105,8 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
                                 <PropertyName>Identifier</PropertyName>
                             </ListItem>
                             <ListItem>
-                                <Label>ItemsInPackage</Label>
-                                <ScriptBlock>
-                                    @($_.Package.GetParts() | ? {
-                                        $_.Uri -notlike "/_rels*" -and
-                                        $_.Uri -notlike "/package/services/metadata/core-properties*"
-                                    }).Count
-                                </ScriptBlock>
+                                <Label>ItemCount</Label>
+                                <PropertyName>ItemCount</PropertyName>
                             </ListItem>
                             <ListItem>
                                 <PropertyName>FileName</PropertyName>
