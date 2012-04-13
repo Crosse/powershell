@@ -87,31 +87,26 @@ function Backup-Database {
             [switch]
             $Truncate
           )
-    BEGIN {
-    }
-    PROCESS {
-        if ($FullBackup -or $DifferentialBackup) {
-            $backupType = "DATABASE"
-        } elseif ($TransactionLogBackup) {
-            $backupType = "LOG"
-        } else {
-            # should never happen
-            Write-Error "Backup type not recognized"
-            return
-        }
 
-        $cmd = "BACKUP {0} {1} TO DISK = '{2}'" -f $backupType, $Database, $BackupPath
-
-        $withOptions = @(BuildWithOptions $PSCmdlet.MyInvocation.BoundParameters)
-        if ($withOptions.Count -gt 0) {
-            $with = " WITH {0}" -f ($withOptions -join ", ")
-            $cmd += $with
-        }
-
-        Write-Verbose $cmd
+    if ($FullBackup -or $DifferentialBackup) {
+        $backupType = "DATABASE"
+    } elseif ($TransactionLogBackup) {
+        $backupType = "LOG"
+    } else {
+        # should never happen
+        Write-Error "Backup type not recognized"
+        return
     }
-    END {
+
+    $cmd = "BACKUP {0} {1} TO DISK = '{2}'" -f $backupType, $Database, $BackupPath
+
+    $withOptions = @(BuildWithOptions $PSCmdlet.MyInvocation.BoundParameters)
+    if ($withOptions.Count -gt 0) {
+        $with = " WITH {0}" -f ($withOptions -join ", ")
+        $cmd += $with
     }
+
+    Write-Verbose $cmd
 }
 
 
@@ -240,3 +235,5 @@ function BuildWithOptions {
 
     return $withOptions
 }
+
+Export-ModuleMember Backup-Database
