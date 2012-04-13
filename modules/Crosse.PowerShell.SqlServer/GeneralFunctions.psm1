@@ -3,11 +3,16 @@ function Get-SqlServerProperties {
             [Parameter(Mandatory=$true)]
             [ValidateNotNull()]
             [string]
-            $SqlServerInstance
-          )
-    $server, $instance = $SqlServerInstance.Split('\')
+            $Server,
 
-    Write-Verbose "Server: $server"
+            [Parameter(Mandatory=$false)]
+            [ValidateNotNull()]
+            [System.Management.Automation.PSCredential]
+            $Credential
+          )
+    $serverName, $instance = $Server.Split('\')
+
+    Write-Verbose "Server: $serverName"
 
     if ([String]::IsNullOrEmpty($instance)) {
         Write-Verbose "Instance: (Default Instance)"
@@ -17,16 +22,21 @@ function Get-SqlServerProperties {
         $serviceName = 'MSSQL${0}' -f $instance
     }
 
-    $service = Get-WmiObject Win32_Service -ComputerName $server -Filter "Name = '$serviceName'"
+    if ($Credential) {
+        $service = Get-WmiObject Win32_Service -ComputerName $serverName Credential $Credential -Filter "Name = '$serviceName'"
+    } else {
+        $service = Get-WmiObject Win32_Service -ComputerName $serverName -Filter "Name = '$serviceName'"
+    }
+
     if ($service -eq $null) {
-        throw "Could not find the SQL Server service on $server for the specified instance"
+        throw "Could not find the SQL Server service on $serverName for the specified instance"
     } else {
         $serviceAccount = $service.StartName
-        Write-Verbose "Service $($service.Name) on $server is running as $serviceAccount"
+        Write-Verbose "Service $($service.Name) on $serverName is running as $serviceAccount"
     }
 
     return New-Object PSObject -Property @{
-            Server          = $server
+            Server          = $serverName
             Instance        = $instance
             ServiceName     = $serviceName
             ServiceAccount  = $serviceAccount
@@ -35,15 +45,22 @@ function Get-SqlServerProperties {
 
 function Get-SqlDatabaseProperties {
     param (
+            [Parameter(Mandatory=$true)]
             [ValidateNotNull()]
             [System.Data.SqlClient.SqlConnection]
             $SqlConnection,
 
-            [ValidateNotNull()]
-            [Object]
+            [Parameter(Mandatory=$false)]
+            [ValidateNotNullOrEmpty()]
+            [string]
             $Database
           )
-    $cmd = "SELECT compatibility_level, collation_name, state_desc, recovery_model, recovery_model_desc FROM sys.databases WHERE name = '$Database'"
+
+    if ([String]::IsNullOrEmpty($Database)) {
+        $Database = $SqlConnection.Database
+    }
+
+    $cmd = "SELECT * FROM sys.databases WHERE name = '$Database'"
     $props = @(Send-SqlQuery $SqlConnection $cmd)
     
     if ($props.Count -gt 1) {
@@ -55,16 +72,22 @@ function Get-SqlDatabaseProperties {
 function Open-SqlConnection {
     param (
             [Parameter(Mandatory=$true)]
+            [ValidateNotNullOrEmpty()]
             [string]
-            $SqlServerInstance
+            $Server,
+
+            [Parameter(Mandatory=$false)]
+            [ValidateNotNullOrEmpty()]
+            [string]
+            $Database="master"
           )
 
-    $connString = "Data Source={0};Initial Catalog=master;Integrated Security=SSPI;" -f $SqlServerInstance
+    $connString = "Data Source={0};Initial Catalog={1};Integrated Security=SSPI;" -f $Server, $Database
     $conn = New-Object System.Data.SqlClient.SqlConnection $connString
-    Write-Verbose "Opening connection to $SqlServerInstance"
+    Write-Verbose "Opening connection to $Server"
     $conn.Open()
     if ($conn.State -ne 'Open') {
-        throw "Could not open SQL connection to the server $SqlServerInstance"
+        throw "Could not open SQL connection to the server $Server"
     }
     return $conn
 }
@@ -87,10 +110,12 @@ function Close-SqlConnection {
 
 function Send-SqlScalarQuery {
     param (
+            [Parameter(Mandatory=$true)]
             [ValidateNotNull()]
             [System.Data.SqlClient.SqlConnection]
             $SqlConnection,
 
+            [Parameter(Mandatory=$true)]
             [ValidateNotNullOrEmpty()]
             [string]
             $Command
@@ -113,10 +138,12 @@ function Send-SqlScalarQuery {
 
 function Send-SqlNonQuery {
     param (
+            [Parameter(Mandatory=$true)]
             [ValidateNotNull()]
             [System.Data.SqlClient.SqlConnection]
             $SqlConnection,
 
+            [Parameter(Mandatory=$true)]
             [ValidateNotNullOrEmpty()]
             [string]
             $Command
@@ -139,10 +166,12 @@ function Send-SqlNonQuery {
 
 function Send-SqlQuery {
     param (
+            [Parameter(Mandatory=$true)]
             [ValidateNotNull()]
             [System.Data.SqlClient.SqlConnection]
             $SqlConnection,
 
+            [Parameter(Mandatory=$true)]
             [ValidateNotNullOrEmpty()]
             [string]
             $Command
