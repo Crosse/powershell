@@ -119,16 +119,21 @@ function Backup-Database {
     $result = $sqlCmd.BeginExecuteNonQuery()
     while (! $result.IsCompleted) {
         $check = Send-SqlQuery -SqlConnection $checkConn -Command "SELECT session_id,percent_complete,command,estimated_completion_time FROM sys.dm_exec_requests WHERE session_id = $spid AND command = 'BACKUP DATABASE'"
+        if ($check -eq $null) {
+            break
+        }
+
         if ($perms -eq $null) {
             $elapsed = ((Get-Date) - $start).ToString("hh\:mm\:ss")
             Write-Progress -Activity "Backing up $Database" -Status "Elapsed time:  $elapsed"
         } else {
-            $completion = $check.estimated_completion_time / 1000
+            $percent = [Math]::Round($check.percent_complete, 0, "AwayFromZero")
             Write-Progress -Activity "Backing up $Database" `
-                           -Status "Estimated Completion: ${completion}s" `
-                           -PercentComplete $check.percent_complete
+                           -Status "${percent}% complete" `
+                           -PercentComplete $check.percent_complete `
+                           -SecondsRemaining ($check.estimated_completion_time / 1000)
         }
-        Start-Sleep 1
+        Start-Sleep -Milliseconds 250
     }
     Write-Progress -Activity "Backing up $Database" -Status "Completed" -Completed
     $sqlCmd.EndExecuteNonQuery($result) | Out-Null
