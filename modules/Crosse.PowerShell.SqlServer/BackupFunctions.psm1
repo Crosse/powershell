@@ -131,6 +131,113 @@ function Backup-Database {
     PerformBackupOrRecovery -Server $Server -Database $Database -Command $cmd
 }
 
+function Restore-Database {
+    [CmdletBinding(SupportsShouldProcess=$true,
+            ConfirmImpact="High")]
+    param (
+            [Parameter(Mandatory=$true)]
+            [ValidateNotNullOrEmpty()]
+            # The MSSQL server to which to connect.
+            # This could be either the default instance or a named
+            # instance.
+            [string]
+            $Server,
+
+            [Parameter(Mandatory=$true)]
+            [ValidateNotNullOrEmpty()]
+            [string]
+            $Database,
+
+            [Parameter(Mandatory=$true)]
+            [System.IO.FileInfo]
+            $RestorePath,
+
+            [Parameter(Mandatory=$false,
+                ParameterSetName="DatabaseRestore")]
+            [switch]
+            $RestoreDatabase,
+
+            [Parameter(Mandatory=$false,
+                ParameterSetName="TransactionLogRestore")]
+            [switch]
+            $RestoreTransactionLog,
+
+            [Parameter(Mandatory=$false)]
+            [int]
+            $BackupSetFileNumber,
+
+            [Parameter(Mandatory=$false)]
+            [switch]
+            $Partial,
+
+            [Parameter(Mandatory=$false)]
+            [switch]
+            $Recovery,
+
+            [Parameter(Mandatory=$false)]
+            [switch]
+            $Replace,
+
+            [Parameter(Mandatory=$false)]
+            [System.Collections.Hashtable]
+            $MoveMapping,
+
+            [Parameter(Mandatory=$false)]
+            [switch]
+            $Restart,
+
+            [Parameter(Mandatory=$false)]
+            [switch]
+            $RestrictedUser,
+
+            [Parameter(Mandatory=$false)]
+            [string]
+            $MediaName,
+
+            [Parameter(Mandatory=$false)]
+            [switch]
+            $Checksum
+          )
+
+    if ($RestoreDatabase) {
+        $backupType = "DATABASE"
+        $desc = "Perform full restore of database $Database on server $Server"
+    } elseif ($RestoreTransactionLog) {
+        $backupType = "LOG"
+        $desc = "Perform transaction log restore of database $Database on server $Server"
+    } else {
+        # should never happen
+        Write-Error "Restore type not recognized"
+        return
+    }
+
+    $cmd = "RESTORE {0} {1} FROM DISK = '{2}'" -f $backupType, $Database, $RestorePath
+
+    $withOptions = @(BuildWithOptions $PSCmdlet.MyInvocation.BoundParameters)
+    if ($withOptions.Count -gt 0) {
+        $with = " WITH {0}" -f ($withOptions -join ", ")
+        $cmd += $with
+    }
+
+    Write-Verbose $cmd
+
+    $caption = $desc
+    $warning = "Are you sure you want to perform this action?`n"
+    $warning += "This will perform a "
+    if ($RestoreDatabase) {
+        $warning += "full "
+    } elseif ($RestoreTransactionLog) {
+        $warning += "transaction log "
+    }
+    $warning += "restore of database $Database on $Server."
+
+    if (!$PSCmdlet.ShouldProcess($desc, $warning, $caption)) {
+        return
+    }
+
+    PerformBackupOrRecovery -Server $Server -Database $Database -Command $cmd
+}
+
 function PerformBackupOrRecovery {
     [CmdletBinding(SupportsShouldProcess=$true,
             ConfirmImpact="High")]
@@ -287,10 +394,49 @@ function BuildWithOptions {
         }
     }
 
+    if ($BoundParameters.ContainsKey('BackupSetFileNumber')) {
+        $withOptions += "FILE = $BackupSetFileNumber"
+    }
+
+    if ($BoundParameters.ContainsKey('Partial')) {
+        if ($Partial) {
+            $withOptions += "PARTIAL"
+        }
+    }
+
+    if ($BoundParameters.ContainsKey('Recovery')) {
+        if ($Checksum) {
+            $withOptions += "RECOVERY"
+        } else {
+            $withOptions += "NORECOVERY"
+        }
+    }
+
+    if ($BoundParameters.ContainsKey('Replace')) {
+        if ($Replace) {
+            $withOptions += "REPLACE"
+        }
+    }
+
+    if ($BoundParameters.ContainsKey('MoveMapping')) {
+        foreach ($key in $MoveMapping.Keys) {
+            $withOptions += "MOVE '{0}' TO '{1}'" -f $key, $MoveMapping[$key]
+        }
+    }
+
+    if ($BoundParameters.ContainsKey('Restart')) {
+        if ($Restart) {
+            $withOptions += "RESTART"
+        }
+    }
+
+    if ($BoundParameters.ContainsKey('RestrictedUser')) {
+        if ($RestrictedUser) {
+            $withOptions += "RESTRICTEDUSER"
         }
     }
 
     return $withOptions
 }
 
-Export-ModuleMember Backup-Database
+Export-ModuleMember Backup-Database, Restore-Database
