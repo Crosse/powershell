@@ -81,7 +81,7 @@ function Backup-Database {
             [Parameter(Mandatory=$false,
                 ParameterSetName="TransactionLogBackup")]
             [switch]
-            $Truncate
+            $NoTruncate
           )
 
     if ($FullBackup -or $DifferentialBackup) {
@@ -254,8 +254,8 @@ function BuildWithOptions {
         }
     }
 
-    if ($BoundParameters.ContainsKey('Truncate')) {
-        if ($Truncate -eq $false) {
+    if ($BoundParameters.ContainsKey('NoTruncate')) {
+        if ($NoTruncate) {
             $option = "NO_TRUNCATE"
             Write-Verbose "Requested: $option"
             $withOptions += $option
