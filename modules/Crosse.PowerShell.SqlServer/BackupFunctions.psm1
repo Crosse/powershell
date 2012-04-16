@@ -78,10 +78,6 @@ function Backup-Database {
             [switch]
             $Checksum,
 
-            [Parameter(Mandatory=$false)]
-            [switch]
-            $ShowProgress,
-
             [Parameter(Mandatory=$false,
                 ParameterSetName="TransactionLogBackup")]
             [switch]
@@ -107,8 +103,39 @@ function Backup-Database {
     }
 
     Write-Verbose $cmd
-}
+    $conn = Open-SqlConnection -Server $Server -Database $Database -Async
+    $spid = (Send-SqlQuery -SqlConnection $conn -Command "SELECT @@SPID as spid").spid
+    Write-Verbose "SPID: $spid"
+    $sqlCmd = $conn.CreateCommand()
+    $sqlCmd.CommandText = $cmd
 
+    $checkConn = Open-SqlConnection -Server $Server
+    $perms = Send-SqlQuery -SqlConnection $checkConn -Command "SELECT * FROM fn_my_permissions(NULL, 'SERVER') WHERE permission_name = 'VIEW SERVER STATE'"
+    if ($perms -eq $null) {
+        Write-Warning "Cannot get backup progress.  You have not been granted the VIEW SERVER STATE permission."
+    }
+
+    $start = Get-Date
+    $result = $sqlCmd.BeginExecuteNonQuery()
+    while (! $result.IsCompleted) {
+        $check = Send-SqlQuery -SqlConnection $checkConn -Command "SELECT session_id,percent_complete,command,estimated_completion_time FROM sys.dm_exec_requests WHERE session_id = $spid AND command = 'BACKUP DATABASE'"
+        if ($perms -eq $null) {
+            $elapsed = ((Get-Date) - $start).ToString("hh\:mm\:ss")
+            Write-Progress -Activity "Backing up $Database" -Status "Elapsed time:  $elapsed"
+        } else {
+            $completion = $check.estimated_completion_time / 1000
+            Write-Progress -Activity "Backing up $Database" `
+                           -Status "Estimated Completion: ${completion}s" `
+                           -PercentComplete $check.percent_complete
+        }
+        Start-Sleep 1
+    }
+    Write-Progress -Activity "Backing up $Database" -Status "Completed" -Completed
+    $sqlCmd.EndExecuteNonQuery($result) | Out-Null
+    $sqlCmd.Dispose()
+    Close-SqlConnection $conn
+    Close-SqlConnection $checkConn
+}
 
 function BuildWithOptions {
     param (
