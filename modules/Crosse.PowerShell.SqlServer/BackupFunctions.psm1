@@ -173,7 +173,9 @@ function BuildWithOptions {
             Write-Verbose "Requested: $option"
             $withOptions += $option
         } else {
-            $withOption += "NOINIT"
+            $option = "NOINIT"
+            Write-Verbose "Requested: $option"
+            $withOptions += $option
         }
     }
 
@@ -225,7 +227,7 @@ function BuildWithOptions {
         }
     }
 
-    if ($BoundParameters.ContainsKey('TRUNCATE')) {
+    if ($BoundParameters.ContainsKey('Truncate')) {
         if ($Truncate -eq $false) {
             $option = "NO_TRUNCATE"
             Write-Verbose "Requested: $option"
