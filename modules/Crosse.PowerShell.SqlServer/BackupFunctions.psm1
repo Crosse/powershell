@@ -1,8 +1,12 @@
 function Backup-Database {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess=$true,
+            ConfirmImpact="High")]
     param (
             [Parameter(Mandatory=$true)]
             [ValidateNotNullOrEmpty()]
+            # The MSSQL server to which to connect.
+            # This could be either the default instance or a named
+            # instance.
             [string]
             $Server,
 
@@ -86,8 +90,14 @@ function Backup-Database {
 
     if ($FullBackup -or $DifferentialBackup) {
         $backupType = "DATABASE"
+        if ($FullBackup) {
+            $desc = "Perform full backup of database $Database on server $Server"
+        } else {
+            $desc = "Perform differential backup of database $Database on server $Server"
+        }
     } elseif ($TransactionLogBackup) {
         $backupType = "LOG"
+        $desc = "Perform transaction log backup for database $Database on server $Server"
     } else {
         # should never happen
         Write-Error "Backup type not recognized"
@@ -102,40 +112,88 @@ function Backup-Database {
         $cmd += $with
     }
 
+    $caption = $desc
+    $warning = "Are you sure you want to perform this action?`n"
+    $warning += "This will perform a "
+    if ($FullBackup) {
+        $warning += "full backup "
+    } elseif ($DifferentialBackup) {
+        $warning += "differential "
+    } elseif ($TransactionLogBackup) {
+        $warning += "transaction log "
+    }
+    $warning += "backup of database $Database on $Server."
+
+    if (!$PSCmdlet.ShouldProcess($desc, $warning, $caption)) {
+        return
+    }
+
+    PerformBackupOrRecovery -Server $Server -Database $Database -Command $cmd
+}
+
+function PerformBackupOrRecovery {
+    [CmdletBinding(SupportsShouldProcess=$true,
+            ConfirmImpact="High")]
+    param (
+            [Parameter(Mandatory=$true)]
+            [ValidateNotNullOrEmpty()]
+            # The MSSQL server to which to connect.
+            # This could be either the default instance or a named
+            # instance.
+            [string]
+            $Server,
+
+            [Parameter(Mandatory=$true)]
+            [ValidateNotNullOrEmpty()]
+            [string]
+            $Database,
+
+            [Parameter(Mandatory=$true)]
+            [ValidateNotNullOrEmpty()]
+            [string]
+            $Command
+          )
+
+    if ($Command.Contains("BACKUP")) {
+        $verbPhrase = "Backing up"
+    } elseif ($Command.Contains("RESTORE")) {
+        $verbPhrase = "Restoring"
+    }
+
     Write-Verbose $cmd
-    $conn = Open-SqlConnection -Server $Server -Database $Database -Async
+
+    $conn = Open-SqlConnection -Server $Server -Async
     $spid = (Send-SqlQuery -SqlConnection $conn -Command "SELECT @@SPID as spid").spid
-    Write-Verbose "SPID: $spid"
     $sqlCmd = $conn.CreateCommand()
-    $sqlCmd.CommandText = $cmd
+    $sqlCmd.CommandText = $Command
 
     $checkConn = Open-SqlConnection -Server $Server
     $perms = Send-SqlQuery -SqlConnection $checkConn -Command "SELECT * FROM fn_my_permissions(NULL, 'SERVER') WHERE permission_name = 'VIEW SERVER STATE'"
     if ($perms -eq $null) {
-        Write-Warning "Cannot get backup progress.  You have not been granted the VIEW SERVER STATE permission."
+        Write-Warning "Cannot get progress.  You have not been granted the VIEW SERVER STATE permission."
     }
 
     $start = Get-Date
     $result = $sqlCmd.BeginExecuteNonQuery()
     while (! $result.IsCompleted) {
-        $check = Send-SqlQuery -SqlConnection $checkConn -Command "SELECT session_id,percent_complete,command,estimated_completion_time FROM sys.dm_exec_requests WHERE session_id = $spid AND command = 'BACKUP DATABASE'"
+        $check = Send-SqlQuery -SqlConnection $checkConn -Command "SELECT session_id,percent_complete,command,estimated_completion_time FROM sys.dm_exec_requests WHERE session_id = $spid AND command IN ('BACKUP DATABASE', 'BACKUP LOG', 'RESTORE DATABASE', 'RESTORE LOG')"
         if ($check -eq $null) {
             break
         }
 
         if ($perms -eq $null) {
             $elapsed = ((Get-Date) - $start).ToString("hh\:mm\:ss")
-            Write-Progress -Activity "Backing up $Database" -Status "Elapsed time:  $elapsed"
+            Write-Progress -Activity "$verbPhrase $Database" -Status "Elapsed time:  $elapsed"
         } else {
             $percent = [Math]::Round($check.percent_complete, 0, "AwayFromZero")
-            Write-Progress -Activity "Backing up $Database" `
+            Write-Progress -Activity "$verbPhrase $Database" `
                            -Status "${percent}% complete" `
                            -PercentComplete $check.percent_complete `
                            -SecondsRemaining ($check.estimated_completion_time / 1000)
         }
         Start-Sleep -Milliseconds 250
     }
-    Write-Progress -Activity "Backing up $Database" -Status "Completed" -Completed
+    Write-Progress -Activity "$verb $Database" -Status "Completed" -Completed
     $sqlCmd.EndExecuteNonQuery($result) | Out-Null
     $sqlCmd.Dispose()
     Close-SqlConnection $conn
@@ -152,118 +210,83 @@ function BuildWithOptions {
     $withOptions = @()
 
     if ($BoundParameters['DifferentialBackup']) {
-        $option = "DIFFERENTIAL"
-        Write-Verbose "Requested: $option"
-        $withOptions += $option
+        $withOptions += "DIFFERENTIAL"
     }
 
     if ($BoundParameters['CopyOnly']) {
-        $option = "COPY_ONLY"
-        Write-Verbose "Requested: $option"
-        $withOptions += $option
+        $withOptions += "COPY_ONLY"
     }
 
     if ($BoundParameters.ContainsKey('Compression')) {
         if ($Compression) {
-            $option = "COMPRESSION"
-            Write-Verbose "Requested: $option"
-            $withOptions += $option
+            $withOptions += "COMPRESSION"
         } else {
-            $option = "NO_COMPRESSION"
-            Write-Verbose "Requested: $option"
-            $withOptions += $option
+            $withOptions += "NO_COMPRESSION"
         }
     }
 
     if (! [String]::IsNullOrEmpty($Description)) {
-        $option = "DESCRIPTION = '$Description'"
-        Write-Verbose "Requested: $option"
-        $withOptions += $option
+        $withOptions += "DESCRIPTION = '$Description'"
     }
 
     if (! [String]::IsNullOrEmpty($Name)) {
-        $option = "NAME = '$Name'"
-        Write-Verbose "Requested: $option"
-        $withOptions += $option
+        $withOptions += "NAME = '$Name'"
     }
 
     if ($ExpireDate) {
-        $option = "EXPIREDATE = '$ExpireDate'"
-        Write-Verbose "Requested: $option"
-        $withOptions += $option
+        $withOptions += "EXPIREDATE = '$ExpireDate'"
     }
 
     if ($RetainDays) {
-        $option = "RETAINDAYS = $RetainDays"
-        Write-Verbose "Requested: $option"
-        $withOptions += $option
+        $withOptions += "RETAINDAYS = $RetainDays"
     }
 
     if ($BoundParameters.ContainsKey('Init')) {
         if ($Init) {
-            $option = "INIT"
-            Write-Verbose "Requested: $option"
-            $withOptions += $option
+            $withOptions += "INIT"
         } else {
-            $option = "NOINIT"
-            Write-Verbose "Requested: $option"
-            $withOptions += $option
+            $withOptions += "NOINIT"
         }
     }
 
     if ($BoundParameters.ContainsKey('Skip')) {
         if ($Skip) {
-            $option = "SKIP"
-            Write-Verbose "Requested: $option"
-            $withOptions += $option
+            $withOptions += "SKIP"
         } else {
-            $option = "NOSKIP"
-            Write-Verbose "Requested: $option"
-            $withOptions += $option
+            $withOptions += "NOSKIP"
         }
     }
 
     if ($BoundParameters.ContainsKey('Format')) {
         if ($Format) {
-            $option = "FORMAT"
-            Write-Verbose "Requested: $option"
-            $withOptions += $option
+            $withOptions += "FORMAT"
         } else {
-            $option = "NOFORMAT"
-            Write-Verbose "Requested: $option"
-            $withOptions += $option
+            $withOptions += "NOFORMAT"
         }
     }
 
     if (! [String]::IsNullOrEmpty($MediaDescription)) {
-        $option = "MEDIADESCRIPTION = '$MediaDescription'"
-        Write-Verbose "Requested: $option"
-        $withOptions += $option
+        $withOptions += "MEDIADESCRIPTION = '$MediaDescription'"
     }
 
     if (! [String]::IsNullOrEmpty($MediaName)) {
-        $option = "MEDIANAME = '$MediaName'"
-        Write-Verbose "Requested: $option"
-        $withOptions += $option
+        $withOptions += "MEDIANAME = '$MediaName'"
     }
 
     if ($BoundParameters.ContainsKey('Checksum')) {
         if ($Checksum) {
-            $option = "CHECKSUM"
-            Write-Verbose "Requested: $option"
-            $withOptions += $option
+            $withOptions += "CHECKSUM"
         } else {
-            $option = "NO_CHECKSUM"
-            Write-Verbose "Requested: $option"
-            $withOptions += $option
+            $withOptions += "NO_CHECKSUM"
         }
     }
 
     if ($BoundParameters.ContainsKey('NoTruncate')) {
         if ($NoTruncate) {
-            $option = "NO_TRUNCATE"
-            Write-Verbose "Requested: $option"
-            $withOptions += $option
+            $withOptions += "NO_TRUNCATE"
+        }
+    }
+
         }
     }
 
