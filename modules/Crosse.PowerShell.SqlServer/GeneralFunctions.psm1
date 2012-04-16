@@ -79,10 +79,17 @@ function Open-SqlConnection {
             [Parameter(Mandatory=$false)]
             [ValidateNotNullOrEmpty()]
             [string]
-            $Database="master"
+            $Database="master",
+
+            [Parameter(Mandatory=$false)]
+            [switch]
+            $Async
           )
 
     $connString = "Data Source={0};Initial Catalog={1};Integrated Security=SSPI;" -f $Server, $Database
+    if ($Async) {
+        $connString += "Asynchronous Processing=true;"
+    }
     $conn = New-Object System.Data.SqlClient.SqlConnection $connString
     Write-Verbose "Opening connection to $Server"
     $conn.Open()
