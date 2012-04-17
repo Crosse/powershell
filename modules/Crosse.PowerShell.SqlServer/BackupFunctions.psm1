@@ -267,8 +267,6 @@ function PerformBackupOrRecovery {
         $verbPhrase = "Restoring"
     }
 
-    Write-Verbose $cmd
-
     $conn = Open-SqlConnection -Server $Server -Async
     $spid = (Send-SqlQuery -SqlConnection $conn -Command "SELECT @@SPID as spid").spid
     $sqlCmd = $conn.CreateCommand()
