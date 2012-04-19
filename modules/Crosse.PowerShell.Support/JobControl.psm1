@@ -5,10 +5,14 @@ function Push-Job {
             [string]
             $Name,
 
-            [Parameter(Mandatory=$false,
+            [Parameter(Mandatory=$true,
                 ValueFromPipeline=$true)]
             [ScriptBlock]
             $ScriptBlock,
+
+            [Parameter(Mandatory=$false)]
+            [ScriptBlock]
+            $InitializationScript,
 
             [Parameter(Mandatory=$false)]
             [int]
