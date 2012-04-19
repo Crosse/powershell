@@ -5,10 +5,14 @@ function Push-Job {
             [string]
             $Name,
 
-            [Parameter(Mandatory=$false,
+            [Parameter(Mandatory=$true,
                 ValueFromPipeline=$true)]
             [ScriptBlock]
             $ScriptBlock,
+
+            [Parameter(Mandatory=$false)]
+            [ScriptBlock]
+            $InitializationScript,
 
             [Parameter(Mandatory=$false)]
             [int]
@@ -27,7 +31,7 @@ function Push-Job {
         do {
             $submitted = $false
             if ($global:JobWatcher[$Name].Count -le $ParallelJobCount) {
-                $job = Start-Job -ScriptBlock $ScriptBlock
+                $job = Start-Job -ScriptBlock $ScriptBlock -InitializationScript $InitializationScript
                 $global:JobWatcher[$Name].Add($job) | Out-Null
                 $submitted = $true
                 Write-Verbose "Started job $($job.Id)"
