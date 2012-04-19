@@ -97,4 +97,5 @@ function Watch-Jobs {
             $now = Get-Date
         }
     }
+    $global:JobWatcher.Remove($Name) | Out-Null
 }
