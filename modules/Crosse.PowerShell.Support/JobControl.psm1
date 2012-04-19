@@ -53,7 +53,7 @@ function Pop-Jobs {
 
     $jobs = $global:JobWatcher[$Name].ToArray()
     foreach ($job in $jobs) {
-        if ($job.State -eq "Completed" -or $job.State -eq "Stopped") {
+        if ($job.State -ne "Running" -or $job.State -eq "Suspended") {
             Write-Verbose "Removing job $($job.Id) from the queue"
             $global:JobWatcher[$Name].Remove($job) | Out-Null
             Receive-Job $job
