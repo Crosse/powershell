@@ -16,7 +16,11 @@ function Push-Job {
 
             [Parameter(Mandatory=$false)]
             [int]
-            $ParallelJobCount=10
+            $ParallelJobCount=10,
+
+            [Parameter(Mandatory=$false)]
+            [switch]
+            $Wait=$true
           )
 
     PROCESS {
@@ -44,6 +48,12 @@ function Push-Job {
             }
             Pop-Jobs -Name $Name
         } while ($submitted -eq $false)
+    }
+
+    END {
+        if ($Wait) {
+            Watch-Jobs -Name $Name
+        }
     }
 }
 
