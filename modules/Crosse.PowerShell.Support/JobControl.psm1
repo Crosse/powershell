@@ -20,7 +20,7 @@ function Push-Job {
 
             [Parameter(Mandatory=$false)]
             [switch]
-            $Wait=$true
+            $Wait=$false
           )
 
     PROCESS {
@@ -34,7 +34,7 @@ function Push-Job {
 
         do {
             $submitted = $false
-            if ($global:JobWatcher[$Name].Count -le $ParallelJobCount) {
+            if ($ParallelJobCount -eq -1 -or $global:JobWatcher[$Name].Count -le $ParallelJobCount) {
                 $job = Start-Job -ScriptBlock $ScriptBlock -InitializationScript $InitializationScript
                 $global:JobWatcher[$Name].Add($job) | Out-Null
                 $submitted = $true
