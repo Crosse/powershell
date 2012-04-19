@@ -403,7 +403,7 @@ function BuildWithOptions {
     }
 
     if ($BoundParameters.ContainsKey('Recovery')) {
-        if ($Checksum) {
+        if ($Recovery) {
             $withOptions += "RECOVERY"
         } else {
             $withOptions += "NORECOVERY"
