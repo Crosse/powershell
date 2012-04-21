@@ -81,14 +81,14 @@ FormatsToProcess = @('PackageManagement.Format.ps1xml')
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
 NestedModules = @(
+    'Add-PackageItem.psm1',
+    'Export-PackageItem.psm1',
+    'Get-PackageItem.psm1',
     'New-Package.psm1',
     'Open-Package.psm1',
-    'Set-Package.psm1',
-    'Get-PackageItem.psm1',
-    'Add-PackageItem.psm1',
+    'Out-Package.psm1',
     'Remove-PackageItem.psm1',
-    'Export-PackageItem.psm1',
-    'Out-Package.psm1'
+    'Set-Package.psm1'
                  )
 
 # Functions to export from this module
@@ -108,26 +108,26 @@ AliasesToExport = '*'
 
 # List of all modules packaged with this module
 ModuleList = @(
+    'Add-PackageItem.psm1',
+    'Export-PackageItem.psm1',
+    'Get-PackageItem.psm1',
     'New-Package.psm1',
     'Open-Package.psm1',
-    'Set-Package.psm1',
-    'Get-PackageItem.psm1',
-    'Add-PackageItem.psm1',
+    'Out-Package.psm1',
     'Remove-PackageItem.psm1',
-    'Export-PackageItem.psm1',
-    'Out-Package.psm1'
+    'Set-Package.psm1'
               )
 
 # List of all files packaged with this module
 FileList = @(
+    'Add-PackageItem.psm1',
+    'Export-PackageItem.psm1',
+    'Get-PackageItem.psm1',
     'New-Package.psm1',
     'Open-Package.psm1',
-    'Set-Package.psm1',
-    'Get-PackageItem.psm1',
-    'Add-PackageItem.psm1',
+    'Out-Package.psm1',
     'Remove-PackageItem.psm1',
-    'Export-PackageItem.psm1',
-    'Out-Package.psm1'
+    'Set-Package.psm1'
             )
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess
