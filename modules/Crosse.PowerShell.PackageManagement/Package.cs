@@ -31,22 +31,22 @@ namespace Crosse.PowerShell.PackageManagement {
         public PackageFile(string fileName, FileMode mode) {
             FileName = fileName;
             using (Package package = Package.Open(fileName, mode)) {
-                Category = package.PackageProperties.Category;
-                ContentStatus = package.PackageProperties.ContentStatus;
-                ContentType = package.PackageProperties.ContentType;
-                Created = package.PackageProperties.Created;
-                Creator = package.PackageProperties.Creator;
-                Description = package.PackageProperties.Description;
-                Identifier = package.PackageProperties.Identifier;
-                Keywords = package.PackageProperties.Keywords;
-                Language = package.PackageProperties.Language;
-                LastModifiedBy = package.PackageProperties.LastModifiedBy;
-                LastPrinted = package.PackageProperties.LastPrinted;
-                Modified = package.PackageProperties.Modified;
-                Revision = package.PackageProperties.Revision;
-                Subject = package.PackageProperties.Subject;
-                Title = package.PackageProperties.Title;
-                Version = package.PackageProperties.Version;
+                Category        = package.PackageProperties.Category;
+                ContentStatus   = package.PackageProperties.ContentStatus;
+                ContentType     = package.PackageProperties.ContentType;
+                Created         = package.PackageProperties.Created;
+                Creator         = package.PackageProperties.Creator;
+                Description     = package.PackageProperties.Description;
+                Identifier      = package.PackageProperties.Identifier;
+                Keywords        = package.PackageProperties.Keywords;
+                Language        = package.PackageProperties.Language;
+                LastModifiedBy  = package.PackageProperties.LastModifiedBy;
+                LastPrinted     = package.PackageProperties.LastPrinted;
+                Modified        = package.PackageProperties.Modified;
+                Revision        = package.PackageProperties.Revision;
+                Subject         = package.PackageProperties.Subject;
+                Title           = package.PackageProperties.Title;
+                Version         = package.PackageProperties.Version;
 
                 ItemCount = package.GetParts().Count();
             }
@@ -54,22 +54,22 @@ namespace Crosse.PowerShell.PackageManagement {
 
         public void Flush() {
             using (Package package = Package.Open(FileName, FileMode.Open)) {
-                package.PackageProperties.Category = Category;
-                package.PackageProperties.ContentStatus = ContentStatus;
-                package.PackageProperties.ContentType = ContentType;
-                package.PackageProperties.Created = Created;
-                package.PackageProperties.Creator = Creator;
-                package.PackageProperties.Description = Description;
-                package.PackageProperties.Identifier = Identifier;
-                package.PackageProperties.Keywords = Keywords;
-                package.PackageProperties.Language = Language;
-                package.PackageProperties.LastModifiedBy = LastModifiedBy;
-                package.PackageProperties.LastPrinted = LastPrinted;
-                package.PackageProperties.Modified = Modified;
-                package.PackageProperties.Revision = Revision;
-                package.PackageProperties.Subject = Subject;
-                package.PackageProperties.Title = Title;
-                package.PackageProperties.Version = Version;
+                package.PackageProperties.Category          = Category;
+                package.PackageProperties.ContentStatus     = ContentStatus;
+                package.PackageProperties.ContentType       = ContentType;
+                package.PackageProperties.Created           = Created;
+                package.PackageProperties.Creator           = Creator;
+                package.PackageProperties.Description       = Description;
+                package.PackageProperties.Identifier        = Identifier;
+                package.PackageProperties.Keywords          = Keywords;
+                package.PackageProperties.Language          = Language;
+                package.PackageProperties.LastModifiedBy    = LastModifiedBy;
+                package.PackageProperties.LastPrinted       = LastPrinted;
+                package.PackageProperties.Modified          = Modified;
+                package.PackageProperties.Revision          = Revision;
+                package.PackageProperties.Subject           = Subject;
+                package.PackageProperties.Title             = Title;
+                package.PackageProperties.Version           = Version;
 
                 ItemCount = package.GetParts().Count();
             }
