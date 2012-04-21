@@ -61,30 +61,12 @@ function Get-PackageItem {
     PROCESS {
         try {
             if ([String]::IsNullOrEmpty($Name) -eq $false) {
-                $Package = Open-Package $Name
+                $Package = Get-Package $Name
             }
 
-            # This is so we don't get "Collection modified" errors when
-            # being piped to Remove-PackageItem.
-            $parts = @()
-            foreach ($part in $Package.Package.GetParts()) {
-                if ($part.Uri -like "/_rels*" -or
-                        $part.Uri -like "/package/services/metadata/core-properties*") {
-                    continue
-                }
-                $parts += $part
-            }
-            $parts
+            $Package.GetPackageItems()
         } catch {
-            if (![String]::IsNullOrEmpty($Name) -and $Package -ne $null) {
-                Close-Package $Package
-            }
-            throw $_
-        }
-        finally {
-            if (![String]::IsNullOrEmpty($Name)) {
-                Close-Package $Package
-            }
+            throw
         }
     }
 }
