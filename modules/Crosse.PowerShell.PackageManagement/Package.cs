@@ -31,6 +31,7 @@ namespace Crosse.PowerShell.PackageManagement {
         public PackageFile(string fileName, FileMode mode) {
             FileName = fileName;
             using (Package package = Package.Open(fileName, mode)) {
+                ItemCount       = CountParts(package);
                 Category        = package.PackageProperties.Category;
                 ContentStatus   = package.PackageProperties.ContentStatus;
                 ContentType     = package.PackageProperties.ContentType;
@@ -47,13 +48,15 @@ namespace Crosse.PowerShell.PackageManagement {
                 Subject         = package.PackageProperties.Subject;
                 Title           = package.PackageProperties.Title;
                 Version         = package.PackageProperties.Version;
+            }
+        }
 
-                ItemCount = package.GetParts().Count();
             }
         }
 
         public void Flush() {
             using (Package package = Package.Open(FileName, FileMode.Open)) {
+                ItemCount                                   = CountParts(package);
                 package.PackageProperties.Category          = Category;
                 package.PackageProperties.ContentStatus     = ContentStatus;
                 package.PackageProperties.ContentType       = ContentType;
@@ -70,8 +73,23 @@ namespace Crosse.PowerShell.PackageManagement {
                 package.PackageProperties.Subject           = Subject;
                 package.PackageProperties.Title             = Title;
                 package.PackageProperties.Version           = Version;
+            }
+        }
 
-                ItemCount = package.GetParts().Count();
+        private int CountParts(Package package) {
+            int items = 0;
+            foreach (ZipPackagePart part in package.GetParts()) {
+                if (part.Uri.OriginalString.StartsWith("/package/services/metadata/core-properties") ||
+                        part.Uri.OriginalString.StartsWith("/_rels"))
+                    continue;
+                else
+                    items++;
+            }
+            return items;
+        }
+    }
+
+
             }
         }
     }
