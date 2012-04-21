@@ -117,9 +117,9 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
             </ListControl>
         </View>
         <View>
-            <Name>System.IO.Packaging.ZipPackagePart</Name>
+            <Name>Crosse.PowerShell.PackageManagement.PackageItem</Name>
             <ViewSelectedBy>
-                <TypeName>System.IO.Packaging.ZipPackagePart</TypeName>
+                <TypeName>Crosse.PowerShell.PackageManagement.PackageItem</TypeName>
             </ViewSelectedBy>
             <TableControl>
                 <TableHeaders>
@@ -142,9 +142,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
                                 <ScriptBlock>[Uri]::UnescapeDataString($_.Uri)</ScriptBlock>
                             </TableColumnItem>
                             <TableColumnItem>
-                                <ScriptBlock>
-                                    $stream = $_.GetStream("Open", "Read"); $l = $stream.Length; $stream.Close(); return $l
-                                </ScriptBlock>
+                                <PropertyName>UncompressedLength</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
                                 <PropertyName>CompressionOption</PropertyName>
@@ -155,9 +153,9 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
             </TableControl>
         </View>
         <View>
-            <Name>System.IO.Packaging.ZipPackagePart</Name>
+            <Name>Crosse.PowerShell.PackageManagement.PackageItem</Name>
             <ViewSelectedBy>
-                <TypeName>System.IO.Packaging.ZipPackagePart</TypeName>
+                <TypeName>Crosse.PowerShell.PackageManagement.PackageItem</TypeName>
             </ViewSelectedBy>
             <ListControl>
                 <ListEntries>
@@ -168,10 +166,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
                                 <ScriptBlock>[Uri]::UnescapeDataString($_.Uri)</ScriptBlock>
                             </ListItem>
                             <ListItem>
-                                <Label>UncompressedLength</Label>
-                                <ScriptBlock>
-                                    $stream = $_.GetStream("Open", "Read"); $l = $stream.Length; $stream.Close(); return $l
-                                </ScriptBlock>
+                                <PropertyName>UncompressedLength</PropertyName>
                             </ListItem>
                             <ListItem>
                                 <PropertyName>CompressionOption</PropertyName>

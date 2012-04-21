@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.IO.Packaging;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace Crosse.PowerShell.PackageManagement {
     public class PackageFile {
@@ -51,7 +52,18 @@ namespace Crosse.PowerShell.PackageManagement {
             }
         }
 
+        public List<PackageItem> GetPackageItems() {
+            List<PackageItem> parts = new List<PackageItem>();
+            using (Package package = Package.Open(FileName, FileMode.Open)) {
+                foreach (PackagePart part in package.GetParts()) {
+                    if (part.Uri.OriginalString.StartsWith("/package/services/metadata/core-properties") ||
+                            part.Uri.OriginalString.StartsWith("/_rels"))
+                        continue;
+                    else
+                        parts.Add(new PackageItem(part));
+                }
             }
+            return parts;
         }
 
         public void Flush() {
@@ -89,7 +101,16 @@ namespace Crosse.PowerShell.PackageManagement {
         }
     }
 
+    public class PackageItem {
+        public Uri Uri { get; internal set; }
+        public long UncompressedLength { get; internal set; }
+        public CompressionOption CompressionOption { get; internal set; }
 
+        internal PackageItem(PackagePart part) {
+            Uri = part.Uri;
+            CompressionOption = part.CompressionOption;
+            using (Stream stream = part.GetStream(FileMode.Open, FileAccess.Read)) {
+                UncompressedLength = stream.Length;
             }
         }
     }
