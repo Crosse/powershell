@@ -24,11 +24,11 @@
     Creates a new package file.
 
     .INPUTS
-    A System.IO.Packaging.Package object.
+    None.
 
     .OUTPUTS
     New-Package returns a Crosse.PowerShell.PackageManagement.PackageFile
-    object referencing the open package.
+    object referencing the package.
 
     .EXAMPLE
     New-Package test.zip
@@ -89,49 +89,6 @@ function New-Package {
                     -LastModifiedBy $creator
         Get-Package $package
     } catch {
-        throw
-    }
-}
-
-function Get-Package {
-    [CmdletBinding()]
-    param (
-            [Parameter(Mandatory=$true,
-                ValueFromPipeline=$true,
-                Position=0,
-                ParameterSetName="File")]
-            [string]
-            # The path to a package file.
-            $Name,
-
-            [Parameter(Mandatory=$true,
-                ValueFromPipeline=$true,
-                Position=0,
-                ParameterSetName="Package")]
-            [ValidateNotNull()]
-            [Crosse.PowerShell.PackageManagement.PackageFile]
-            # A PackageFile object.
-            $Package
-          )
-
-    if ([String]::IsNullOrEmpty($Name) -eq $true) {
-        $packagePath = $Package.FileName
-    } else {
-        if ((Split-Path -IsAbsolute $Name) -eq $true) {
-            $packagePath = Resolve-Path $Name -ErrorAction Stop
-        } else {
-            $packagePath = Resolve-Path `
-                (Join-Path (Get-Location -PSProvider "FileSystem") $Name) -ErrorAction Stop
-        }
-    }
-
-    if ((Test-Path $packagePath) -eq $false) {
-        throw "File $packagePath does not exist."
-    }
-
-    try {
-        New-Object Crosse.PowerShell.PackageManagement.PackageFile($packagePath, "Open")
-    } catch { 
         throw
     }
 }
