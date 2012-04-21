@@ -29,7 +29,10 @@ if (Test-Path $dll) {
 } else {
     try {
         $code = [String]::Join("`n", (Get-Content (Join-Path $PSScriptRoot "Package.cs")))
+        $start = Get-Date
         Add-Type -Language CSharpVersion3 -TypeDefinition $code -ReferencedAssemblies $assembly.FullName
+        $end = Get-Date
+        Write-Host "Package.cs compilation took $(($end - $start).Milliseconds)ms."
     } catch {
         throw
     } finally {
