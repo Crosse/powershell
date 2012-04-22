@@ -87,7 +87,7 @@ function New-Package {
                     -Modified $now `
                     -Identifier $Identifier `
                     -LastModifiedBy $creator
-        Get-Package $package
+        Get-Package $packagePath
     } catch {
         throw
     }
