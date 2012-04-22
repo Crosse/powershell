@@ -30,10 +30,10 @@
     None.
 
     .EXAMPLE
-    Close-Package $package
+    Close-Package $pack
 
     This example illustrates closing a package that had previously been
-    opened and saved into the variable "$package".
+    opened and saved into the variable "$pack".
 
     .LINK
 
@@ -46,7 +46,7 @@ function Out-Package {
             [Parameter(Mandatory=$true)]
             [ValidateNotNullOrEmpty()]
             [string]
-            $FilePath,
+            $PackagePath,
 
             [switch]
             $AddOrUpdate,
@@ -78,30 +78,40 @@ function Out-Package {
                 $fileMode = "Create"
             }
 
-            if ( (Split-Path -IsAbsolute $FilePath) -eq $true) {
-                $packagePath = $FilePath
+            if ( (Split-Path -IsAbsolute $PackagePath) -eq $true) {
+                $packPath = $PackagePath
             } else {
-                $packagePath = Join-Path (Get-Location -PSProvider "FileSystem") $FilePath
+                $packPath = Join-Path (Get-Location -PSProvider "FileSystem") $PackagePath
             }
 
-            $package = [System.IO.Packaging.Package]::Open($packagePath, $fileMode)
+            if (Test-Path $packPath) {
+                if ($AddOrUpdate) {
+                    $package = Get-Package $packPath
+                } else {
+                    throw "Package exists, and -AddOrUpdate wasn't specified."
+                }
+            } else {
+                $package = New-Package $packPath
+            }
+            $pack = $package.GetUnderlyingPackage()
             $basePath = $null
         } catch {
-            Close-Package $package
-            throw $_
+            $package.CloseUnderlyingPackage()
+            throw
         }
 
         $totalObjects = @($InputObject).Count
         $totalProgress = 0
 
         if ($ShowProgress) {
-            Write-Progress "Compressing" -Activity "Creating package $FilePath"
+            Write-Progress "Compressing" -Activity "Creating package $PackagePath"
         }
     }
 
     PROCESS {
         $i = 0
         foreach ($fso in $InputObject) {
+            Write-Verbose $fso
             if ($fso -eq $null) {
                 continue
             }
@@ -123,11 +133,11 @@ function Out-Package {
                 $interrupted = $true
                 Write-Verbose "Adding $relPath"
                 $uri = [System.IO.Packaging.PackUriHelper]::CreatePartUri($relPath)
-                if ($package.PartExists($uri)) {
+                if ($pack.PartExists($uri)) {
                     Write-Verbose "$uri already exists in package; deleting"
-                    $package.DeletePart($uri)
+                    $pack.DeletePart($uri)
                 }
-                $part = $package.CreatePart($uri, "", "Normal")
+                $part = $pack.CreatePart($uri, "", "Normal")
                 $srcStream = New-Object System.IO.FileStream($fso.FullName, "Open", "Read")
                 $destStream = $part.GetStream()
 
@@ -154,19 +164,19 @@ function Out-Package {
                 if ($ShowProgress) {
                     if ($totalObjects -gt 1) {
                         $percent = [Math]::Round($i/$totalObjects*100, 0)
-                        Write-Progress "$percent% Complete" -Activity "Creating package $FilePath" -PercentComplete $percent
+                        Write-Progress "$percent% Complete" -Activity "Creating package $PackagePath" -PercentComplete $percent
                     } else {
-                        Write-Progress "Compressed $relPath" -Activity "Creating package $FilePath"
+                        Write-Progress "Compressed $relPath" -Activity "Creating package $PackagePath"
                     }
                 }
                 $i++
                 $interrupted = $false
             } catch {
-                Write-Error $_
-                if ($package -ne $null) {
-                    $package.Close()
+                $err = $_
+                if ($pack -ne $null) {
+                    $pack.Close()
                 }
-                return
+                throw $err
             } finally {
                 if ($srcStream -ne $null) {
                     $srcStream.Close()
@@ -175,7 +185,7 @@ function Out-Package {
                     $destStream.Close()
                 }
                 if ($interrupted) {
-                    Close-Package $package
+                    $pack.CloseUnderlyingPackage()
                     throw "Operation interrupted."
                 }
             }
@@ -184,9 +194,9 @@ function Out-Package {
 
     END {
         Write-Verbose "Cleaning up"
-        Close-Package $package
+        $package.CloseUnderlyingPackage()
         if ($ShowProgress) {
-            Write-Progress "Creating package $FilePath" -Activity "Done." -Completed
+            Write-Progress "Creating package $PackagePath" -Activity "Done." -Completed
         }
     }
 }
