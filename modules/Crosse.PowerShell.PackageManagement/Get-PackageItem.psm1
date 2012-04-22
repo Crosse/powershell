@@ -59,14 +59,10 @@ function Get-PackageItem {
           )
 
     PROCESS {
-        try {
-            if ([String]::IsNullOrEmpty($Name) -eq $false) {
-                $Package = Get-Package $Name
-            }
-
-            $Package.GetPackageItems()
-        } catch {
-            throw
+        if ([String]::IsNullOrEmpty($Name) -eq $false) {
+            $Package = Get-Package $Name
         }
+
+        $Package.GetPackageItems()
     }
 }
