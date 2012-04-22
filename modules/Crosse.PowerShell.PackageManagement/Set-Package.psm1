@@ -73,8 +73,8 @@ function Set-Package {
             # A string describing the category of this package.
             $Category,
 
-            [DateTime]
-            # When the package was created.
+            [System.Nullable[DateTime]]
+            # When the package was created".
             $Created,
 
             [string]
@@ -101,11 +101,11 @@ function Set-Package {
             # The user/email address/etc. of the person who last modified the package.
             $LastModifiedBy,
 
-            [DateTime]
+            [System.Nullable[DateTime]]
             # When the package was last modified.
             $Modified,
 
-            [int]
+            [System.Nullable[int]]
             # The revision number of the package.
             $Revision,
 
@@ -133,63 +133,64 @@ function Set-Package {
                 }
                 $Package = Get-Package $packagePath
             }
-
-            if ($Category) {
-                Write-Verbose "Setting Category to $Category"
-                $package.Category = $Category
-            }
-            if ($Created) {
-                Write-Verbose "Setting Created to $Created"
-                $package.Created = $Created
-            }
-            if ($Creator -ne $null) {
-                Write-Verbose "Setting Creator to $Creator"
-                $package.Creator = $Creator
-            }
-            if ($Description -ne $null) {
-                Write-Verbose "Setting Description to $Description"
-                $package.Description = $Description
-            }
-            if ($Identifier -ne $null) {
-                Write-Verbose "Setting Identifier to $Identifier"
-                $package.Identifier = $Identifier
-            }
-            if ($Keywords -ne $null) {
-                Write-Verbose "Setting Keywords to $Keywords"
-                $package.Keywords = $Keywords -join ", "
-            }
-            if ($Language -ne $null) {
-                Write-Verbose "Setting Language to $Language"
-                $package.Language = $Language
-            }
-            if ($LastModifiedBy -ne $null) {
-                Write-Verbose "Setting LastModifiedBy to $LastModifiedBy"
-                $package.LastModifiedBy = $LastModifiedBy
-            }
-            if ($Modified) {
-                Write-Verbose "Setting Modified to $Modified"
-                $package.Modified = $Modified
-            }
-            if ($Revision -ne $null) {
-                Write-Verbose "Setting Revision to $Revision"
-                $package.Revision = $Revision
-            }
-            if ($Subject -ne $null) {
-                Write-Verbose "Setting Subject to $Subject"
-                $package.Title = $Subject
-            }
-            if ($Title -ne $null) {
-                Write-Verbose "Setting Title to $Title"
-                $package.Title = $Title
-            }
-            if ($Version -ne $null) {
-                Write-Verbose "Setting Version to $Version"
-                $package.Version = $Version
-            }
-
-            $package.Flush()
         } catch {
             throw $_
         }
+
+        $BoundParameters = $PSCmdlet.MyInvocation.BoundParameters
+        if ($BoundParameters.ContainsKey("Category")) {
+            Write-Verbose "Setting Category to `"$Category`""
+            $package.Category = $Category
+        }
+        if ($BoundParameters.ContainsKey("Created")) {
+            Write-Verbose "Setting Created to $Created"
+            $package.Created = $Created
+        }
+        if ($BoundParameters.ContainsKey("Creator")) {
+            Write-Verbose "Setting Creator to `"$Creator`""
+            $package.Creator = $Creator
+        }
+        if ($BoundParameters.ContainsKey("Description")) {
+            Write-Verbose "Setting Description to `"$Description`""
+            $package.Description = $Description
+        }
+        if ($Identifier -ne $null) {
+            Write-Verbose "Setting Identifier to $Identifier"
+            $package.Identifier = $Identifier
+        }
+        if ($BoundParameters.ContainsKey("Keywords")) {
+            Write-Verbose "Setting Keywords to $Keywords"
+            $package.Keywords = $Keywords -join ", "
+        }
+        if ($BoundParameters.ContainsKey("Language")) {
+            Write-Verbose "Setting Language to $Language"
+            $package.Language = $Language
+        }
+        if ($BoundParameters.ContainsKey("LastModifiedBy")) {
+            Write-Verbose "Setting LastModifiedBy to $LastModifiedBy"
+            $package.LastModifiedBy = $LastModifiedBy
+        }
+        if ($BoundParameters.ContainsKey("Modified")) {
+            Write-Verbose "Setting Modified to $Modified"
+            $package.Modified = $Modified
+        }
+        if ($BoundParameters.ContainsKey("Revision")) {
+            Write-Verbose "Setting Revision to $Revision"
+            $package.Revision = $Revision
+        }
+        if ($BoundParameters.ContainsKey("Subject")) {
+            Write-Verbose "Setting Subject to $Subject"
+            $package.Title = $Subject
+        }
+        if ($BoundParameters.ContainsKey("Title")) {
+            Write-Verbose "Setting Title to $Title"
+            $package.Title = $Title
+        }
+        if ($Version -ne $null) {
+            Write-Verbose "Setting Version to $Version"
+            $package.Version = $Version
+        }
+
+        $package.Flush()
     }
 }

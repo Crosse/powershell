@@ -21,7 +21,7 @@ namespace Crosse.PowerShell.PackageManagement {
         public  string      LastModifiedBy  { get; set; }
         public  DateTime?   LastPrinted     { get; set; }
         public  DateTime?   Modified        { get; set; }
-        public  int         Revision        { get; set; }
+        public  int?        Revision        { get; set; }
         public  string      Subject         { get; set; }
         public  string      Title           { get; set; }
         public  Version     Version         { get; set; }
@@ -43,9 +43,15 @@ namespace Crosse.PowerShell.PackageManagement {
                 LastModifiedBy  = package.PackageProperties.LastModifiedBy;
                 LastPrinted     = package.PackageProperties.LastPrinted;
                 Modified        = package.PackageProperties.Modified;
-                Revision        = package.PackageProperties.Revision;
                 Subject         = package.PackageProperties.Subject;
                 Title           = package.PackageProperties.Title;
+
+                int rev;
+                if (Int32.TryParse(package.PackageProperties.Revision, out rev)) {
+                    Revision = rev;
+                } else {
+                    Revision = null;
+                }
 
                 if (String.IsNullOrEmpty(package.PackageProperties.Keywords)) {
                     Keywords = new List<string>();
@@ -99,14 +105,20 @@ namespace Crosse.PowerShell.PackageManagement {
                 package.PackageProperties.Description       = Description;
                 package.PackageProperties.Identifier        = Identifier.ToString();
                 package.PackageProperties.Keywords          = String.Join(",", Keywords.ToArray());
-                package.PackageProperties.Language          = Language.ToString();
                 package.PackageProperties.LastModifiedBy    = LastModifiedBy;
                 package.PackageProperties.LastPrinted       = LastPrinted;
                 package.PackageProperties.Modified          = Modified;
-                package.PackageProperties.Revision          = Revision;
                 package.PackageProperties.Subject           = Subject;
                 package.PackageProperties.Title             = Title;
                 package.PackageProperties.Version           = Version.ToString();
+
+                if (Revision == null)
+                    package.PackageProperties.Revision      = null;
+                else
+                    package.PackageProperties.Revision      = Revision.ToString();
+
+                if (Language != null)
+                    package.PackageProperties.Language      = Language.ToString();
             }
         }
 
