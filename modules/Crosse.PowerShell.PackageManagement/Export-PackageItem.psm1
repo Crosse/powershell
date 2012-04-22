@@ -45,7 +45,7 @@ function Export-PackageItem {
                 ParameterSetName="File")]
             [string]
             # The path to a package file.
-            $Name,
+            $PackagePath,
 
             [Parameter(Mandatory=$true,
                 Position=0,
@@ -89,7 +89,7 @@ function Export-PackageItem {
     PROCESS {
         switch ($PSCmdlet.ParameterSetName) {
             "File" {
-                $Package = Open-Package $Name
+                $Package = Open-Package $PackagePath
                 $PackagePart = Get-PackageItem -Name $Package | 
                     Where-Object {
                         [Uri]::UnescapeDataString($_.Uri) -eq $Path -or

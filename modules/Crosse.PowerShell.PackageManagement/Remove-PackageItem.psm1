@@ -45,7 +45,7 @@ function Remove-PackageItem {
                 ParameterSetName="File")]
             [string]
             # The path to a package file.
-            $Name,
+            $PackagePath,
 
             [Parameter(Mandatory=$true,
                 Position=0,
@@ -77,7 +77,7 @@ function Remove-PackageItem {
         try {
             switch ($PSCmdlet.ParameterSetName) {
                 "File" {
-                    $Package = Open-Package $Name
+                    $Package = Open-Package $PackagePath
                     $pack = $Package.Package
                     break;
                 }
@@ -98,13 +98,13 @@ function Remove-PackageItem {
                 Write-Warning "Item $ItemPath does not exist in package."
             }
         } catch {
-            if (![String]::IsNullOrEmpty($Name) -and $Package -ne $null) {
+            if (![String]::IsNullOrEmpty($PackagePath) -and $Package -ne $null) {
                 Close-Package $Package
             }
             throw $_
         }
         finally {
-            if (![String]::IsNullOrEmpty($Name)) {
+            if (![String]::IsNullOrEmpty($PackagePath)) {
                 Close-Package $Package
             }
         }

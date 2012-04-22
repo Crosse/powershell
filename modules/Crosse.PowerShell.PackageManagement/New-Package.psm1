@@ -53,7 +53,7 @@ function New-Package {
             [ValidateNotNullOrEmpty()]
             [string]
             # The path to the package file to create.
-            $Name,
+            $PackagePath,
 
             [Guid]
             # A globally-unique identifier (GUID) used to identify the package.
@@ -66,10 +66,10 @@ function New-Package {
           )
 
     try {
-        if ((Split-Path -IsAbsolute $Name) -eq $true) {
-            $packagePath = Resolve-Path $Name
+        if ((Split-Path -IsAbsolute $PackagePath) -eq $true) {
+            $packagePath = Resolve-Path $PackagePath
         } else {
-            $packagePath = Join-Path (Get-Location -PSProvider "FileSystem") $Name
+            $packagePath = Join-Path (Get-Location -PSProvider "FileSystem") $PackagePath
         }
 
         if ((Test-Path $packagePath) -and $Force -eq $false) {
@@ -81,7 +81,7 @@ function New-Package {
         $now = Get-Date
         Set-Package -Package $package `
                     -Creator $creator `
-                    -Title $Name `
+                    -Title $PackagePath `
                     -Version "1.0" `
                     -Created $now `
                     -Modified $now `

@@ -46,7 +46,7 @@ function Get-PackageItem {
                 ParameterSetName="File")]
             [string]
             # The path to a package file.
-            $Name,
+            $PackagePath,
 
             [Parameter(Mandatory=$true,
                 ValueFromPipeline=$true,
@@ -59,8 +59,8 @@ function Get-PackageItem {
           )
 
     PROCESS {
-        if ([String]::IsNullOrEmpty($Name) -eq $false) {
-            $Package = Get-Package $Name
+        if ([String]::IsNullOrEmpty($PackagePath) -eq $false) {
+            $Package = Get-Package $PackagePath
         }
 
         $Package.GetPackageItems()

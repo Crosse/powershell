@@ -47,14 +47,14 @@ function Get-Package {
                 ValueFromPipeline=$true)]
             [string]
             # The path to a package file.
-            $Name
+            $PackagePath
           )
 
-    if ((Split-Path -IsAbsolute $Name) -eq $true) {
-        $packagePath = Resolve-Path $Name -ErrorAction Stop
+    if ((Split-Path -IsAbsolute $PackagePath) -eq $true) {
+        $packagePath = Resolve-Path $PackagePath -ErrorAction Stop
     } else {
         $packagePath = Resolve-Path `
-            (Join-Path (Get-Location -PSProvider "FileSystem") $Name) -ErrorAction Stop
+            (Join-Path (Get-Location -PSProvider "FileSystem") $PackagePath) -ErrorAction Stop
     }
 
     New-Object Crosse.PowerShell.PackageManagement.PackageFile($packagePath, "Open")

@@ -58,7 +58,7 @@ function Set-Package {
                 ParameterSetName="File")]
             [string]
             # The path to a package file.
-            $Name,
+            $PackagePath,
 
             [Parameter(Mandatory=$true,
                 ValueFromPipeline=$true,
@@ -124,12 +124,12 @@ function Set-Package {
 
     PROCESS {
         try {
-            if ([String]::IsNullOrEmpty($Name) -eq $false) {
-                if ((Split-Path -IsAbsolute $Name) -eq $true) {
-                    $packagePath = Resolve-Path $Name -ErrorAction Stop
+            if ([String]::IsNullOrEmpty($PackagePath) -eq $false) {
+                if ((Split-Path -IsAbsolute $PackagePath) -eq $true) {
+                    $packagePath = Resolve-Path $PackagePath -ErrorAction Stop
                 } else {
                     $packagePath = Resolve-Path `
-                        (Join-Path (Get-Location -PSProvider "FileSystem") $Name) -ErrorAction Stop
+                        (Join-Path (Get-Location -PSProvider "FileSystem") $PackagePath) -ErrorAction Stop
                 }
                 $Package = Get-Package $packagePath
             }

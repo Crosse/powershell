@@ -49,7 +49,7 @@ function Add-PackageItem {
                 ParameterSetName="File")]
             [string]
             # The path to a package file.
-            $Name,
+            $PackagePath,
 
             [Parameter(Mandatory=$true,
                 Position=0,
@@ -91,8 +91,8 @@ function Add-PackageItem {
 
     PROCESS {
         try {
-            if ([String]::IsNullOrEmpty($Name) -eq $false) {
-                $Package = Open-Package $Name
+            if ([String]::IsNullOrEmpty($PackagePath) -eq $false) {
+                $Package = Open-Package $PackagePath
             }
 
             if ($Destination) {
@@ -135,7 +135,7 @@ function Add-PackageItem {
             if ($uri -and $pack.PartExists($uri)) {
                 $pack.DeletePart($uri)
             }
-            if (![String]::IsNullOrEmpty($Name) -and $Package -ne $null) {
+            if (![String]::IsNullOrEmpty($PackagePath) -and $Package -ne $null) {
                 Close-Package $Package
             }
             throw $_
@@ -147,7 +147,7 @@ function Add-PackageItem {
             if ($destStream -ne $null) {
                 $destStream.Close()
             }
-            if (![String]::IsNullOrEmpty($Name)) {
+            if (![String]::IsNullOrEmpty($PackagePath)) {
                 Close-Package $Package
             }
         }
