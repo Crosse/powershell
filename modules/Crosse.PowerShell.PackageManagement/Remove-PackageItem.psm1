@@ -77,7 +77,7 @@ function Remove-PackageItem {
         try {
             switch ($PSCmdlet.ParameterSetName) {
                 "File" {
-                    $Package = Open-Package $PackagePath
+                    $Package = Get-Package $PackagePath
                     $pack = $Package.Package
                     break;
                 }

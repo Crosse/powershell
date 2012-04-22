@@ -92,7 +92,7 @@ function Add-PackageItem {
     PROCESS {
         try {
             if ([String]::IsNullOrEmpty($PackagePath) -eq $false) {
-                $Package = Open-Package $PackagePath
+                $Package = Get-Package $PackagePath
             }
 
             if ($Destination) {

@@ -89,7 +89,7 @@ function Export-PackageItem {
     PROCESS {
         switch ($PSCmdlet.ParameterSetName) {
             "File" {
-                $Package = Open-Package $PackagePath
+                $Package = Get-Package $PackagePath
                 $PackagePart = Get-PackageItem -Name $Package | 
                     Where-Object {
                         [Uri]::UnescapeDataString($_.Uri) -eq $Path -or
