@@ -70,40 +70,56 @@ function Set-Package {
             $Package,
 
             [string]
-            # The creator of the package.  This could be a user name, email address, etc.
-            $Creator,
-
-            [string]
-            # The title of the package.
-            $Title,
-
-            [string]
-            # The description of the package.
-            $Description,
-
-            [string]
-            # The version number of the package.
-            $Version,
-
-            [string]
-            # The revision number of the package.
-            $Revision,
+            # A string describing the category of this package.
+            $Category,
 
             [DateTime]
             # When the package was created.
             $Created,
 
-            [DateTime]
-            # When the package was last modified.
-            $Modified,
+            [string]
+            # The creator of the package.  This could be a user name, email address, etc.
+            $Creator,
+
+            [string]
+            # The description of the package.
+            $Description,
+
+            [Guid]
+            # The globally-unique identifier (GUID) of the package.
+            $Identifier,
+
+            [string[]]
+            # An array of keywords describing the package.
+            $Keywords,
+
+            [System.Globalization.CultureInfo]
+            # The language of the package.
+            $Language,
 
             [string]
             # The user/email address/etc. of the person who last modified the package.
             $LastModifiedBy,
 
-            [Guid]
-            # The globally-unique identifier (GUID) of the package.
-            $Identifier
+            [DateTime]
+            # When the package was last modified.
+            $Modified,
+
+            [int]
+            # The revision number of the package.
+            $Revision,
+
+            [string]
+            # The package's subject matter.
+            $Subject,
+
+            [string]
+            # The title of the package.
+            $Title,
+
+            [Version]
+            # The version number of the package.
+            $Version
         )
 
     PROCESS {
@@ -115,44 +131,60 @@ function Set-Package {
                     $packagePath = Resolve-Path `
                         (Join-Path (Get-Location -PSProvider "FileSystem") $Name) -ErrorAction Stop
                 }
-                $Package = Open-Package $packagePath
+                $Package = Get-Package $packagePath
             }
 
-            if ($Creator -ne $null) {
-                Write-Verbose "Setting Creator to $Creator"
-                $package.Creator = $Creator
-            }
-            if ($Title -ne $null) {
-                Write-Verbose "Setting Title to $Title"
-                $package.Title = $Title
-            }
-            if ($Description -ne $null) {
-                Write-Verbose "Setting Description to $Description"
-                $package.Description = $Description
-            }
-            if ($Version -ne $null) {
-                Write-Verbose "Setting Version to $Version"
-                $package.Version = $Version
-            }
-            if ($Revision -ne $null) {
-                Write-Verbose "Setting Revision to $Revision"
-                $package.Revision = $Revision
+            if ($Category) {
+                Write-Verbose "Setting Category to $Category"
+                $package.Category = $Category
             }
             if ($Created) {
                 Write-Verbose "Setting Created to $Created"
                 $package.Created = $Created
             }
-            if ($Modified) {
-                Write-Verbose "Setting Modified to $Modified"
-                $package.Modified = $Modified
+            if ($Creator -ne $null) {
+                Write-Verbose "Setting Creator to $Creator"
+                $package.Creator = $Creator
+            }
+            if ($Description -ne $null) {
+                Write-Verbose "Setting Description to $Description"
+                $package.Description = $Description
+            }
+            if ($Identifier -ne $null) {
+                Write-Verbose "Setting Identifier to $Identifier"
+                $package.Identifier = $Identifier
+            }
+            if ($Keywords -ne $null) {
+                Write-Verbose "Setting Keywords to $Keywords"
+                $package.Keywords = $Keywords -join ", "
+            }
+            if ($Language -ne $null) {
+                Write-Verbose "Setting Language to $Language"
+                $package.Language = $Language
             }
             if ($LastModifiedBy -ne $null) {
                 Write-Verbose "Setting LastModifiedBy to $LastModifiedBy"
                 $package.LastModifiedBy = $LastModifiedBy
             }
-            if ($Identifier -ne $null) {
-                Write-Verbose "Setting Identifier to $Identifier"
-                $package.Identifier = $Identifier
+            if ($Modified) {
+                Write-Verbose "Setting Modified to $Modified"
+                $package.Modified = $Modified
+            }
+            if ($Revision -ne $null) {
+                Write-Verbose "Setting Revision to $Revision"
+                $package.Revision = $Revision
+            }
+            if ($Subject -ne $null) {
+                Write-Verbose "Setting Subject to $Subject"
+                $package.Title = $Subject
+            }
+            if ($Title -ne $null) {
+                Write-Verbose "Setting Title to $Title"
+                $package.Title = $Title
+            }
+            if ($Version -ne $null) {
+                Write-Verbose "Setting Version to $Version"
+                $package.Version = $Version
             }
 
             $package.Flush()

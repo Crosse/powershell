@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.IO.Packaging;
 using System.Linq;
@@ -14,16 +15,16 @@ namespace Crosse.PowerShell.PackageManagement {
         public  DateTime?   Created         { get; set; }
         public  string      Creator         { get; set; }
         public  string      Description     { get; set; }
-        public  string      Identifier      { get; set; }
-        public  string      Keywords        { get; set; }
-        public  string      Language        { get; set; }
+        public  Guid        Identifier      { get; set; }
+        public  List<string>Keywords        { get; set; }
+        public  CultureInfo Language        { get; set; }
         public  string      LastModifiedBy  { get; set; }
         public  DateTime?   LastPrinted     { get; set; }
         public  DateTime?   Modified        { get; set; }
-        public  string      Revision        { get; set; }
+        public  int         Revision        { get; set; }
         public  string      Subject         { get; set; }
         public  string      Title           { get; set; }
-        public  string      Version         { get; set; }
+        public  Version     Version         { get; set; }
 #endregion
 
         public  string      FileName        { get; internal set; }
@@ -39,16 +40,36 @@ namespace Crosse.PowerShell.PackageManagement {
                 Created         = package.PackageProperties.Created;
                 Creator         = package.PackageProperties.Creator;
                 Description     = package.PackageProperties.Description;
-                Identifier      = package.PackageProperties.Identifier;
-                Keywords        = package.PackageProperties.Keywords;
-                Language        = package.PackageProperties.Language;
                 LastModifiedBy  = package.PackageProperties.LastModifiedBy;
                 LastPrinted     = package.PackageProperties.LastPrinted;
                 Modified        = package.PackageProperties.Modified;
                 Revision        = package.PackageProperties.Revision;
                 Subject         = package.PackageProperties.Subject;
                 Title           = package.PackageProperties.Title;
-                Version         = package.PackageProperties.Version;
+
+                if (String.IsNullOrEmpty(package.PackageProperties.Keywords)) {
+                    Keywords = new List<string>();
+                } else {
+                    Keywords.AddRange(package.PackageProperties.Keywords.Split(','));
+                }
+
+                try {
+                    Version  = new Version(package.PackageProperties.Version);
+                } catch (Exception) {
+                    this.Version = new Version();
+                }
+
+                try {
+                    Language = new CultureInfo(package.PackageProperties.Language);
+                } catch (ArgumentException) {
+                    Language = null;
+                }
+
+                try {
+                    Identifier = new Guid(package.PackageProperties.Identifier);
+                } catch (Exception) {
+                    Identifier = Guid.Empty;
+                }
             }
         }
 
@@ -67,6 +88,7 @@ namespace Crosse.PowerShell.PackageManagement {
         }
 
         public void Flush() {
+            Keywords.Sort();
             using (Package package = Package.Open(FileName, FileMode.Open)) {
                 ItemCount                                   = CountParts(package);
                 package.PackageProperties.Category          = Category;
@@ -75,16 +97,16 @@ namespace Crosse.PowerShell.PackageManagement {
                 package.PackageProperties.Created           = Created;
                 package.PackageProperties.Creator           = Creator;
                 package.PackageProperties.Description       = Description;
-                package.PackageProperties.Identifier        = Identifier;
-                package.PackageProperties.Keywords          = Keywords;
-                package.PackageProperties.Language          = Language;
+                package.PackageProperties.Identifier        = Identifier.ToString();
+                package.PackageProperties.Keywords          = String.Join(",", Keywords.ToArray());
+                package.PackageProperties.Language          = Language.ToString();
                 package.PackageProperties.LastModifiedBy    = LastModifiedBy;
                 package.PackageProperties.LastPrinted       = LastPrinted;
                 package.PackageProperties.Modified          = Modified;
                 package.PackageProperties.Revision          = Revision;
                 package.PackageProperties.Subject           = Subject;
                 package.PackageProperties.Title             = Title;
-                package.PackageProperties.Version           = Version;
+                package.PackageProperties.Version           = Version.ToString();
             }
         }
 
