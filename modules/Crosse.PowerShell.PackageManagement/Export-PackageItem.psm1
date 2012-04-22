@@ -56,21 +56,12 @@ function Export-PackageItem {
             $Package,
 
             [Parameter(Mandatory=$true,
-                Position=0,
-                ValueFromPipeline=$true,
-                ParameterSetName="PackagePart")]
-            [ValidateNotNull()]
-            [System.IO.Packaging.PackagePart]
-            # A PackagePart object.
-            $PackagePart,
-
-            [Parameter(Mandatory=$true,
                 ValueFromPipelineByPropertyName=$true)]
             [ValidateNotNullOrEmpty()]
             [Alias("Uri")]
             [Uri]
             # The item to export from the package.
-            $Path,
+            $ItemPath,
 
             [Parameter(Mandatory=$false)]
             [string]
@@ -87,25 +78,18 @@ function Export-PackageItem {
           )
 
     PROCESS {
-        switch ($PSCmdlet.ParameterSetName) {
-            "File" {
-                $Package = Get-Package $PackagePath
-                $PackagePart = Get-PackageItem -Name $Package | 
-                    Where-Object {
-                        [Uri]::UnescapeDataString($_.Uri) -eq $Path -or
-                        $_.Uri -eq $Path
-                    }
-            }
-            "Package" {
-                $PackagePart = Get-PackageItem -Package $Package | 
-                    Where-Object {
-                        [Uri]::UnescapeDataString($_.Uri) -eq $Path -or
-                        $_.Uri -eq $Path
-                    }
-            }
+        if (! [String]::IsNullOrEmpty($PackagePath)) {
+            $Package = Get-Package $PackagePath
         }
 
-        $normalizedPath = [Uri]::UnescapeDataString($Path)
+        $pack = $Package.GetUnderlyingPackage()
+        $PackagePart = $pack.GetParts() |
+            Where-Object {
+                [Uri]::UnescapeDataString($_.Uri) -eq $ItemPath -or
+                $_.Uri -eq $ItemPath
+            }
+
+        $normalizedPath = [Uri]::UnescapeDataString($ItemPath)
         if ([String]::IsNullOrEmpty($BasePath)) {
             $base = $PWD
         } else {
@@ -158,6 +142,7 @@ function Export-PackageItem {
                 $writer.Close()
                 $writer.Dispose()
             }
+            $Package.CloseUnderlyingPackage()
         }
     }
 }

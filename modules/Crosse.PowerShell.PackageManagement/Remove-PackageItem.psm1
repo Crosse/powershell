@@ -56,57 +56,32 @@ function Remove-PackageItem {
             $Package,
 
             [Parameter(Mandatory=$true,
-                Position=0,
-                ValueFromPipeline=$true,
-                ParameterSetName="PackagePart")]
-            [ValidateNotNull()]
-            [System.IO.Packaging.PackagePart]
-            # A PackagePart object.
-            $PackagePart,
-
-            [Parameter(Mandatory=$true,
                 ValueFromPipelineByPropertyName=$true)]
             [ValidateNotNullOrEmpty()]
             [Alias("Uri")]
             [Uri]
             # The item to remove from the package.
-            $Path
+            $ItemPath
           )
 
     PROCESS {
         try {
-            switch ($PSCmdlet.ParameterSetName) {
-                "File" {
-                    $Package = Get-Package $PackagePath
-                    $pack = $Package.Package
-                    break;
-                }
-                "Package" {
-                    $pack = $Package.Package
-                    break;
-                }
-                "PackagePart" {
-                    $pack = $PackagePart.Package
-                    break;
-                }
+            if (! [String]::IsNullOrEmpty($PackagePath)) {
+                $Package = Get-Package $PackagePath
             }
+            $pack = $Package.GetUnderlyingPackage()
 
-            if ($pack.PartExists($Path)) {
-                Write-Verbose "Deleting $Path from package"
-                $pack.DeletePart($Path)
+            if ($pack.PartExists($ItemPath)) {
+                Write-Verbose "Deleting $ItemPath from package"
+                $pack.DeletePart($ItemPath)
             } else {
                 Write-Warning "Item $ItemPath does not exist in package."
             }
         } catch {
-            if (![String]::IsNullOrEmpty($PackagePath) -and $Package -ne $null) {
-                Close-Package $Package
-            }
-            throw $_
+            throw
         }
         finally {
-            if (![String]::IsNullOrEmpty($PackagePath)) {
-                Close-Package $Package
-            }
+            $Package.CloseUnderlyingPackage()
         }
     }
 }
