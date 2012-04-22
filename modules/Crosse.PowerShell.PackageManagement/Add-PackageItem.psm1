@@ -62,7 +62,6 @@ function Add-PackageItem {
             [Parameter(Mandatory=$true,
                 ValueFromPipeline=$true,
                 Position=1)]
-            [ValidateScript({Test-Path $_.FullName -PathType Leaf})]
             [System.IO.FileInfo]
             # The file to add to the package.
             $Source,
@@ -95,13 +94,19 @@ function Add-PackageItem {
                 $Package = Get-Package $PackagePath
             }
 
+            if ((Split-Path -IsAbsolute $Source) -eq $true) {
+                $Source = (Resolve-Path $Source -ErrorAction Stop).Path
+            } else {
+                $Source = (Resolve-Path (Join-Path (Get-Location -PSProvider "FileSystem") $Source) -ErrorAction Stop).Path
+            }
+
             if ($Destination) {
                 $destPath = $Destination
             } else {
                 $destPath = $Source.Name
             }
 
-            $pack = $Package.Package
+            $pack = $Package.GetUnderlyingPackage()
 
             Write-Verbose "Adding $Source to package as $destPath"
             $uri = [System.IO.Packaging.PackUriHelper]::CreatePartUri($destPath)
@@ -132,13 +137,11 @@ function Add-PackageItem {
             }
             $destStream.Flush()
         } catch {
+            $err = $_
             if ($uri -and $pack.PartExists($uri)) {
                 $pack.DeletePart($uri)
             }
-            if (![String]::IsNullOrEmpty($PackagePath) -and $Package -ne $null) {
-                Close-Package $Package
-            }
-            throw $_
+            throw $err
         }
         finally {
             if ($srcStream -ne $null) {
@@ -147,9 +150,7 @@ function Add-PackageItem {
             if ($destStream -ne $null) {
                 $destStream.Close()
             }
-            if (![String]::IsNullOrEmpty($PackagePath)) {
-                Close-Package $Package
-            }
+            $Package.CloseUnderlyingPackage();
         }
     }
 }
