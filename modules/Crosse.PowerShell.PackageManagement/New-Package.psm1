@@ -66,9 +66,7 @@ function New-Package {
           )
 
     try {
-        if ((Split-Path -IsAbsolute $PackagePath) -eq $true) {
-            $packagePath = Resolve-Path $PackagePath
-        } else {
+        if ((Split-Path -IsAbsolute $PackagePath) -eq $false) {
             $packagePath = Join-Path (Get-Location -PSProvider "FileSystem") $PackagePath
         }
 
