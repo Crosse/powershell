@@ -6,7 +6,7 @@ using System.Linq;
 using System.Collections.Generic;
 
 namespace Crosse.PowerShell.PackageManagement {
-    public class PackageFile {
+    public class PackageFile : IDisposable {
 
 # region Properties that mirror Package.PackageProperties
         public  string      Category        { get; set; }
@@ -29,6 +29,7 @@ namespace Crosse.PowerShell.PackageManagement {
 
         public  string      FileName        { get; internal set; }
         public  int         ItemCount       { get; internal set; }
+        private Package     package;
 
         public PackageFile(string fileName, FileMode mode) {
             FileName = fileName;
@@ -132,6 +133,27 @@ namespace Crosse.PowerShell.PackageManagement {
                     items++;
             }
             return items;
+        }
+
+        public Package GetUnderlyingPackage() {
+           package = Package.Open(FileName, FileMode.Open);
+           return package;
+        }
+
+        public void CloseUnderlyingPackage() {
+            if (package != null) {
+                try {
+                    package.Close();
+                } catch {
+                    // do nothing
+                } finally {
+                    package = null;
+                }
+            }
+        }
+
+        public void Dispose() {
+            CloseUnderlyingPackage();
         }
     }
 
