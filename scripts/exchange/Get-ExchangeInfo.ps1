@@ -88,15 +88,16 @@ if ($IncludeDatabaseStatistics) {
                         -Status $db.Name `
                         -PercentComplete ($i/$dbCount*100) `
                         -Id 1 -SecondsRemaining $dtimeLeft
-        $dbInfo = New-Object PSObject
-        $dbInfo = Add-Member -PassThru -InputObject $dbInfo NoteProperty Identity $db.Name
-        Add-Member -InputObject $dbInfo NoteProperty Mailboxes $null
-        Add-Member -InputObject $dbInfo NoteProperty EdbFileSizeInGB $null
-        Add-Member -InputObject $dbInfo NoteProperty AvailableSpaceInMB $null
-        Add-Member -InputObject $dbInfo NoteProperty CommitPercent $null
-        Add-Member -InputObject $dbInfo NoteProperty BackupStatus $null
-        Add-Member -InputObject $dbInfo NoteProperty LastFullBackup $null
-        Add-Member -InputObject $dbInfo NoteProperty MountedOnServer $db.MountedOnServer.Split(".")[0]
+        $dbInfo = New-Object PSObject -Property @{
+                        Identity            = $db.Name
+                        Mailboxes           = $null
+                        EdbFileSizeInGB     = $null
+                        AvailableSpaceInMB  = $null
+                        CommitPercent       = $null
+                        BackupStatus        = $null
+                        LastFullBackup      = $null
+                        MountedOnServer     = $db.MountedOnServer.Split(".")[0]
+                    }
 
         if ($db.DatabaseSize -ne $null) {
             $dbInfo.EdbFileSizeInGB = [Math]::Round($db.DatabaseSize.ToBytes()/1GB, 0)
