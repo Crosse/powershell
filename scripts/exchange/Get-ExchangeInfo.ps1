@@ -63,9 +63,11 @@ Write-Verbose "Start Date: $Start"
 Write-Verbose "Script path:  $cwd"
 
 [UInt64]$totalStorageBytes = 0
+[UInt64]$totalQuotaBytes = 0
 $dbInfoArray = New-Object System.Collections.ArrayList
 $userInfoArray = @{}
 $statsArray = @{}
+$dbStatsArray = @{}
 
 Write-Host "Discovering all mailboxes..."
 $allMailboxes = $(adfind -csv -q -f '(&(!(cn=SystemMailbox*))(homeMDB=*)(objectClass=user))' sAMAccountName homeMDB msExchRecipientTypeDetails userAccountControl mDBUseDefaults | ConvertFrom-Csv)
@@ -169,6 +171,7 @@ if ($IncludeDatabaseStatistics) {
             $dbInfo.CommitPercent = "unlimited"
         } else {
             $dbInfo.CommitPercent = [Math]::Round(($totalDbUserQuota/$MaxDatabaseSizeInBytes*100), 0)
+            $totalQuotaBytes += $totalDbUserQuota
         }
 
         Write-Verbose "Database Name: $($dbInfo.Identity)"
@@ -218,8 +221,16 @@ $statsArray["Distribution Groups"] = @(Get-DistributionGroup).Count
 Write-Verbose "Found $($statsArray['Distribution Groups']) Distribution Groups"
 
 if ($IncludeDatabaseStatistics) {
-    $statsArray["Total Storage Used"] = "{0:N2} GB" -f ($totalStorageBytes/1GB)
+    $dbStatsArray["Total Storage Used"] = "{0:N2} GB" -f ($totalStorageBytes/1GB)
     Write-Verbose "Total Storage Used:  $($statsArray['Total Storage Used'])"
+
+    $dbStatsArray["Total Quota Extended"] = "{0:N2} GB" -f ($totalQuotaBytes/1GB)
+    Write-Verbose "Total Quota Extended:  $($statsArray['Total Quota Extended'])"
+}
+
+if ($IncludeTopRecipients) {
+    $statsArray["Actual Storage Used"] = "{0:N2} GB" -f (($userInfoArray.Values | Measure-Object -Sum).Sum)
+    Write-Verbose "Actual Storage Used:  $($statsArray['Actual Storage Used'])"
 }
 
 if ($IncludeMessageMetrics) {
@@ -293,6 +304,23 @@ foreach ($key in $statsArray.Keys) {
         <tr style="$style">
             <td style="$tdStyle">$($key)</td>
             <td style="$tdStyle">$($statsArray[$key])</td>
+        </tr>
+
+"@
+    $i++
+}
+
+foreach ($key in $dbStatsArray.Keys) {
+    if (($i % 2) -eq 0) {
+        $style = $trAltStyle
+    } else {
+        $style = $tr
+    }
+
+    $Body += @"
+        <tr style="$style">
+            <td style="$tdStyle">$($key)</td>
+            <td style="$tdStyle">$($dbStatsArray[$key])</td>
         </tr>
 
 "@
