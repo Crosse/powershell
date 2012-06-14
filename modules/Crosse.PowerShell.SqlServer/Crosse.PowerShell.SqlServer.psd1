@@ -83,7 +83,8 @@ CLRVersion = ''
 NestedModules = @(
     'GeneralFunctions.psm1',
     'BackupFunctions.psm1', 
-    'SqlMirroringFunctions.psm1'
+    'SqlMirroringFunctions.psm1',
+    'Set-SqlInstancePort.psm1'
 )
 
 # Functions to export from this module
@@ -102,14 +103,16 @@ AliasesToExport = '*'
 ModuleList = @(
     'GeneralFunctions.psm1',
     'BackupFunctions.psm1', 
-    'SqlMirroringFunctions.psm1'
+    'SqlMirroringFunctions.psm1',
+    'Set-SqlInstancePort.psm1'
 )
 
 # List of all files packaged with this module
 FileList = @(
     'GeneralFunctions.psm1',
     'BackupFunctions.psm1', 
-    'SqlMirroringFunctions.psm1'
+    'SqlMirroringFunctions.psm1',
+    'Set-SqlInstancePort.psm1'
 )
 
 # Private data to pass to the module specified in ModuleToProcess
