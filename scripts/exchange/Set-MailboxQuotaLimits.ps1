@@ -64,6 +64,7 @@ PROCESS {
 
     if ($stats.StorageLimitStatus -ne 'NoChecking' -and 
             $stats.StorageLimitStatus -ne 'BelowLimit') {
+        Write-Verbose "Looking at mailbox quota limits for $($Mailbox.Name)"
         if ($Mailbox.UseDatabaseQuotaDefaults -eq $true) {
             $db = Get-MailboxDatabase $Mailbox.Database `
                         -DomainController $dc
