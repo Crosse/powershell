@@ -141,9 +141,7 @@ if ($IncludeDatabaseStatistics) {
             if ($IncludeTopStorageUsers -or $RunSetMailboxQuotaLimits) {
                 $stats = Get-MailboxStatistics $user.sAMAccountName
                 if ($stats -ne $null) {
-                    if ($IncludeTopRecipients) {
-                        $userInfoArray[$user.sAMAccountName] = $stats.TotalItemSize.Value.ToBytes()
-                    }
+                    $userInfoArray[$user.sAMAccountName] = $stats.TotalItemSize.Value.ToBytes()
 
                     if ($RunSetMailboxQuotaLimits -and
                             (Test-Path "$cwd\Set-MailboxQuotaLimits.ps1") -and
@@ -222,16 +220,14 @@ $statsArray["Distribution Groups"] = @(Get-DistributionGroup).Count
 Write-Verbose "Found $($statsArray['Distribution Groups']) Distribution Groups"
 
 if ($IncludeDatabaseStatistics) {
-    $dbStatsArray["Total Storage Used"] = "{0:N2} GB" -f ($totalStorageBytes/1GB)
-    Write-Verbose "Total Storage Used:  $($statsArray['Total Storage Used'])"
+    $dbStatsArray["Storage Used (Databases)"] = "{0:N2} GB" -f ($totalStorageBytes/1GB)
+    Write-Verbose "Storage Used (Databases):  $($dbStatsArray['Total Storage Used'])"
 
-    $dbStatsArray["Total Quota Extended"] = "{0:N2} GB" -f ($totalQuotaBytes/1GB)
-    Write-Verbose "Total Quota Extended:  $($statsArray['Total Quota Extended'])"
-}
+    $dbStatsArray["Storage Used (Mailbox)"] = "{0:N2} GB" -f (($userInfoArray.Values | Measure-Object -Sum).Sum/1GB)
+    Write-Verbose "Storage Used (Mailboxes):  $($dbStatsArray['Actual Storage Used'])"
 
-if ($IncludeTopRecipients) {
-    $statsArray["Actual Storage Used"] = "{0:N2} GB" -f (($userInfoArray.Values | Measure-Object -Sum).Sum)
-    Write-Verbose "Actual Storage Used:  $($statsArray['Actual Storage Used'])"
+    $dbStatsArray["Total Quota Allocated"] = "{0:N2} GB" -f ($totalQuotaBytes/1GB)
+    Write-Verbose "Total Quota Allocated:  $($dbStatsArray['Total Quota Allocated'])"
 }
 
 if ($IncludeMessageMetrics) {
