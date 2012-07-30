@@ -120,11 +120,7 @@ if ($files -eq $null) {
                         -Confirm:$false
             $result
 
-            if ($result.ProvisioningSuccessful -eq $false) {
-                $user.Reason = $result.Error
-                $errorCount++
-                $output += "FAILURE: [ {0,-8} ] - {1}`n" -f $user.User, $result.Error
-            } else {
+            if ($result.ProvisioningSuccessful -eq $true) {
                 # Enable the user for Lync ONLY if mailbox provisioning was successful.
                 if ($EnableForLync) {
                     try {
@@ -152,7 +148,7 @@ if ($files -eq $null) {
             if ($result.ProvisioningSuccessful -eq $false) {
                 $user.Reason = $result.Error
                 $errorCount++
-                $output += "FAILURE [ {0,-8} ] - {1}`n" -f $user.User, $result.Error
+                $output += "FAILURE: [ {0,-8} ] - {1}`n" -f $user.User, $result.Error
             } else {
                 $user.Reason = $null
                 $output += "SUCCESS: [ {0,-8} ] - {1}" -f $user.User, $result.Error
@@ -199,11 +195,16 @@ if ($SendEmail -eq $true) {
 # Take care of disabled Lync people.  Band-aid for now.
 $disabledUsers = adfind -bit -list -q -f "(&(userAccountControl:AND:=2)(msRTCSIP-PrimaryUserAddress=*))" cn | Sort-Object
 if ($disabledUsers -ne $null) {
-    $disabledUsers | Disable-CsUser
-
     $Subject = "Lync Users Deprovisioned"
-    $Body = "The following users were found to be disabled in Active Directory, and thus were disabled in Lync:`n`n"
-    $Body += [String]::Join("`n", $disabledUsers)
+    $Body = "The following users were found to be disabled in Active Directory, and thus we attempted to disable them in Lync:`n`n"
+    foreach ($user in $disabledUsers) {
+        try {
+            Disable-CsUser -Identity $user -ErrorAction Stop
+            $Body += "SUCCESS: [ {0,-8} ]" -f $user
+        } catch {
+            $Body += "FAILURE: [ {0,-8} ] - {1}`n" -f $user, $_
+        }
+    }
 
     Write-Host $Subject
     Write-Host $Body
