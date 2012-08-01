@@ -200,7 +200,7 @@ if ($disabledUsers -ne $null) {
     foreach ($user in $disabledUsers) {
         try {
             Disable-CsUser -Identity $user -ErrorAction Stop
-            $Body += "SUCCESS: [ {0,-8} ]" -f $user
+            $Body += "SUCCESS: [ {0,-8} ]`n" -f $user
         } catch {
             $Body += "FAILURE: [ {0,-8} ] - {1}`n" -f $user, $_
         }
