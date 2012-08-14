@@ -105,11 +105,10 @@ if ($IncludeDatabaseStatistics) {
         }
 
         $dbInfo.LastFullBackup = $db.LastFullBackup
-
         if ($db.LastFullBackup -gt (Get-Date).AddDays(-1)) {
-            $dbInfo.BackupStatus = "OK (<24h)"
+            $dbInfo.BackupStatus = "OK"
         } else {
-            $dbInfo.BackupStatus = "NOT OK (>24h)"
+            $dbInfo.BackupStatus = "NOT OK"
         }
 
         $dbInfo.AvailableSpaceInMB = [Math]::Round($db.AvailableNewMailboxSpace.ToBytes()/1MB, 0)
