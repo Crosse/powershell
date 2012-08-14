@@ -16,25 +16,27 @@
 #
 ################################################################################
 
-[CmdletBinding(SupportsShouldProcess=$true,
-        ConfirmImpact="High")]
+function Get-ExchangeReplicationInfo {
+    [CmdletBinding(SupportsShouldProcess=$true,
+            ConfirmImpact="High")]
 
-param (
-        [Parameter(Mandatory=$false)]
-        [int]
-        $QueueLengthThreshold = 10
-      )
+    param (
+            [Parameter(Mandatory=$false)]
+            [int]
+            $QueueLengthThreshold = 10
+        )
 
-$eapref = $ErrorActionPreference
-try {
-    $status = Get-MailboxDatabase | Get-MailboxDatabaseCopyStatus
-} catch {
-    $e = $_
-    $ErrorActionPreference = $eapref
-    throw $e
+    $eapref = $ErrorActionPreference
+    try {
+        $status = Get-MailboxDatabase | Get-MailboxDatabaseCopyStatus
+    } catch {
+        $e = $_
+        $ErrorActionPreference = $eapref
+        throw $e
+    }
+
+    $status | ? {   $_.CopyQueueLength -gt $QueueLengthThreshold -or
+                    $_.ReplayQueueLength -gt $QueueLengthThreshold -or
+                    ($_.Status -ne "Healthy" -and $_.Status -ne "Mounted") -or
+                    $_.ContentIndexState -ne "Healthy" }
 }
-
-$status | ? {   $_.CopyQueueLength -gt $QueueLengthThreshold -or
-                $_.ReplayQueueLength -gt $QueueLengthThreshold -or
-                ($_.Status -ne "Healthy" -and $_.Status -ne "Mounted") -or
-                $_.ContentIndexState -ne "Healthy" }
