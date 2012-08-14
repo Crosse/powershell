@@ -69,7 +69,7 @@ $userInfoArray = @{}
 $statsArray = @{}
 $dbStatsArray = @{}
 
-Write-Host "Discovering all mailboxes..."
+Write-Verbose "Discovering all mailboxes..."
 $allMailboxes = $(adfind -csv -q -f '(&(!(cn=SystemMailbox*))(homeMDB=*)(objectClass=user))' sAMAccountName homeMDB msExchRecipientTypeDetails userAccountControl mDBUseDefaults | ConvertFrom-Csv)
 Write-Verbose "Found $($allMailboxes.Count) mailboxes"
 
@@ -173,13 +173,6 @@ if ($IncludeDatabaseStatistics) {
             $totalQuotaBytes += $totalDbUserQuota
         }
 
-        Write-Verbose "Database Name: $($dbInfo.Identity)"
-        Write-Verbose "Database Size: $($dbInfo.EdbFileSizeInGB)"
-        Write-Verbose "Database Available Space: $($dbInfo.AvailableSpaceInMB)MB"
-        Write-Verbose "Database Commit %: $($dbInfo.CommitPercent)"
-        Write-Verbose "Database Last Full Backup: $($dbInfo.LastFullBackup)"
-        Write-Verbose "Database Backup Status: $($dbInfo.BackupStatus)"
-        Write-Verbose "Database Mounted on:  $($dbInfo.MountedOnServer)"
         $null = $dbInfoArray.Add($dbInfo)
         $i++
         #if ($i -gt 2) {
@@ -191,31 +184,31 @@ if ($IncludeDatabaseStatistics) {
 
 # Misnomer, really.  This gets the top senders by recipient count.
 if ($IncludeTopRecipients) {
-    Write-Host "Getting Top Recipient Counts"
+    Write-Verbose "Getting Top Recipient Counts"
     $recipientCounts = & "$cwd\Get-TopRecipientCounts.ps1" -Start $Start -Verbose:$Verbose
 }
 
-Write-Host "Getting UserMailbox count..."
+Write-Verbose "Getting UserMailbox count..."
 $statsArray["User Mailboxes"] = @($allMailboxes | ? { $_.msExchRecipientTypeDetails -eq 1 }).Count
 Write-Verbose "Found $($statsArray['User Mailboxes']) UserMailboxes"
 
-Write-Host "Getting SharedMailbox count..."
+Write-Verbose "Getting SharedMailbox count..."
 $statsArray["Shared Mailboxes"] = @($allMailboxes | ? { $_.msExchRecipientTypeDetails -eq 4 }).Count
 Write-Verbose "Found $($statsArray['Shared Mailboxes']) Shared Mailboxes"
 
-Write-Host "Getting Resource Mailbox count..."
+Write-Verbose "Getting Resource Mailbox count..."
 $statsArray["Resource Mailboxes"] = @($allMailboxes | ? { $_.msExchRecipientTypeDetails -eq 16 -or $_.msExchRecipientTypeDetails -eq 32 }).Count
 Write-Verbose "Found $($statsArray['Resource Mailboxes']) Resource Mailboxes"
 
-Write-Host "Getting Disabled Mailboxes count..."
+Write-Verbose "Getting Disabled Mailboxes count..."
 $statsArray["Disabled Mailboxes"] = @($allMailboxes | ? { $_.msExchRecipientTypeDetails -eq 1 -and ($_.userAccountControl -band 2) -eq 2}).Count
 Write-Verbose "Found $($statsArray['Disabled Mailboxes']) Disabled Mailboxes"
 
-Write-Host "Getting MailUser count..."
+Write-Verbose "Getting MailUser count..."
 $statsArray["Mail Users"] = (adfind -c -q -f '(&(!(homeMDB=*))(targetAddress=*)(objectClass=user))')[1].Split(" ")[0]
 Write-Verbose "Found $($statsArray['Mail Users']) MailUsers"
 
-Write-Host "Getting Distribution Group count..."
+Write-Verbose "Getting Distribution Group count..."
 $statsArray["Distribution Groups"] = @(Get-DistributionGroup).Count
 Write-Verbose "Found $($statsArray['Distribution Groups']) Distribution Groups"
 
@@ -231,7 +224,7 @@ if ($IncludeDatabaseStatistics) {
 }
 
 if ($IncludeMessageMetrics) {
-    Write-Host "Getting Message Metrics"
+    Write-Verbose "Getting Message Metrics"
     $hubs = Get-ExchangeServer | ? { $_.ServerRole -match 'Hub' }
     $messageStats = $hubs | Get-MessageTrackingLog -ResultSize Unlimited `
                                 -Start $Start | ? {
