@@ -258,8 +258,8 @@ $trAltStyle         = "margin:4px;background-color:#EAF2D3"
 $tdStyle            = "margin:4px;border:1px solid green;border-collapse:collapse;text-align:right;"
 $tdIdentityStyle    = "margin:4px;border:1px solid green;border-collapse:collapse;text-align:left;"
 $tdServerStyle      = "margin:4px;border:1px solid green;border-collapse:collapse;text-align:center;"
-$tdWarningStyle     = "margin:4px;border:1px solid green;border-collapse:collapse;background-color:yellow;"
-$tdErrorStyle       = "margin:4px;border:1px solid green;border-collapse:collapse;background-color:red;"
+$tdWarningStyle     = "margin:4px;border:1px solid green;border-collapse:collapse;text-align:right;background-color:yellow;"
+$tdErrorStyle       = "margin:4px;border:1px solid green;border-collapse:collapse;text-align:right;background-color:red;"
 $brClearStyle       = "clear:both;"
 
 $Body  = @"
@@ -453,24 +453,15 @@ if ($IncludeDatabaseStatistics) {
                 <td style="$tdStyle">$($db.AvailableSpaceInMB) MB</td>
 
 "@
-        if ($db.CommitPercent -eq "unlimited") {
-            $Body += "<td style=`"$tdStyle`">{0}</td>" -f $db.CommitPercent
-        } elseif ($db.CommitPercent -gt 100) {
-            $Body += "<td style=`"$tdWarningStyle`">{0:N0}%</td>" -f $db.CommitPercent
-        } elseif ($db.CommitPercent -gt 150) {
-            $Body += "<td style=`"$tdErrorStyle`">{0:N0}%</td>" -f $db.CommitPercent
-        } else {
-            $Body += "<td style=`"$tdStyle`">{0:N0}%</td>" -f $db.CommitPercent
-        }
+        $Body += "<td style=`"$tdStyle`">{0:N0}%</td>" -f $db.CommitPercent
 
         $Body += "`n<td style=`"$tdStyle`">$($db.LastFullBackup.ToString('M/d/yy HH:mm'))</td>`n"
 
         if ($db.BackupStatus -match "NOT OK") {
-            $Body += "<td style=`"$tdWarningStyle`">{0}</td>" -f $($db.BackupStatus)
+            $Body += "<td style=`"$tdWarningStyle;text-align:center`">{0}</td>" -f $($db.BackupStatus)
         } else {
-            $Body += "<td style=`"$tdStyle`">{0}</td>" -f $($db.BackupStatus)
+            $Body += "<td style=`"$tdStyle;text-align:center`">{0}</td>" -f $($db.BackupStatus)
         }
-
         $Body += @"
 
                 <td style="$tdServerStyle">$($db.MountedOnServer.ToLower())</td>
