@@ -26,9 +26,6 @@
 
 param (
         [switch]
-        $IncludeDatabaseStatistics=$true,
-
-        [switch]
         $IncludeTopRecipients=$true,
 
         [switch]
@@ -65,113 +62,111 @@ Write-Verbose "Discovering all mailboxes..."
 $allMailboxes = $(adfind -csv -q -f '(&(!(cn=SystemMailbox*))(homeMDB=*)(objectClass=user))' sAMAccountName homeMDB msExchRecipientTypeDetails userAccountControl mDBUseDefaults | ConvertFrom-Csv)
 Write-Verbose "Found $($allMailboxes.Count) mailboxes"
 
-if ($IncludeDatabaseStatistics) {
-    $dbs = @(Get-MailboxDatabase -Status | Sort whenCreated)
-    $dbCount = $dbs.Count
-    $i = 1
-    $dstart = Get-Date
-    foreach ($db in $dbs) {
-        $dend = Get-Date
-        $dtotalSeconds = ($dend - $dstart).TotalSeconds
-        $timePerDb = $dtotalSeconds / $i
-        $dtimeLeft = $timePerDb * ($dbCount - $i)
+$dbs = @(Get-MailboxDatabase -Status | Sort whenCreated)
+$dbCount = $dbs.Count
+$i = 1
+$dstart = Get-Date
+foreach ($db in $dbs) {
+    $dend = Get-Date
+    $dtotalSeconds = ($dend - $dstart).TotalSeconds
+    $timePerDb = $dtotalSeconds / $i
+    $dtimeLeft = $timePerDb * ($dbCount - $i)
 
-        Write-Progress  -Activity "Gathering Database Statistics" `
-                        -Status $db.Name `
-                        -PercentComplete ($i/$dbCount*100) `
-                        -Id 1 -SecondsRemaining $dtimeLeft
-        $dbInfo = New-Object PSObject -Property @{
-                        Identity            = $db.Name
-                        Mailboxes           = $null
-                        EdbFileSizeInGB     = $null
-                        AvailableSpaceInMB  = $null
-                        CommitPercent       = $null
-                        BackupStatus        = $null
-                        LastFullBackup      = $null
-                        MountedOnServer     = $db.MountedOnServer.Split(".")[0]
-                    }
-
-        if ($db.DatabaseSize -ne $null) {
-            $dbInfo.EdbFileSizeInGB = [Math]::Round($db.DatabaseSize.ToBytes()/1GB, 0)
-            $totalStorageBytes += $db.DatabaseSize.ToBytes()
-        }
-
-        $dbInfo.LastFullBackup = $db.LastFullBackup
-        if ($db.LastFullBackup -gt (Get-Date).AddDays(-1)) {
-            $dbInfo.BackupStatus = "OK"
-        } else {
-            $dbInfo.BackupStatus = "NOT OK"
-        }
-
-        $dbInfo.AvailableSpaceInMB = [Math]::Round($db.AvailableNewMailboxSpace.ToBytes()/1MB, 0)
-        $dbUsers = @($allMailboxes | ? { $_.homeMDB -match "CN=$($db.Name)," })
-        $dbInfo.Mailboxes = $dbUsers.Count
-
-        if ($db.ProhibitSendReceiveQuota -eq "unlimited") {
-            Write-Verbose "Database quota set to unlimited"
-        } else {
-            [UInt64]$totalDbUserQuota = 0
-            $dbQuota = $db.ProhibitSendReceiveQuota.Value.ToBytes()
-        }
-
-        $usersCount = $dbUsers.Count
-        $j = 0
-        $startTime = Get-Date
-        foreach ($user in $dbUsers) {
-            if ($db.ProhibitSendReceiveQuota -ne "unlimited") {
-                if ($user.mDBUseDefaults -eq $true) {
-                    $totalDbUserQuota += $dbQuota
-                } else {
-                    $userQuota = (Get-Mailbox $user.sAMAccountName).ProhibitSendReceiveQuota
-                    if ($userQuota.IsUnlimited -eq $false) {
-                        $totalDbUserQuota += $userQuota.Value.ToBytes()
-                    }
+    Write-Progress  -Activity "Gathering Database Statistics" `
+                    -Status $db.Name `
+                    -PercentComplete ($i/$dbCount*100) `
+                    -Id 1 -SecondsRemaining $dtimeLeft
+    $dbInfo = New-Object PSObject -Property @{
+                    Identity            = $db.Name
+                    Mailboxes           = $null
+                    EdbFileSizeInGB     = $null
+                    AvailableSpaceInMB  = $null
+                    CommitPercent       = $null
+                    BackupStatus        = $null
+                    LastFullBackup      = $null
+                    MountedOnServer     = $db.MountedOnServer.Split(".")[0]
                 }
-            }
 
-            if ($IncludeTopStorageUsers -or $RunSetMailboxQuotaLimits) {
-                $stats = Get-MailboxStatistics $user.sAMAccountName
-                if ($stats -ne $null) {
-                    $userInfoArray[$user.sAMAccountName] = $stats.TotalItemSize.Value.ToBytes()
-
-                    if ($RunSetMailboxQuotaLimits -and
-                            (Test-Path "$cwd\Set-MailboxQuotaLimits.ps1") -and
-                            ($stats.StorageLimitStatus -eq 'IssueWarning' -or
-                            $stats.StorageLimitStatus -eq 'ProhibitSend' -or
-                            $stats.StorageLimitStatus -eq 'MailboxDisabled')) {
-                        Write-Verbose "Raising quota for user $($user.sAMAccountName)"
-                    & "$cwd\Set-MailboxQuotaLimits.ps1" -Identity $user.sAMAccountName -Verbose:$Verbose -Confirm:$false
-                    }
-                }
-            }
-            $j++
-            $end = Get-Date
-            $totalSeconds = ($end - $startTime).TotalSeconds
-            $timePerUser = $totalSeconds / $j
-            $timeLeft = $timePerUser * ($usersCount - $j)
-            Write-Progress  -Activity "Gathering User Statistics for Database $($db.Name)" `
-                            -Status $user.sAMAccountName `
-                            -PercentComplete ($j/$usersCount*100) `
-                            -Id 2 -ParentId 1 `
-                            -SecondsRemaining $timeLeft
-        }
-        Write-Progress -Activity "Gathering User Statistics" -Status "Finished" -Id 2 -ParentId 1 -Completed
-
-        if ($db.ProhibitSendReceiveQuota -eq "unlimited") {
-            $dbInfo.CommitPercent = "unlimited"
-        } else {
-            $dbInfo.CommitPercent = [Math]::Round(($totalDbUserQuota/$MaxDatabaseSizeInBytes*100), 0)
-            $totalQuotaBytes += $totalDbUserQuota
-        }
-
-        $null = $dbInfoArray.Add($dbInfo)
-        $i++
-        #if ($i -gt 2) {
-        #    break
-        #}
+    if ($db.DatabaseSize -ne $null) {
+        $dbInfo.EdbFileSizeInGB = [Math]::Round($db.DatabaseSize.ToBytes()/1GB, 0)
+        $totalStorageBytes += $db.DatabaseSize.ToBytes()
     }
-    Write-Progress -Activity "Gathering Database Statistics" -Status "Finished" -Id 1 -Completed
+
+    $dbInfo.LastFullBackup = $db.LastFullBackup
+    if ($db.LastFullBackup -gt (Get-Date).AddDays(-1)) {
+        $dbInfo.BackupStatus = "OK"
+    } else {
+        $dbInfo.BackupStatus = "NOT OK"
+    }
+
+    $dbInfo.AvailableSpaceInMB = [Math]::Round($db.AvailableNewMailboxSpace.ToBytes()/1MB, 0)
+    $dbUsers = @($allMailboxes | ? { $_.homeMDB -match "CN=$($db.Name)," })
+    $dbInfo.Mailboxes = $dbUsers.Count
+
+    if ($db.ProhibitSendReceiveQuota -eq "unlimited") {
+        Write-Verbose "Database quota set to unlimited"
+    } else {
+        [UInt64]$totalDbUserQuota = 0
+        $dbQuota = $db.ProhibitSendReceiveQuota.Value.ToBytes()
+    }
+
+    $usersCount = $dbUsers.Count
+    $j = 0
+    $startTime = Get-Date
+    foreach ($user in $dbUsers) {
+        if ($db.ProhibitSendReceiveQuota -ne "unlimited") {
+            if ($user.mDBUseDefaults -eq $true) {
+                $totalDbUserQuota += $dbQuota
+            } else {
+                $userQuota = (Get-Mailbox $user.sAMAccountName).ProhibitSendReceiveQuota
+                if ($userQuota.IsUnlimited -eq $false) {
+                    $totalDbUserQuota += $userQuota.Value.ToBytes()
+                }
+            }
+        }
+
+        if ($IncludeTopStorageUsers -or $RunSetMailboxQuotaLimits) {
+            $stats = Get-MailboxStatistics $user.sAMAccountName
+            if ($stats -ne $null) {
+                $userInfoArray[$user.sAMAccountName] = $stats.TotalItemSize.Value.ToBytes()
+
+                if ($RunSetMailboxQuotaLimits -and
+                        (Test-Path "$cwd\Set-MailboxQuotaLimits.ps1") -and
+                        ($stats.StorageLimitStatus -eq 'IssueWarning' -or
+                        $stats.StorageLimitStatus -eq 'ProhibitSend' -or
+                        $stats.StorageLimitStatus -eq 'MailboxDisabled')) {
+                    Write-Verbose "Raising quota for user $($user.sAMAccountName)"
+                & "$cwd\Set-MailboxQuotaLimits.ps1" -Identity $user.sAMAccountName -Verbose:$Verbose -Confirm:$false
+                }
+            }
+        }
+        $j++
+        $end = Get-Date
+        $totalSeconds = ($end - $startTime).TotalSeconds
+        $timePerUser = $totalSeconds / $j
+        $timeLeft = $timePerUser * ($usersCount - $j)
+        Write-Progress  -Activity "Gathering User Statistics for Database $($db.Name)" `
+                        -Status $user.sAMAccountName `
+                        -PercentComplete ($j/$usersCount*100) `
+                        -Id 2 -ParentId 1 `
+                        -SecondsRemaining $timeLeft
+    }
+    Write-Progress -Activity "Gathering User Statistics" -Status "Finished" -Id 2 -ParentId 1 -Completed
+
+    if ($db.ProhibitSendReceiveQuota -eq "unlimited") {
+        $dbInfo.CommitPercent = "unlimited"
+    } else {
+        $dbInfo.CommitPercent = [Math]::Round(($totalDbUserQuota/$MaxDatabaseSizeInBytes*100), 0)
+        $totalQuotaBytes += $totalDbUserQuota
+    }
+
+    $null = $dbInfoArray.Add($dbInfo)
+    $i++
+    #if ($i -gt 2) {
+    #    break
+    #}
 }
+Write-Progress -Activity "Gathering Database Statistics" -Status "Finished" -Id 1 -Completed
 
 # Misnomer, really.  This gets the top senders by recipient count.
 if ($IncludeTopRecipients) {
@@ -204,13 +199,10 @@ $statsArray["Distribution Groups"] = @(Get-DistributionGroup).Count
 
 $timeTaken = [Math]::Round(((Get-Date) - $stepStartTime).TotalSeconds, 2)
 Write-Verbose "Object counts report took $timeTaken seconds."
-if ($IncludeDatabaseStatistics) {
-    $dbStatsArray["Storage Used (Databases)"] = "{0:N2} GB" -f ($totalStorageBytes/1GB)
 
-    $dbStatsArray["Storage Used (Mailbox)"] = "{0:N2} GB" -f (($userInfoArray.Values | Measure-Object -Sum).Sum/1GB)
-
-    $dbStatsArray["Total Quota Allocated"] = "{0:N2} GB" -f ($totalQuotaBytes/1GB)
-}
+$dbStatsArray["Storage Used (Databases)"] = "{0:N2} GB" -f ($totalStorageBytes/1GB)
+$dbStatsArray["Storage Used (Mailbox)"] = "{0:N2} GB" -f (($userInfoArray.Values | Measure-Object -Sum).Sum/1GB)
+$dbStatsArray["Total Quota Allocated"] = "{0:N2} GB" -f ($totalQuotaBytes/1GB)
 
 if ($IncludeMessageMetrics) {
     $stepStartTime = Get-Date
@@ -417,8 +409,7 @@ $Body += @"
 "@
 
 
-if ($IncludeDatabaseStatistics) {
-    $Body += @"
+$Body += @"
         <table style="$tableDatabaseStyle">
             <caption style="$captionStyle">Database Information</caption>
             <tr style="$trStyle">
@@ -434,8 +425,8 @@ if ($IncludeDatabaseStatistics) {
 
 "@
 
-    foreach ($db in $dbInfoArray) {
-        $Body += @"
+foreach ($db in $dbInfoArray) {
+    $Body += @"
             <tr style="$trStyle">
                 <td style="$tdIdentityStyle">$($db.Identity)</td>
                 <td style="$tdStyle">$($db.Mailboxes)</td>
@@ -443,23 +434,23 @@ if ($IncludeDatabaseStatistics) {
                 <td style="$tdStyle">$($db.AvailableSpaceInMB) MB</td>
 
 "@
-        $Body += "<td style=`"$tdStyle`">{0:N0}%</td>" -f $db.CommitPercent
+    $Body += "<td style=`"$tdStyle`">{0:N0}%</td>" -f $db.CommitPercent
 
-        $Body += "`n<td style=`"$tdStyle`">$($db.LastFullBackup.ToString('M/d/yy HH:mm'))</td>`n"
+    $Body += "`n<td style=`"$tdStyle`">$($db.LastFullBackup.ToString('M/d/yy HH:mm'))</td>`n"
 
-        if ($db.BackupStatus -match "NOT OK") {
-            $Body += "<td style=`"$tdWarningStyle;text-align:center`">{0}</td>" -f $($db.BackupStatus)
-        } else {
-            $Body += "<td style=`"$tdStyle;text-align:center`">{0}</td>" -f $($db.BackupStatus)
-        }
-        $Body += @"
+    if ($db.BackupStatus -match "NOT OK") {
+        $Body += "<td style=`"$tdWarningStyle;text-align:center`">{0}</td>" -f $($db.BackupStatus)
+    } else {
+        $Body += "<td style=`"$tdStyle;text-align:center`">{0}</td>" -f $($db.BackupStatus)
+    }
+    $Body += @"
 
                 <td style="$tdServerStyle">$($db.MountedOnServer.ToLower())</td>
             </tr>
 
 "@
     }
-    $Body += @"
+$Body += @"
     </table>
     <br />
 
