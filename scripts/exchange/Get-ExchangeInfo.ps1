@@ -54,14 +54,6 @@ $MaxDatabaseSizeInBytes = 250*1GB
 ##################################
 $cwd = [System.IO.Path]::GetDirectoryName(($MyInvocation.MyCommand).Definition)
 
-Write-Verbose "SmtpServer: $SmtpServer"
-Write-Verbose "From: $From"
-Write-Verbose "To: $To"
-Write-Verbose "Email Subject:  $Title"
-Write-Verbose "MaxDatabaseSizeInBytes:  $($MaxDatabaseSizeInBytes/1GB)GB"
-Write-Verbose "Start Date: $Start"
-Write-Verbose "Script path:  $cwd"
-
 [UInt64]$totalStorageBytes = 0
 [UInt64]$totalQuotaBytes = 0
 $dbInfoArray = New-Object System.Collections.ArrayList
@@ -189,37 +181,28 @@ if ($IncludeTopRecipients) {
 
 Write-Verbose "Getting UserMailbox count..."
 $statsArray["User Mailboxes"] = @($allMailboxes | ? { $_.msExchRecipientTypeDetails -eq 1 }).Count
-Write-Verbose "Found $($statsArray['User Mailboxes']) UserMailboxes"
 
 Write-Verbose "Getting SharedMailbox count..."
 $statsArray["Shared Mailboxes"] = @($allMailboxes | ? { $_.msExchRecipientTypeDetails -eq 4 }).Count
-Write-Verbose "Found $($statsArray['Shared Mailboxes']) Shared Mailboxes"
 
 Write-Verbose "Getting Resource Mailbox count..."
 $statsArray["Resource Mailboxes"] = @($allMailboxes | ? { $_.msExchRecipientTypeDetails -eq 16 -or $_.msExchRecipientTypeDetails -eq 32 }).Count
-Write-Verbose "Found $($statsArray['Resource Mailboxes']) Resource Mailboxes"
 
 Write-Verbose "Getting Disabled Mailboxes count..."
 $statsArray["Disabled Mailboxes"] = @($allMailboxes | ? { $_.msExchRecipientTypeDetails -eq 1 -and ($_.userAccountControl -band 2) -eq 2}).Count
-Write-Verbose "Found $($statsArray['Disabled Mailboxes']) Disabled Mailboxes"
 
 Write-Verbose "Getting MailUser count..."
 $statsArray["Mail Users"] = (adfind -c -q -f '(&(!(homeMDB=*))(targetAddress=*)(objectClass=user))')[1].Split(" ")[0]
-Write-Verbose "Found $($statsArray['Mail Users']) MailUsers"
 
 Write-Verbose "Getting Distribution Group count..."
 $statsArray["Distribution Groups"] = @(Get-DistributionGroup).Count
-Write-Verbose "Found $($statsArray['Distribution Groups']) Distribution Groups"
 
 if ($IncludeDatabaseStatistics) {
     $dbStatsArray["Storage Used (Databases)"] = "{0:N2} GB" -f ($totalStorageBytes/1GB)
-    Write-Verbose "Storage Used (Databases):  $($dbStatsArray['Total Storage Used'])"
 
     $dbStatsArray["Storage Used (Mailbox)"] = "{0:N2} GB" -f (($userInfoArray.Values | Measure-Object -Sum).Sum/1GB)
-    Write-Verbose "Storage Used (Mailboxes):  $($dbStatsArray['Actual Storage Used'])"
 
     $dbStatsArray["Total Quota Allocated"] = "{0:N2} GB" -f ($totalQuotaBytes/1GB)
-    Write-Verbose "Total Quota Allocated:  $($dbStatsArray['Total Quota Allocated'])"
 }
 
 if ($IncludeMessageMetrics) {
@@ -239,12 +222,6 @@ if ($IncludeMessageMetrics) {
     $avgMessagesPerMailbox = $totalMessages / $allMailboxes.Count
     $iopsPerMailbox = ($avgMessagesPerMailbox / 1000) * ($avgMessageSizeInKB/75)
     $totalIops = $iopsPerMailbox * $allMailboxes.Count
-
-    Write-Verbose "Total messages, last 24h:  $totalMessages"
-    Write-Verbose "Average message size:  $avgMessageSizeInKB KB"
-    Write-Verbose "Average messages per mailbox: $avgMessagesPerMailbox"
-    Write-Verbose "Predicted IOPS per mailbox: $iopsPerMailbox"
-    Write-Verbose "Total Predicted IOPS:  $totalIops"
 }
 
 $bodyStyle          = "font-family:sans-serif;color:black;background-color:white;"
