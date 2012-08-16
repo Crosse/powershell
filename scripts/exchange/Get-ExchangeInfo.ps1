@@ -175,10 +175,15 @@ if ($IncludeDatabaseStatistics) {
 
 # Misnomer, really.  This gets the top senders by recipient count.
 if ($IncludeTopRecipients) {
+    $stepStartTime = Get-Date
     Write-Verbose "Getting Top Recipient Counts"
     $recipientCounts = & "$cwd\Get-TopRecipientCounts.ps1" -Start $Start -Verbose:$Verbose
+
+    $timeTaken = [Math]::Round(((Get-Date) - $stepStartTime).TotalSeconds, 2)
+    Write-Verbose "Top Recipient Count report took $timeTaken seconds."
 }
 
+$stepStartTime = Get-Date
 Write-Verbose "Getting UserMailbox count..."
 $statsArray["User Mailboxes"] = @($allMailboxes | ? { $_.msExchRecipientTypeDetails -eq 1 }).Count
 
@@ -197,6 +202,8 @@ $statsArray["Mail Users"] = (adfind -c -q -f '(&(!(homeMDB=*))(targetAddress=*)(
 Write-Verbose "Getting Distribution Group count..."
 $statsArray["Distribution Groups"] = @(Get-DistributionGroup).Count
 
+$timeTaken = [Math]::Round(((Get-Date) - $stepStartTime).TotalSeconds, 2)
+Write-Verbose "Object counts report took $timeTaken seconds."
 if ($IncludeDatabaseStatistics) {
     $dbStatsArray["Storage Used (Databases)"] = "{0:N2} GB" -f ($totalStorageBytes/1GB)
 
@@ -206,7 +213,9 @@ if ($IncludeDatabaseStatistics) {
 }
 
 if ($IncludeMessageMetrics) {
+    $stepStartTime = Get-Date
     Write-Verbose "Getting Message Metrics"
+
     $hubs = Get-ExchangeServer | ? { $_.ServerRole -match 'Hub' }
     $messageStats = $hubs | Get-MessageTrackingLog -ResultSize Unlimited `
                                 -Start $Start | ? {
@@ -222,6 +231,9 @@ if ($IncludeMessageMetrics) {
     $avgMessagesPerMailbox = $totalMessages / $allMailboxes.Count
     $iopsPerMailbox = ($avgMessagesPerMailbox / 1000) * ($avgMessageSizeInKB/75)
     $totalIops = $iopsPerMailbox * $allMailboxes.Count
+
+    $timeTaken = [Math]::Round(((Get-Date) - $stepStartTime).TotalSeconds, 2)
+    Write-Verbose "Message Metrics report took $timeTaken seconds."
 }
 
 $bodyStyle          = "font-family:sans-serif;color:black;background-color:white;"
