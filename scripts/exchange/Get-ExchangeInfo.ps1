@@ -167,6 +167,8 @@ foreach ($db in $dbs) {
     #}
 }
 Write-Progress -Activity "Gathering Database Statistics" -Status "Finished" -Id 1 -Completed
+$timeTaken = [Math]::Round(((Get-Date) - $dStart).TotalSeconds, 2)
+Write-Verbose "Database Statistics took $timeTaken seconds."
 
 # Misnomer, really.  This gets the top senders by recipient count.
 if ($IncludeTopRecipients) {
@@ -238,7 +240,6 @@ $trStyle            = "margin:4px;"
 $trAltStyle         = "margin:4px;background-color:#EAF2D3"
 $tdStyle            = "margin:4px;border:1px solid green;border-collapse:collapse;text-align:right;"
 $tdIdentityStyle    = "margin:4px;border:1px solid green;border-collapse:collapse;text-align:left;"
-$tdStatusStyle      = $tdIdentityStyle
 $tdServerStyle      = "margin:4px;border:1px solid green;border-collapse:collapse;text-align:center;"
 $tdWarningStyle     = "margin:4px;border:1px solid green;border-collapse:collapse;text-align:right;background-color:yellow;"
 $tdErrorStyle       = "margin:4px;border:1px solid green;border-collapse:collapse;text-align:right;background-color:red;"
