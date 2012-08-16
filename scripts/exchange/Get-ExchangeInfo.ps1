@@ -246,12 +246,13 @@ $trStyle            = "margin:4px;"
 $trAltStyle         = "margin:4px;background-color:#EAF2D3"
 $tdStyle            = "margin:4px;border:1px solid green;border-collapse:collapse;text-align:right;"
 $tdIdentityStyle    = "margin:4px;border:1px solid green;border-collapse:collapse;text-align:left;"
+$tdStatusStyle      = $tdIdentityStyle
 $tdServerStyle      = "margin:4px;border:1px solid green;border-collapse:collapse;text-align:center;"
 $tdWarningStyle     = "margin:4px;border:1px solid green;border-collapse:collapse;text-align:right;background-color:yellow;"
 $tdErrorStyle       = "margin:4px;border:1px solid green;border-collapse:collapse;text-align:right;background-color:red;"
 $brClearStyle       = "clear:both;"
 
-$Body  = @"
+$Body = @"
 <!DOCTYPE html PUBLIC "-//W3C/DTD XHTML 1.0 Tranisional//EN"
     "http://www.w3.org/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>
