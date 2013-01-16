@@ -24,11 +24,18 @@ param (
         [Parameter(Mandatory=$false)]
         [string]
         # The domain controller to use for all operations.
-        $DomainController
+        $DomainController,
+
+        [Parameter(Mandatory=$false)]
+        [IO.FileInfo]
+        $TranscriptPath
       )
 
 # This section executes only once, before the pipeline.
 BEGIN {
+    if ($TranscriptPath -ne $null) {
+        Start-Transcript -Append $TranscriptPath
+    }
     Write-Verbose "Performing initialization actions."
 
     if ([String]::IsNullOrEmpty($DomainController)) {
@@ -124,6 +131,11 @@ PROCESS {
                     -UseDatabaseQuotaDefaults:$false
     } else {
         Write-Verbose "Mailbox is within quota limits"
+    }
+}
+END {
+    if ($TranscriptPath -ne $null) {
+        Stop-Transcript
     }
 
     Get-Mailbox -Identity $Mailbox -DomainController $dc
