@@ -59,29 +59,29 @@ BEGIN {
 PROCESS {
     $Mailbox = Get-Mailbox $Identity -DomainController $dc
     if ($Mailbox -eq $null) {
-        Write-Error "Could not find mailbox."
+        Write-Error "Could not find mailbox `"$Identity.`""
         return
     }
 
     $stats = Get-MailboxStatistics $Mailbox -DomainController $dc
     if ($stats -eq $null) {
-        Write-Error "Could not get mailbox statistics"
+        Write-Error "Could not get mailbox statistics for `"$($Mailbox.Name)`"."
         return
     }
 
     if ($stats.StorageLimitStatus -ne 'NoChecking' -and 
             $stats.StorageLimitStatus -ne 'BelowLimit') {
-        Write-Verbose "Looking at mailbox quota limits for $($Mailbox.Name)"
+        Write-Verbose "Verifying mailbox quota limits for `"$($Mailbox.Name)`" (current size: $($stats.TotalItemSize.Value.ToMB()) MB)"
         if ($Mailbox.UseDatabaseQuotaDefaults -eq $true) {
             $db = Get-MailboxDatabase $Mailbox.Database `
                         -DomainController $dc
 
-            Write-Verbose "Mailbox is using database quota defaults"
+            Write-Verbose "Mailbox is using database quota defaults:"
             $IssueWarning           = $db.IssueWarningQuota.Value.ToMB()
             $ProhibitSend           = $db.ProhibitSendQuota.Value.ToMB()
             $ProhibitSendReceive    = $db.ProhibitSendReceiveQuota.Value.ToMB()
         } else {
-            Write-Verbose "Mailbox has custom quota levels"
+            Write-Verbose "Mailbox has custom quota levels:"
             $IssueWarning           = $Mailbox.IssueWarningQuota.Value.ToMB()
             $ProhibitSend           = $Mailbox.ProhibitSendQuota.Value.ToMB()
             $ProhibitSendReceive    = $Mailbox.ProhibitSendReceiveQuota.Value.ToMB()
@@ -129,14 +129,13 @@ PROCESS {
                     -ProhibitSendQuota $ProhibitSend `
                     -ProhibitSendReceiveQuota $ProhibitSendReceive `
                     -UseDatabaseQuotaDefaults:$false
+        Write-Verbose "Raised quota limits for `"$($Mailbox.Name)`"."
     } else {
-        Write-Verbose "Mailbox is within quota limits"
+        Write-Verbose "Mailbox for `"$($Mailbox.Name)`" is within quota limits."
     }
 }
 END {
     if ($TranscriptPath -ne $null) {
         Stop-Transcript
     }
-
-    Get-Mailbox -Identity $Mailbox -DomainController $dc
 }
