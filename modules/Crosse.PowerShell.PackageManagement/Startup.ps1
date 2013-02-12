@@ -16,7 +16,14 @@
 #
 ################################################################################
 
-$assembly = Get-ChildItem -Path 'C:\Program Files\Reference Assemblies\Microsoft\Framework' -Filter "WindowsBase.dll" -Recurse
+$assembly = Get-ChildItem -Path 'C:\Program Files\Reference Assemblies\Microsoft\Framework' `
+                                -Filter "WindowsBase.dll" `
+                                -Recurse -ErrorAction SilentlyContinue
+if ($assembly -eq $null) {
+    $assembly = Get-ChildItem -Path 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework' `
+                                -Filter "WindowsBase.dll" `
+                                -Recurse -ErrorAction SilentlyContinue
+}
 if ($assembly -eq $null) {
     throw New-Object System.IO.FileNotFoundException "Cannot find WindowsBase.dll"
 }
