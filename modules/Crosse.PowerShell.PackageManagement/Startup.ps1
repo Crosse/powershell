@@ -16,30 +16,38 @@
 #
 ################################################################################
 
-$assembly = Get-ChildItem -Path 'C:\Program Files\Reference Assemblies\Microsoft\Framework' `
-                                -Filter "WindowsBase.dll" `
-                                -Recurse -ErrorAction SilentlyContinue
-if ($assembly -eq $null) {
-    $assembly = Get-ChildItem -Path 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework' `
-                                -Filter "WindowsBase.dll" `
-                                -Recurse -ErrorAction SilentlyContinue
+[CmdletBinding()]
+param  ( )
+
+if ([AppDomain]::CurrentDomain.GetAssemblies() -match "WindowsBase") {
+    Write-Verbose "Found WindowsBase"
+} else {
+    $assembly = Get-ChildItem -Path 'C:\Program Files\Reference Assemblies\Microsoft\Framework' `
+                                    -Filter "WindowsBase.dll" `
+                                    -Recurse -ErrorAction SilentlyContinue
+    if ($assembly -eq $null) {
+        $assembly = Get-ChildItem -Path 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework' `
+                                    -Filter "WindowsBase.dll" `
+                                    -Recurse -ErrorAction SilentlyContinue
+    }
+    if ($assembly -eq $null) {
+        throw New-Object System.IO.FileNotFoundException "Cannot find WindowsBase.dll"
+    }
+    Add-Type -Path $assembly.FullName
 }
-if ($assembly -eq $null) {
-    throw New-Object System.IO.FileNotFoundException "Cannot find WindowsBase.dll"
-}
-Add-Type -Path $assembly.FullName
+
+$assembly = [AppDomain]::CurrentDomain.GetAssemblies() -match "WindowsBase"
 
 $dll = Join-Path $PSScriptRoot "types.dll"
 if (Test-Path $dll) {
+    Write-Verbose "Found precompiled $dll"
     Add-Type -Path $dll
     Remove-Variable assembly, dll
 } else {
     try {
+        Write-Verbose "Compiling $dll"
         $code = [String]::Join("`n", (Get-Content (Join-Path $PSScriptRoot "Package.cs")))
-        $start = Get-Date
-        Add-Type -Language CSharpVersion3 -TypeDefinition $code -ReferencedAssemblies $assembly.FullName
-        $end = Get-Date
-        Write-Host "Package.cs compilation took $(($end - $start).Milliseconds)ms."
+        Add-Type -Language CSharp -TypeDefinition $code -ReferencedAssemblies $assembly.FullName
     } catch {
         throw
     } finally {
