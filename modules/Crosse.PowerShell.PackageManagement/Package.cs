@@ -152,8 +152,13 @@ namespace Crosse.PowerShell.PackageManagement {
             }
         }
 
+        public void Dispose(bool dispose) {
+            if (dispose)
+                CloseUnderlyingPackage();
+        }
+
         public void Dispose() {
-            CloseUnderlyingPackage();
+            Dispose(true);
         }
     }
 
