@@ -48,16 +48,8 @@ function Out-M4V {
                 '--pfr',
                 # Set audio codec to use when it is not possible to copy an
                 # audio track without re-encoding.
-                '--aencoder "ffaac,copy:ac3"',
-                '--audio-copy-mask none',
                 '--audio-fallback ffac3',
                 # Store pixel aspect ratio with specified width
-                '--ab "160,0"',
-                '--mixdown "dpl2,auto"',
-                '--arate "Auto,Auto"',
-                '--drc "0,0"',
-                '--gain "0,0"',
-                '--aname English',
                 '--width 720',
                 '--loose-anamorphic',
                 # Set the number you want the scaled pixel dimensions to divide
@@ -96,7 +88,48 @@ function Out-M4V {
             Write-Verbose "Input File: $inputFile"
             $outputFile = Join-Path $outPath $inputFile.Name.Replace($inputFile.Extension, ".m4v")
 
-            $fileOptions = "--input `"$inputFile`" --output `"$outputFile`""
+            $command = "& '$mediainfo' --Output=XML `"$($inputFile.FullName)`""
+            Write-Verbose $command
+            [xml]$info = Invoke-Expression "$command"
+
+            $audio = $info.MediaInfo.File.Track | ? { $_.type -eq "Audio" }
+            if ($audio -eq $null) {
+                Write-Error "Error getting information about audio."
+                return
+            }
+
+            switch ($audio.Format) {
+                "AC-3" {
+                    $audioTitle = $audio.Title
+                    $audioOptions = @(
+                            '--aencoder "copy:ac3,copy:aac"',
+                            '-A "Dolby Digital $audioTitle,Dolby Pro Logic II"',
+                            '--drc "0,1.5"',
+                            '--gain "0,0"',
+                            '--arate Auto,Auto'
+                            )
+                }
+                "DTS" {
+                    if ($audio.Format_profile -match '^MA') {
+                        $audioOptions = @(
+                                '--aencoder "copy:ac3,copy:dtshd,copy:aac"',
+                                '-A "Dolby Digital 5.1,DTS-HD MA,Dolby Pro Logic II"'
+                                '--drc 0,0,1.5',
+                                '--gain 0,0,0',
+                                '--arate Auto,Auto,Auto'
+                                )
+                    } else {
+                        $audioOptions = @(
+                                '--aencoder "copy:dts,copy:ac3,copy:aac"',
+                                '-A "DTS","Dolby Digital 5.1,Dolby Pro Logic II"'
+                                '--drc 0,0,1.5',
+                                '--gain 0,0,0',
+                                '--arate Auto,Auto,Auto'
+                                )
+                    }
+                }
+            }
+
             if ($ScanOnly) {
                 $fileOptions = "--scan --input `"$($inputFile.FullName)`""
             } else {
@@ -104,6 +137,8 @@ function Out-M4V {
             }
             $command = "& '$handbrake' $fileOptions "
             $command += $handbrakeOptions -join " "
+            $command += " "
+            $command += $audioOptions -join " "
             Write-Verbose $command
             Invoke-Expression "$command"
         }
