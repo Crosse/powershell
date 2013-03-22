@@ -72,7 +72,9 @@ function Out-M4V {
                 # only used 10 percent of the time or less is selected. This
                 # should locate subtitles for short foreign language segments.
                 # Best used in conjunction with --subtitle-forced.
-                '--subtitle scan'
+                '--subtitle scan',
+                # Specifiy your language preference.
+                '--native-language eng'
                 )
 
         if ($Verbose) {
