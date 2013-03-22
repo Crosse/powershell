@@ -40,7 +40,8 @@ function Out-M4V {
                 '--encoder x264',
                 # advanced encoder options in the same style as mencoder
                 '--encopts "b-adapt=2"',
-                '--quality 20',
+                # Set video quality
+                '--quality 18',
                 # Set video framerate
                 '--rate 30',
                 # Select peak-limited frame rate control.
