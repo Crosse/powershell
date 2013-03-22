@@ -10,6 +10,12 @@ function Out-M4V {
             [System.IO.DirectoryInfo]
             $OutputPath = (Get-Location).Path,
 
+            [Parameter(Mandatory=$false,
+                ParameterSetName="Bluray")]
+            [ValidateSet("480p", "720p", "1080p")]
+            [string]
+            $Preset,
+
             [Parameter(Mandatory=$true,
                 ParameterSetName="ScanOnly")]
             [switch]
@@ -50,7 +56,6 @@ function Out-M4V {
                 # audio track without re-encoding.
                 '--audio-fallback ffac3',
                 # Store pixel aspect ratio with specified width
-                '--width 720',
                 '--loose-anamorphic',
                 # Set the number you want the scaled pixel dimensions to divide
                 # cleanly by.
@@ -130,6 +135,12 @@ function Out-M4V {
                 }
             }
 
+            switch ($Preset) {
+                '480p' { $videoOptions = '--maxWidth 480' }
+                '720p' { $videoOptions = '--maxWidth 1280' }
+                '1080p' { $videoOptions = '--maxWidth 1920' }
+            }
+
             if ($ScanOnly) {
                 $fileOptions = "--scan --input `"$($inputFile.FullName)`""
             } else {
@@ -139,6 +150,8 @@ function Out-M4V {
             $command += $handbrakeOptions -join " "
             $command += " "
             $command += $audioOptions -join " "
+            $command += " "
+            $command += $videoOptions -join " "
             Write-Verbose $command
             Invoke-Expression "$command"
         }
