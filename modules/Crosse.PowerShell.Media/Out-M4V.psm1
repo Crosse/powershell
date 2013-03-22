@@ -3,7 +3,7 @@ function Out-M4V {
     param (
             [Parameter(Mandatory=$true,
                 ValueFromPipeline=$true)]
-            [System.IO.FileInfo]
+            [object]
             $File,
 
             [Parameter(Mandatory=$false)]
@@ -50,8 +50,15 @@ function Out-M4V {
 
     }
     process {
+        Write-Verbose "Working on $File"
         try {
-            $inputFile = [System.IO.FileInfo](Resolve-Path $File -ErrorAction Stop).Path
+            if ($File -is [System.IO.FileInfo]) {
+                $inputFile = $File
+            } else {
+                $inter = Resolve-Path $File
+                $inputFile = [System.IO.FileInfo]$inter.Path
+            }
+            Write-Verbose "Input File: $inputFile"
             $outputFile = Join-Path $outPath $inputFile.Name.Replace($inputFile.Extension, ".m4v")
 
             $fileOptions = "--input `"$inputFile`" --output `"$outputFile`""
