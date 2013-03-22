@@ -68,7 +68,7 @@ function Out-M4V {
 
             $fileOptions = "--input `"$inputFile`" --output `"$outputFile`""
             if ($ScanOnly) {
-                $fileOptions = "--scan --input `"$($inputFile.FullName)`"" 
+                $fileOptions = "--scan --input `"$($inputFile.FullName)`""
             } else {
                 $fileOptions = "--input `"$($inputFile.FullName)`" --output `"$outputFile`""
             }
