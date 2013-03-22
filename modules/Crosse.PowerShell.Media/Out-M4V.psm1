@@ -8,7 +8,12 @@ function Out-M4V {
 
             [Parameter(Mandatory=$false)]
             [System.IO.DirectoryInfo]
-            $OutputPath = (Get-Location).Path
+            $OutputPath = (Get-Location).Path,
+
+            [Parameter(Mandatory=$true,
+                ParameterSetName="ScanOnly")]
+            [switch]
+            $ScanOnly
           )
 
     begin {
@@ -62,6 +67,11 @@ function Out-M4V {
             $outputFile = Join-Path $outPath $inputFile.Name.Replace($inputFile.Extension, ".m4v")
 
             $fileOptions = "--input `"$inputFile`" --output `"$outputFile`""
+            if ($ScanOnly) {
+                $fileOptions = "--scan --input `"$($inputFile.FullName)`"" 
+            } else {
+                $fileOptions = "--input `"$($inputFile.FullName)`" --output `"$outputFile`""
+            }
             $command = "& '$handbrake' $fileOptions "
             $command += $handbrakeOptions -join " "
             Write-Verbose $command
