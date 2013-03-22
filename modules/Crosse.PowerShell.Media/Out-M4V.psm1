@@ -19,6 +19,12 @@ function Out-M4V {
     begin {
         $handbrake = "C:\Program Files\Handbrake\HandbrakeCLI.exe"
         Resolve-Path $handbrake -ErrorAction Stop | Out-Null
+        Write-Verbose "Found handbrakecli: $handbrake"
+
+        $mediainfo = Join-Path $PSScriptRoot "MediaInfo.exe"
+        Resolve-Path $mediainfo -ErrorAction Stop | Out-Null
+        Write-Verbose "Found mediainfo: $mediainfo"
+
         $outPath = Resolve-Path $OutputPath -ErrorAction Stop
 
         $handbrakeOptions = @(
