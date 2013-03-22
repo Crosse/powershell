@@ -28,18 +28,29 @@ function Out-M4V {
         $outPath = Resolve-Path $OutputPath -ErrorAction Stop
 
         $handbrakeOptions = @(
+                # Set output format
                 '--format mp4',
+                # Add chapter markers
                 '--markers',
+                # Use 64-bit mp4 files that can hold more than 4GB.
                 '--large-file',
+                # Optimize mp4 files for HTTP streaming
                 '--optimize',
+                # Set video library encoder
                 '--encoder x264',
+                # advanced encoder options in the same style as mencoder
                 '--encopts "b-adapt=2"',
                 '--quality 20',
+                # Set video framerate
                 '--rate 30',
+                # Select peak-limited frame rate control.
                 '--pfr',
+                # Set audio codec to use when it is not possible to copy an
+                # audio track without re-encoding.
                 '--aencoder "ffaac,copy:ac3"',
                 '--audio-copy-mask none',
                 '--audio-fallback ffac3',
+                # Store pixel aspect ratio with specified width
                 '--ab "160,0"',
                 '--mixdown "dpl2,auto"',
                 '--arate "Auto,Auto"',
@@ -48,8 +59,18 @@ function Out-M4V {
                 '--aname English',
                 '--width 720',
                 '--loose-anamorphic',
+                # Set the number you want the scaled pixel dimensions to divide
+                # cleanly by.
                 '--modulus 2',
+                # Selectively deinterlaces when it detects combing
                 '--decomb',
+                # Select subtitle track(s), separated by commas.  A special
+                # track name "scan" adds an extra 1st pass.  This extra pass
+                # scans subtitles matching the language of the first audio or
+                # the language selected by --native-language.  The one that's
+                # only used 10 percent of the time or less is selected. This
+                # should locate subtitles for short foreign language segments.
+                # Best used in conjunction with --subtitle-forced.
                 '--subtitle scan'
                 )
 
