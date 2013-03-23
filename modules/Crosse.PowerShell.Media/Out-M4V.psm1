@@ -127,10 +127,19 @@ function Out-M4V {
                 }
             }
 
-            switch ($VideoPreset) {
-                '480p' { $videoOptions = '--maxWidth 480' }
-                '720p' { $videoOptions = '--maxWidth 1280' }
-                '1080p' { $videoOptions = '--maxWidth 1920' }
+            if ([String]::IsNullOrEmpty($VideoPreset)) {
+                $video = $info.MediaInfo.File.Track | ? { $_.type -eq "Video" }
+                if ($audio -eq $null) {
+                    Write-Error "Error getting audio track information from source."
+                    return
+                }
+            }
+            else {
+                switch ($VideoPreset) {
+                    '480p' { $videoOptions = '--maxWidth 480' }
+                    '720p' { $videoOptions = '--maxWidth 1280' }
+                    '1080p' { $videoOptions = '--maxWidth 1920' }
+                }
             }
 
             if ($ScanOnly) {
