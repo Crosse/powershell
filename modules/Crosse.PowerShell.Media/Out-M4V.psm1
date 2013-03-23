@@ -99,7 +99,7 @@ function Out-M4V {
 
             $audio = $info.MediaInfo.File.Track | ? { $_.type -eq "Audio" }
             if ($audio -eq $null) {
-                Write-Error "Error getting information about audio."
+                Write-Error "Error getting audio track information from source."
                 return
             }
 
