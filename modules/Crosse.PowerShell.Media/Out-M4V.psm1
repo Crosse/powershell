@@ -103,16 +103,17 @@ function Out-M4V {
                 return
             }
 
-            switch ($audio.Format) {
+            $mainAudio = $audio | ? { $_.Default -eq "Yes" }
+            switch ($mainAudio.Format) {
                 "AC-3" {
-                    $audioTitle = $audio.Title
+                    $audioTitle = $mainAudio.Title
                     $audioOptions = @(
                             '--aencoder "copy:ac3,copy:aac"',
                             '-A "Dolby Digital $audioTitle,Dolby Pro Logic II"'
                             )
                 }
                 "DTS" {
-                    if ($audio.Format_profile -match '^MA') {
+                    if ($mainAudio.Format_profile -match '^MA') {
                         $audioOptions = @(
                                 '--aencoder "copy:ac3,copy:dtshd,copy:aac"',
                                 '-A "Dolby Digital 5.1,DTS-HD MA,Dolby Pro Logic II"'
