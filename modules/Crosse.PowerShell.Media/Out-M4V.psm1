@@ -14,7 +14,7 @@ function Out-M4V {
                 ParameterSetName="Bluray")]
             [ValidateSet("480p", "720p", "1080p")]
             [string]
-            $Preset,
+            $VideoPreset,
 
             [Parameter(Mandatory=$true,
                 ParameterSetName="ScanOnly")]
@@ -126,7 +126,7 @@ function Out-M4V {
                 }
             }
 
-            switch ($Preset) {
+            switch ($VideoPreset) {
                 '480p' { $videoOptions = '--maxWidth 480' }
                 '720p' { $videoOptions = '--maxWidth 1280' }
                 '1080p' { $videoOptions = '--maxWidth 1920' }
