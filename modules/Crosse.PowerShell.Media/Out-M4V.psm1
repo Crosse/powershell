@@ -108,10 +108,7 @@ function Out-M4V {
                     $audioTitle = $audio.Title
                     $audioOptions = @(
                             '--aencoder "copy:ac3,copy:aac"',
-                            '-A "Dolby Digital $audioTitle,Dolby Pro Logic II"',
-                            '--drc "0,1.5"',
-                            '--gain "0,0"',
-                            '--arate Auto,Auto'
+                            '-A "Dolby Digital $audioTitle,Dolby Pro Logic II"'
                             )
                 }
                 "DTS" {
@@ -119,17 +116,11 @@ function Out-M4V {
                         $audioOptions = @(
                                 '--aencoder "copy:ac3,copy:dtshd,copy:aac"',
                                 '-A "Dolby Digital 5.1,DTS-HD MA,Dolby Pro Logic II"'
-                                '--drc 0,0,1.5',
-                                '--gain 0,0,0',
-                                '--arate Auto,Auto,Auto'
                                 )
                     } else {
                         $audioOptions = @(
                                 '--aencoder "copy:dts,copy:ac3,copy:aac"',
                                 '-A "DTS","Dolby Digital 5.1,Dolby Pro Logic II"'
-                                '--drc 0,0,1.5',
-                                '--gain 0,0,0',
-                                '--arate Auto,Auto,Auto'
                                 )
                     }
                 }
