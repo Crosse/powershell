@@ -371,7 +371,10 @@ function Out-M4V {
             Write-Verbose $command
 
             if ($WhatIf -eq $false) {
+                $startTime = Get-Date
                 Invoke-Expression "$command"
+                $elapsed = [Math]::Round(((Get-Date) - $starttime).TotalMinutes, 2)
+                Write-Verbose "Encoding took $elapsed total minutes."
             }
         }
         catch
