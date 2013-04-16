@@ -279,7 +279,6 @@ function Out-M4V {
                 Write-Verbose "Audio Track ${trackNumber}: Title: $trackTitle; Format: $trackFormat; Format Profile: $($audioTrack.Format_profile); Language: $trackLang"
 
                 if ($isDefaultTrack) {
-                    $audioTitle = $audioTrack.Title
                     Write-Verbose "`tTrack $trackNumber is the default audio track."
 
                     if ([String]::IsNullOrEmpty($trackTitle)) {
