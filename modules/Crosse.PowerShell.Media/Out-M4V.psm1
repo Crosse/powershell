@@ -143,7 +143,7 @@ function Out-M4V {
                 # Set video quality
                 "--quality $VideoQuality"
                 # Set video framerate
-                '--rate 30',
+                "--rate 29.97"
                 # Select peak-limited frame rate control.
                 "--pfr"
                 # Set audio codec to use when it is not possible to copy an
