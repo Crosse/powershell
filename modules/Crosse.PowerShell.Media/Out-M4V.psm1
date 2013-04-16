@@ -54,16 +54,24 @@ function Out-M4V {
                 ParameterSetName="ScanOnly")]
             [switch]
             $ScanOnly
+
+            [Parameter(Mandatory=$false)]
+            [string]
+            # The path to HandbrakeCLI.exe.  By default this is "C:\Program Files\Handbrake\HandbrakeCLI.exe".
+            $HandbrakeCLIPath = "C:\Program Files\Handbrake\HandbrakeCLI.exe",
+
+            [Parameter(Mandatory=$false)]
+            [string]
+            # The path to the MediaInfo.exe CLI program (NOT the GUI application, which unfortunately has the same name).  The default is to use the binaries in the same directory as this cmdlet's module manifest.
+            $MediaInfoCLIPath = (Join-Path $PSScriptRoot "MediaInfo.exe"),
           )
 
     begin {
-        $handbrake = "C:\Program Files\Handbrake\HandbrakeCLI.exe"
-        Resolve-Path $handbrake -ErrorAction Stop | Out-Null
-        Write-Verbose "Found handbrakecli: $handbrake"
+        Resolve-Path $HandbrakeCLIPath -ErrorAction Stop | Out-Null
+        Write-Verbose "Found HandbrakeCLI: $HandbrakeCLIPath"
 
-        $mediainfo = Join-Path $PSScriptRoot "MediaInfo.exe"
-        Resolve-Path $mediainfo -ErrorAction Stop | Out-Null
-        Write-Verbose "Found mediainfo: $mediainfo"
+        Resolve-Path $MediaInfoCLIPath -ErrorAction Stop | Out-Null
+        Write-Verbose "Found MediaInfo: $MediaInfoCLIPath"
 
         $outPath = Resolve-Path $OutputPath -ErrorAction Stop
 
@@ -127,8 +135,7 @@ function Out-M4V {
             Write-Verbose "Input File: $inputFile"
             $outputFile = Join-Path $outPath $inputFile.Name.Replace($inputFile.Extension, ".m4v")
 
-            $command = "& '$mediainfo' --Output=XML `"$($inputFile.FullName)`""
-            Write-Verbose $command
+            $command = "& '$MediaInfoCLIPath' --Output=XML `"$($inputFile.FullName)`""
             [xml]$info = Invoke-Expression "$command"
 
             $audio = $info.MediaInfo.File.Track | ? { $_.type -eq "Audio" }
@@ -181,7 +188,7 @@ function Out-M4V {
             } else {
                 $fileOptions = "--input `"$($inputFile.FullName)`" --output `"$outputFile`""
             }
-            $command = "& '$handbrake' $fileOptions "
+            $command = "& '$HandbrakeCLIPath' $fileOptions "
             $command += $handbrakeOptions -join " "
             $command += " "
             $command += $audioOptions -join " "
