@@ -137,23 +137,23 @@ function Out-M4V {
                 # Use 64-bit mp4 files that can hold more than 4GB.
                 "--large-file"
                 # Set video library encoder
-                '--encoder x264',
+                "--encoder x264"
                 # advanced encoder options in the same style as mencoder
-                '--encopts "b-adapt=2"',
+                "--encopts `"b-adapt=2`""
                 # Set video quality
                 "--quality $VideoQuality"
                 # Set video framerate
                 '--rate 30',
                 # Select peak-limited frame rate control.
-                '--pfr',
+                "--pfr"
                 # Set audio codec to use when it is not possible to copy an
                 # audio track without re-encoding.
-                '--audio-fallback ffac3',
+                "--audio-fallback ffac3"
                 # Store pixel aspect ratio with specified width
-                '--loose-anamorphic',
+                "--loose-anamorphic"
                 # Set the number you want the scaled pixel dimensions to divide
                 # cleanly by.
-                '--modulus 2',
+                "--modulus 2"
                 # Selectively deinterlaces when it detects combing
                 "--decomb"
                 )
