@@ -92,6 +92,11 @@ function Out-M4V {
             $AlwaysIncludeAC3Track = $true,
 
             [Parameter(Mandatory=$false)]
+            [switch]
+            # Indicates whether to include a Dolby Digital 5.1 (AC3) version of High-Definition audio tracks (such as DTS-HD Master Audio tracks) when it is not in AC3 format.  The default is true.
+            $IncludeAC3ForHDAudio = $true,
+
+            [Parameter(Mandatory=$false)]
             [int[]]
             # An array of audio tracks to ignore and not add to the output file.  The audio tracks are numbered starting from one and are in the same order as MediaInfo reports.
             $IgnoreAudioTracks,
