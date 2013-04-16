@@ -266,12 +266,14 @@ function Out-M4V {
                 Write-Verbose "Evaluating track $trackNumber of $($audio.Count)"
                 $audioTrack = $audio[$trackNumber - 1]
 
+                $isDefaultTrack = ($audioTrack.Default -eq "Yes")
                 $trackTitle = $audioTrack.Title
                 $trackLang = $audioTrack.Language
+                $trackFormat = $audioTrack.Format
 
-                Write-Verbose "Audio Track ${trackNumber}: Title: $trackTitle; Language: $trackLang"
+                Write-Verbose "Audio Track ${trackNumber}: Title: $trackTitle; Format: $trackFormat; Format Profile: $($audioTrack.Format_profile); Language: $trackLang"
 
-                if ($audioTrack.Default -eq "Yes") {
+                if ($isDefaultTrack) {
                     $audioTitle = $audioTrack.Title
                     Write-Verbose "Track $trackNumber is the default audio track."
 
@@ -428,6 +430,7 @@ function New-AudioTrack {
             $Mixdown = "Auto"
           )
 
+    Write-Verbose "`t--> Creating new track `"$Name`" from source track $Track"
 
     return New-Object PSObject -Property @{
         Track = $Track
