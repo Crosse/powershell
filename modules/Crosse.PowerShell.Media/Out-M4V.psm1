@@ -81,6 +81,16 @@ function Out-M4V {
             # Indicates whether to optimize for HTTP streaming.  The default is true.  (This only applies to MP4-encoded output files.)
             $OptimizeForHttpStreaming = $true,
 
+            [Parameter(Mandatory=$false)]
+            [switch]
+            # Indicates whether to always include a stereo, Dolby Pro Logic II version of the main audio track.  The default is true.
+            $AlwaysIncludeStereoTrack = $true,
+
+            [Parameter(Mandatory=$false)]
+            [switch]
+            # Indicates whether to include a Dolby Digital 5.1 (AC3) version of the main audio track when it is not in AC3 format (for instance, when the main audio track is a DTS track).  The default is true.
+            $AlwaysIncludeAC3Track = $true,
+
             [Parameter(Mandatory=$true,
             [Parameter(Mandatory=$false)]
             [switch]
@@ -221,34 +231,66 @@ function Out-M4V {
                 return
             }
 
-            $mainAudio = $audio | ? { $_.Default -eq "Yes" }
-            switch ($mainAudio.Format) {
-                "AC-3" {
-                    $audioTitle = $mainAudio.Title
-                    $audioOptions = @(
-                            '--aencoder "copy:ac3,copy:aac"',
-                            '-A "Dolby Digital $audioTitle,Dolby Pro Logic II"'
-                            )
-                }
-                "DTS" {
-                    if ($mainAudio.Format_profile -match '^MA') {
-                        $audioOptions = @(
-                                '--aencoder "copy:ac3,copy:dtshd,copy:aac"',
-                                '-A "Dolby Digital 5.1,DTS-HD MA,Dolby Pro Logic II"'
-                                )
-                    } else {
-                        $audioOptions = @(
-                                '--aencoder "copy:dts,copy:ac3,copy:aac"',
-                                '-A "DTS","Dolby Digital 5.1,Dolby Pro Logic II"'
-                                )
+            Write-Verbose "Processing source audio tracks"
+
+            $audioTracks = @()
+            for ($trackNumber = 1; $trackNumber -le $audio.Count; $trackNumber++) {
+                Write-Verbose "Evaluating track $trackNumber of $($audio.Count)"
+                $audioTrack = $audio[$trackNumber - 1]
+
+                $trackTitle = $audioTrack.Title
+                $trackLang = $audioTrack.Language
+
+                Write-Verbose "Audio Track ${trackNumber}: Title: $trackTitle; Language: $trackLang"
+
+                if ($audioTrack.Default -eq "Yes") {
+                    $audioTitle = $audioTrack.Title
+                    Write-Verbose "Track $trackNumber is the default audio track."
+
+                    if ($AlwaysIncludeStereoTrack) {
+                        # Transcode the main audio track into a stereo track.
+                        $audioTracks += New-AudioTrack -Track $trackNumber -Encoder copy:aac -Mixdown "ProLogicII" -Name "Dolby Pro Logic II"
                     }
+
+                    if ($audioTrack.Format -match "AC-3|MA" -or $AlwaysIncludeAC3Track) {
+                        # Copy or Transcode the main audio track as an AC-3 track
+                        # if it is:
+                        # 1) an AC-3 track already;
+                        # 2) a DTS-HD Master Audio track (because most things can't decode this yet); or
+                        # 3) the -AlwaysIncludeAC3Track option is set (the default)
+                        $audioTracks += New-AudioTrack -Track $trackNumber -Encoder copy:ac3 -Mixdown "6ch" -Name "Dolby Digital 5.1"
+                    }
+
+                    if ($audioTrack.Format -match "DTS") {
+                        if ($audioTrack.Format_profile -match '^MA') {
+                            # If a DTS-HD MA track exists, pass it through.
+                            $audioTracks += New-AudioTrack -Track $trackNumber -Encoder copy:dtshd -Name "DTS-HD Master Audio"
+                        } else {
+                            # If a regular DTS track exists, pass it through.
+                            $audioTracks += New-AudioTrack -Track $trackNumber -Encoder copy:dts -Name "DTS"
+                        }
+                    }
+                } else {
+                    Write-Verbose "Track $trackNumber is a secondary audio track."
+                    # This is a secondary track; copy it as-is if possible, or
+                    # else transcode it to AC3.
+                    $audioTracks += New-AudioTrack -Track $trackNumber -Encoder copy -Name "$trackTitle ($trackLang)"
                 }
             }
 
-            if ([String]::IsNullOrEmpty($VideoPreset)) {
-                $video = $info.MediaInfo.File.Track | ? { $_.type -eq "Video" }
-                if ($audio -eq $null) {
-                    Write-Error "Error getting audio track information from source."
+            #$audioTracks = $audioTracks | Sort-Object Track, Name, Encoder
+
+            $trackNumbers = ($audioTracks | % { $_.Track }) -join ','
+            $trackEncodings = ($audioTracks | % { $_.Encoder }) -join ','
+            $trackNames = ($audioTracks | % { $_.Name }) -join ','
+            $mixdown = ($audioTracks | % { $_.Mixdown}) -join ','
+
+            $audioOptions = "--audio `"$trackNumbers`" --aencoder `"$trackEncodings`" --mixdown `"$mixdown`" --aname `"$trackNames`""
+
+            if ([String]::IsNullOrEmpty($MaxVideoFormat)) {
+                $video = $info.MediaInfo.File.Track | ? { $_.type -match "Video" }
+                if ($video -eq $null) {
+                    Write-Error "Error getting video track information from source."
                     return
                 }
             } else {
@@ -282,3 +324,55 @@ function Out-M4V {
     end {
     }
 }
+
+function New-AudioTrack {
+    param (
+            [Parameter(Mandatory=$true)]
+            [int]
+            $Track,
+
+            [Parameter(Mandatory=$true)]
+            [string]
+            $Name,
+
+            [Parameter(Mandatory=$true)]
+            [ValidateSet(
+                "faac",
+                "ffaac",
+                "copy:aac",
+                "ffac3",
+                "copy:ac3",
+                "copy:dts",
+                "copy:dtshd",
+                "lame",
+                "copy:mp3",
+                "vorbis",
+                "ffflac",
+                "copy"
+                )]
+            [string]
+            $Encoder,
+
+            [Parameter(Mandatory=$false)]
+            [ValidateSet(
+                "Auto",
+                "Mono",
+                "Stereo",
+                "ProLogicI",
+                "ProLogicII",
+                "6ch"
+                )]
+            [string]
+            $Mixdown = "Auto"
+          )
+
+
+    return New-Object PSObject -Property @{
+        Track = $Track
+        Name = $Name
+        Encoder = $Encoder
+        Mixdown = $Mixdown
+    }
+}
+
+
