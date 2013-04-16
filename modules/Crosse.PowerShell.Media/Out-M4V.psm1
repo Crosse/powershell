@@ -82,6 +82,11 @@ function Out-M4V {
             [string]
             # The path to the MediaInfo.exe CLI program (NOT the GUI application, which unfortunately has the same name).  The default is to use the binaries in the same directory as this cmdlet's module manifest.
             $MediaInfoCLIPath = (Join-Path $PSScriptRoot "MediaInfo.exe"),
+
+            [Parameter(Mandatory=$false)]
+            [switch]
+            # Shows what would happen if the cmdlet runs. The cmdlet is not run.
+            $WhatIf
           )
 
     begin {
@@ -210,7 +215,10 @@ function Out-M4V {
             $command += " "
             $command += $videoOptions -join " "
             Write-Verbose $command
-            Invoke-Expression "$command"
+
+            if ($WhatIf -eq $false) {
+                Invoke-Expression "$command"
+            }
         }
         catch
         {
