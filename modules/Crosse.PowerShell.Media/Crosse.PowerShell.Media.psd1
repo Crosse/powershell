@@ -63,7 +63,8 @@ PowerShellVersion = '2.0'
 # FormatsToProcess = @()
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
-NestedModules = 'Out-M4V.psm1'
+NestedModules = 'Out-M4V.psm1',
+                'Get-ChapterInformation.psm1'
 
 # Functions to export from this module
 FunctionsToExport = '*'
@@ -78,10 +79,12 @@ VariablesToExport = '*'
 AliasesToExport = '*'
 
 # List of all modules packaged with this module.
-ModuleList = 'Out-M4V.psm1'
+ModuleList = 'Out-M4V.psm1',
+             'Get-ChapterInformation.psm1'
 
 # List of all files packaged with this module
-FileList = 'Out-M4V.psm1'
+FileList = 'Out-M4V.psm1',
+           'Get-ChapterInformation.psm1'
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess
 # PrivateData = ''
