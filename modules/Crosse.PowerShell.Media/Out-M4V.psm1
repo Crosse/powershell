@@ -215,7 +215,7 @@ function Out-M4V {
             $command = "& '$MediaInfoCLIPath' --Output=XML `"$($inputFile.FullName)`""
             [xml]$info = Invoke-Expression "$command"
 
-            $audio = $info.MediaInfo.File.Track | ? { $_.type -eq "Audio" }
+            $audio = @($info.MediaInfo.File.Track | ? { $_.type -match "Audio" })
             if ($audio -eq $null) {
                 Write-Error "Error getting audio track information from source."
                 return
