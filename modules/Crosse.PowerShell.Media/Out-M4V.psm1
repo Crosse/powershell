@@ -91,7 +91,27 @@ function Out-M4V {
             # Indicates whether to include a Dolby Digital 5.1 (AC3) version of the main audio track when it is not in AC3 format (for instance, when the main audio track is a DTS track).  The default is true.
             $AlwaysIncludeAC3Track = $true,
 
+            [Parameter(Mandatory=$false,
+                ParameterSetName="ChaptersDb")]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="SingleChaptersDb")]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="BatchChaptersDb")]
+            [switch]
+            # Indicates whether to attempt to look up chapter names on ChaptersDb.org.
+            $LookupChapterNames,
+
             [Parameter(Mandatory=$true,
+                ParameterSetName="ChaptersDb")]
+            [Parameter(Mandatory=$true,
+                ParameterSetName="SingleChaptersDb")]
+            [Parameter(Mandatory=$true,
+                ParameterSetName="BatchChaptersDb")]
+            [ValidateNotNullOrEmpty()]
+            [string]
+            # Your API Key for the ChaptersDb.org website.
+            $ChaptersDbApiKey,
+
             [Parameter(Mandatory=$false)]
             [switch]
             # Adds an extra pass that scans subtitles matching the language of the first audio or the language selected by the -NativeLanguage parameter. The one that's only used 10 percent of the time or less is selected. This should locate subtitles for short foreign language segments. The default is true.
@@ -142,8 +162,6 @@ function Out-M4V {
         $handbrakeOptions = @(
                 # Set output format.
                 $format
-                # Add chapter markers
-                '--markers',
                 # Use 64-bit mp4 files that can hold more than 4GB.
                 "--large-file"
                 # Set video library encoder
@@ -301,7 +319,35 @@ function Out-M4V {
                 }
             }
 
+            if ($LookupChapterNames) {
+                $chapterCount = 0
+                $menu = $info.Mediainfo.File.track | ? { $_.type -eq 'Menu' }
+                $enumerator = $menu.GetEnumerator()
+                while ($enumerator.MoveNext() -eq $true) {
+                    $chapterCount++
+                }
+                if ([String]::IsNullOrEmpty($video.Title) -eq $true) {
+                    Write-Warning "Video track has no title!  Cannot look up chapter names."
+                } else {
+                    Write-Verbose "Contacting ChaptersDb.org (Title: $($video.Title), ChapterCount: $chapterCount)"
+                    $chapterInfo = Get-ChapterInformation -Title $video.Title -ChapterCount $chapterCount -UseChaptersDb -ChaptersDbApiKey $ChaptersDbApiKey -BestResult
+                    if ($chapterInfo -eq $null) {
+                        Write-Warning "No chapter information could be retrieved from ChaptersDb.org."
+                        $handbrakeOptions += "--markers"
+                    } else {
+                        $tempFile = [IO.Path]::GetTempFileName()
+                        Write-Verbose "Chapters:"
+                        for ($i = 1; $i -le $chapterInfo.Chapters.Count; $i++) {
+                            Write-Verbose "${i}: $($chapterInfo.Chapters[$i - 1].Title)"
+                            Write-Output "$i,$($chapterInfo.Chapters[$i - 1].Title.Replace(',', '\,'))" | `
+                                Out-File -Append -FilePath $tempFile -Encoding ASCII
+                        }
+
+                        $handbrakeOptions += "--markers=`"$tempFile`""
+                    }
+                }
             }
+
             $fileOptions = "--input `"$($inputFile.FullName)`" --output `"$outFile`""
 
             $command = "& '$HandbrakeCLIPath' $fileOptions "
@@ -319,6 +365,12 @@ function Out-M4V {
         catch
         {
             throw
+        }
+        finally {
+            if ($tempFile -ne $null -and (Test-Path $tempFile)) {
+                Write-Verbose "Removing chapters temp file $tempFile"
+                Remove-Item $tempFile
+            }
         }
     }
     end {
