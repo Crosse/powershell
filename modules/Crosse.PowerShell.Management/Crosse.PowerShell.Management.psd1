@@ -83,6 +83,7 @@ DotNetFrameworkVersion = ''
 NestedModules = @(
         'Get-ComputerStatus.psm1',
         'PatchFunctions.psm1',
+        'Invoke-ServerAudit.psm1',
         'Get-RegistryKeyValue.psm1'
                  )
 
@@ -105,6 +106,7 @@ AliasesToExport = '*'
 ModuleList = @(
         'Get-ComputerStatus.psm1',
         'PatchFunctions.psm1',
+        'Invoke-ServerAudit.psm1',
         'Get-RegistryKeyValue.psm1'
               )
 
@@ -112,6 +114,7 @@ ModuleList = @(
 FileList = @(
         'Get-ComputerStatus.psm1',
         'PatchFunctions.psm1',
+        'Invoke-ServerAudit.psm1',
         'Get-RegistryKeyValue.psm1'
             )
 
