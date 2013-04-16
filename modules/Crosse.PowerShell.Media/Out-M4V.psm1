@@ -37,11 +37,31 @@ function Out-M4V {
     param (
             [Parameter(Mandatory=$true,
                 ValueFromPipeline=$true)]
+            [Alias("File")]
             [object]
-            $File,
+            # The source file to transcode.
+            $InputFile,
+
+            [Parameter(Mandatory=$true,
+                ParameterSetName="Single")]
+            [Parameter(Mandatory=$true,
+                ParameterSetName="SingleChaptersDb")]
+            [System.IO.FileInfo]
+            # The output file.
+            $OutputFile,
 
             [Parameter(Mandatory=$false)]
+            [ValidateSet("MP4", "MKV", "Autodetect")]
+            [string]
+            # The format of the output file.  The default is MP4.
+            $OutputFormat = "MP4",
+
+            [Parameter(Mandatory=$false,
+                ParameterSetName="Batch")]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="BatchChaptersDb")]
             [System.IO.DirectoryInfo]
+            # The output path.  The resulting file name will the the same as the input file, with an extension that depends on the output format.
             $OutputPath = (Get-Location).Path,
 
             [Parameter(Mandatory=$false)]
@@ -72,6 +92,10 @@ function Out-M4V {
             # Specifies the native language preference for subtitles.  When the default audio track does not match this language then select the first subtitle that does.  The format for this parameter is the desired language's ISO639-2 code. The default is "eng" (English).
             $NativeLanguage = "eng",
 
+            [Parameter(Mandatory=$false)]
+            [switch]
+            # Indicates whether to overwrite an output file that already exists.
+            $Force,
 
             [Parameter(Mandatory=$false)]
             [string]
@@ -96,11 +120,18 @@ function Out-M4V {
         Resolve-Path $MediaInfoCLIPath -ErrorAction Stop | Out-Null
         Write-Verbose "Found MediaInfo: $MediaInfoCLIPath"
 
-        $outPath = Resolve-Path $OutputPath -ErrorAction Stop
+        $OutputPath = (Resolve-Path $OutputPath -ErrorAction Stop).Path
+        Write-Verbose "Output Path: $OutputPath"
+
+        switch ($OutputFormat) {
+            "MP4" { $format = "--format mp4" }
+            "MKV" { $format = "--format mkv" }
+            "Audodetect" { }
+        }
 
         $handbrakeOptions = @(
-                # Set output format
-                '--format mp4',
+                # Set output format.
+                $format
                 # Add chapter markers
                 '--markers',
                 # Use 64-bit mp4 files that can hold more than 4GB.
@@ -147,16 +178,39 @@ function Out-M4V {
 
     }
     process {
-        Write-Verbose "Working on $File"
         try {
-            if ($File -is [System.IO.FileInfo]) {
-                $inputFile = $File
-            } else {
-                $inter = Resolve-Path $File
-                $inputFile = [System.IO.FileInfo]$inter.Path
+            if ($InputFile -isnot [System.IO.FileInfo]) {
+                $inter = Resolve-Path $InputFile
+                $InputFile = [System.IO.FileInfo]$inter.Path
             }
-            Write-Verbose "Input File: $inputFile"
-            $outputFile = Join-Path $outPath $inputFile.Name.Replace($inputFile.Extension, ".m4v")
+            Write-Verbose "Input File: $InputFile"
+
+            if ([String]::IsNullOrEmpty($OutputFile)) {
+                switch ($OutputFormat) {
+                    "MP4" {
+                        $extension = ".m4v"
+                    }
+                    "MKV" {
+                        $extension = ".mkv"
+                    }
+                    "Autodetect" {
+                        Write-Error "Autodetect cannot be used with -OutputPath.  Use -OutputFile instead."
+                        return
+                    }
+                }
+                $outFile = Join-Path $OutputPath $InputFile.Name.Replace($InputFile.Extension, $extension)
+            } else {
+                $outFile = $OutputFile
+            }
+
+            if ((Test-Path $outFile) -eq $true -and
+                    $Force -eq $false -and
+                    $WhatIf -eq $false) {
+                Write-Error "Output file already exists! ($outFile)"
+                return
+            }
+
+            Write-Verbose "Output File: $outFile"
 
             $command = "& '$MediaInfoCLIPath' --Output=XML `"$($inputFile.FullName)`""
             [xml]$info = Invoke-Expression "$command"
