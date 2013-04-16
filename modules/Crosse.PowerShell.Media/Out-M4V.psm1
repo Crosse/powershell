@@ -91,6 +91,11 @@ function Out-M4V {
             # Indicates whether to include a Dolby Digital 5.1 (AC3) version of the main audio track when it is not in AC3 format (for instance, when the main audio track is a DTS track).  The default is true.
             $AlwaysIncludeAC3Track = $true,
 
+            [Parameter(Mandatory=$false)]
+            [int[]]
+            # An array of audio tracks to ignore and not add to the output file.  The audio tracks are numbered starting from one and are in the same order as MediaInfo reports.
+            $IgnoreAudioTracks,
+
             [Parameter(Mandatory=$false,
                 ParameterSetName="ChaptersDb")]
             [Parameter(Mandatory=$false,
@@ -253,6 +258,11 @@ function Out-M4V {
 
             $audioTracks = @()
             for ($trackNumber = 1; $trackNumber -le $audio.Count; $trackNumber++) {
+                if (($trackNumber) -in $IgnoreAudioTracks) {
+                    Write-Verbose "Ignoring audio track $trackNumber"
+                    continue
+                }
+
                 Write-Verbose "Evaluating track $trackNumber of $($audio.Count)"
                 $audioTrack = $audio[$trackNumber - 1]
 
