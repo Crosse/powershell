@@ -275,11 +275,14 @@ function Out-M4V {
 
                 if ($isDefaultTrack) {
                     $audioTitle = $audioTrack.Title
-                    Write-Verbose "Track $trackNumber is the default audio track."
+                    Write-Verbose "`tTrack $trackNumber is the default audio track."
 
+                    if ([String]::IsNullOrEmpty($trackTitle)) {
+                        $trackTitle = "Main"
+                    }
                     if ($AlwaysIncludeStereoTrack) {
                         # Transcode the main audio track into a stereo track.
-                        $audioTracks += New-AudioTrack -Track $trackNumber -Encoder copy:aac -Mixdown "ProLogicII" -Name "Dolby Pro Logic II"
+                        $audioTracks += New-AudioTrack -Track $trackNumber -Encoder copy:aac -Mixdown "ProLogicII" -Name "Main Stereo (Dolby Pro Logic II / $trackLang)"
                     }
 
                     if ($audioTrack.Format -match "AC-3|MA" -or $AlwaysIncludeAC3Track) {
