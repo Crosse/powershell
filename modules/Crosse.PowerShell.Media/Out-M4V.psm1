@@ -284,34 +284,63 @@ function Out-M4V {
                     if ([String]::IsNullOrEmpty($trackTitle)) {
                         $trackTitle = "Main"
                     }
+
                     if ($AlwaysIncludeStereoTrack) {
+                        Write-Verbose "`tAdding Pro Logic II version of default audio track."
                         # Transcode the main audio track into a stereo track.
                         $audioTracks += New-AudioTrack -Track $trackNumber -Encoder copy:aac -Mixdown "ProLogicII" -Name "Main Stereo (Dolby Pro Logic II / $trackLang)"
                     }
-
-                    if ($audioTrack.Format -match "AC-3|MA" -or $AlwaysIncludeAC3Track) {
-                        # Copy or Transcode the main audio track as an AC-3 track
-                        # if it is:
-                        # 1) an AC-3 track already;
-                        # 2) a DTS-HD Master Audio track (because most things can't decode this yet); or
-                        # 3) the -AlwaysIncludeAC3Track option is set (the default)
-                        $audioTracks += New-AudioTrack -Track $trackNumber -Encoder copy:ac3 -Mixdown "6ch" -Name "Dolby Digital 5.1"
-                    }
-
-                    if ($audioTrack.Format -match "DTS") {
-                        if ($audioTrack.Format_profile -match '^MA') {
-                            # If a DTS-HD MA track exists, pass it through.
-                            $audioTracks += New-AudioTrack -Track $trackNumber -Encoder copy:dtshd -Name "DTS-HD Master Audio"
-                        } else {
-                            # If a regular DTS track exists, pass it through.
-                            $audioTracks += New-AudioTrack -Track $trackNumber -Encoder copy:dts -Name "DTS"
-                        }
-                    }
                 } else {
-                    Write-Verbose "Track $trackNumber is a secondary audio track."
-                    # This is a secondary track; copy it as-is if possible, or
-                    # else transcode it to AC3.
-                    $audioTracks += New-AudioTrack -Track $trackNumber -Encoder copy -Name "$trackTitle ($trackLang)"
+                    Write-Verbose "`tTrack $trackNumber is a secondary audio track."
+                }
+
+                # Pass-through any DTS tracks.
+                if ($trackFormat -match "^DTS") {
+                    # Pass through any DTS tracks.
+                    if ($audioTrack.Format_profile -match '^MA') {
+                        $format = "DTS-HD Master Audio"
+                    } elseif ($audioTrack.Format_profile -match '^ES') {
+                        $format = "DTS-ES"
+                    } else {
+                        $format = "DTS"
+                    }
+                    Write-Verbose "`tPassing through $format track."
+                    $audioTracks += New-AudioTrack -Track $trackNumber -Encoder copy -Name "$trackTitle ($format / $trackLang)"
+                }
+
+                # Copy or Transcode the main audio track as an AC-3 track
+                # if it is:
+                # 1) an AC-3 track already;
+                # 2) the -AlwaysIncludeAC3Track option is set (the default) and this is the main audio track; or
+                # 3) a DTS-HD Master Audio track (because most things can't decode this yet)
+                if ($trackFormat -match "^AC-3" -or
+                        ($AlwaysIncludeAC3Track -and $isDefaultTrack) -or
+                        ($IncludeAC3ForHDAudio -and $audioTrack.Format_profile -match '^MA')) {
+
+                    if ($audioTrack.Format_profile -match '^MA') {
+                        Write-Verbose "`tAdding AC-3 track for compatibility."
+                    } else {
+                        Write-Verbose "`tAdding AC-3 track."
+                    }
+
+                    # Rename the audio track if it mentions lossless (because AC-3 is not) or
+                    # 3/2+1.
+                    if ($trackTitle -eq 'Lossless' -or $trackTitle -eq '3/2+1') {
+                        $title = "Dolby Digital 5.1"
+                    } else {
+                        $title = $trackTitle
+                    }
+
+                    $audioTracks += New-AudioTrack -Track $trackNumber -Encoder copy:ac3 -Name "$title (AC-3 / $trackLang)"
+                }
+
+                # Finally, if the track is not an AC-3 track or DTS track, try to pass it through
+                # or transcode it to AC-3.
+                if ($trackFormat -notmatch '^AC-3|^DTS') {
+                    Write-Verbose "`tAdding $trackFormat track."
+
+                    # Transcode or pass through AC-3.
+                    $audioTracks += New-AudioTrack -Track $trackNumber -Encoder copy -Name "$trackTitle ($trackFormat / $trackLang)"
                 }
             }
 
