@@ -44,16 +44,34 @@ function Out-M4V {
             [System.IO.DirectoryInfo]
             $OutputPath = (Get-Location).Path,
 
-            [Parameter(Mandatory=$false,
-                ParameterSetName="Bluray")]
+            [Parameter(Mandatory=$false)]
             [ValidateSet("480p", "720p", "1080p")]
             [string]
-            $VideoPreset,
+            # The maximum video resolution to support. Supported values for this parameter are 480p, 720p, and 1080p.
+            $MaxVideoFormat,
+
+            [Parameter(Mandatory=$false)]
+            [ValidateRange(1, 51)]
+            [int]
+            # Set the video quality, from 1 to 51.  The default is 18.
+            $VideoQuality = 18,
+
+            [Parameter(Mandatory=$false)]
+            [switch]
+            # Indicates whether to optimize for HTTP streaming.  The default is true.  (This only applies to MP4-encoded output files.)
+            $OptimizeForHttpStreaming = $true,
 
             [Parameter(Mandatory=$true,
-                ParameterSetName="ScanOnly")]
+            [Parameter(Mandatory=$false)]
             [switch]
-            $ScanOnly
+            # Adds an extra pass that scans subtitles matching the language of the first audio or the language selected by the -NativeLanguage parameter. The one that's only used 10 percent of the time or less is selected. This should locate subtitles for short foreign language segments. The default is true.
+            $SubtitleScan = $true,
+
+            [Parameter(Mandatory=$false)]
+            [string]
+            # Specifies the native language preference for subtitles.  When the default audio track does not match this language then select the first subtitle that does.  The format for this parameter is the desired language's ISO639-2 code. The default is "eng" (English).
+            $NativeLanguage = "eng",
+
 
             [Parameter(Mandatory=$false)]
             [string]
@@ -81,15 +99,13 @@ function Out-M4V {
                 # Add chapter markers
                 '--markers',
                 # Use 64-bit mp4 files that can hold more than 4GB.
-                '--large-file',
-                # Optimize mp4 files for HTTP streaming
-                '--optimize',
+                "--large-file"
                 # Set video library encoder
                 '--encoder x264',
                 # advanced encoder options in the same style as mencoder
                 '--encopts "b-adapt=2"',
                 # Set video quality
-                '--quality 18',
+                "--quality $VideoQuality"
                 # Set video framerate
                 '--rate 30',
                 # Select peak-limited frame rate control.
@@ -103,18 +119,20 @@ function Out-M4V {
                 # cleanly by.
                 '--modulus 2',
                 # Selectively deinterlaces when it detects combing
-                '--decomb',
-                # Select subtitle track(s), separated by commas.  A special
-                # track name "scan" adds an extra 1st pass.  This extra pass
-                # scans subtitles matching the language of the first audio or
-                # the language selected by --native-language.  The one that's
-                # only used 10 percent of the time or less is selected. This
-                # should locate subtitles for short foreign language segments.
-                # Best used in conjunction with --subtitle-forced.
-                '--subtitle scan',
-                # Specifiy your language preference.
-                '--native-language eng'
+                "--decomb"
                 )
+
+        if ($OptimizeForHttpStreaming) {
+            $handbrakeOptions += "--optimize"
+        }
+
+        if ($SubtitleScan) {
+            $handbrakeOptions += "--subtitle scan"
+        }
+
+        if ($NativeLanguage) {
+            $handbrakeOptions += "--native-language eng"
+        }
 
         if ($Verbose) {
             $handbrakeOptions += "--verbose"
@@ -174,20 +192,17 @@ function Out-M4V {
                     Write-Error "Error getting audio track information from source."
                     return
                 }
-            }
-            else {
-                switch ($VideoPreset) {
+            } else {
+                switch ($MaxVideoFormat) {
                     '480p' { $videoOptions = '--maxWidth 480' }
                     '720p' { $videoOptions = '--maxWidth 1280' }
                     '1080p' { $videoOptions = '--maxWidth 1920' }
                 }
             }
 
-            if ($ScanOnly) {
-                $fileOptions = "--scan --input `"$($inputFile.FullName)`""
-            } else {
-                $fileOptions = "--input `"$($inputFile.FullName)`" --output `"$outputFile`""
             }
+            $fileOptions = "--input `"$($inputFile.FullName)`" --output `"$outFile`""
+
             $command = "& '$HandbrakeCLIPath' $fileOptions "
             $command += $handbrakeOptions -join " "
             $command += " "
