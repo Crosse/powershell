@@ -63,19 +63,20 @@ if ($server -eq $null) {
     return
 }
 
+WriteHost "Updating esxupdate.conf"
+$svc = Get-VMHostService $server | ? { $_.Key -eq 'TSM-SSH' }
+if ($svc.Running -eq $false) {
+    $svc | Start-VMHostService
+    Start-Sleep 5
+}
+& 'C:\Program Files (x86)\PuTTY\plink.exe' -l $HostCredential.GetNetworkCredential().UserName -pw $HostCredential.GetNetworkCredential().Password $server "sed -re 's|file = ?$|file = /var/tmp/esxupdate.debug|' -i /etc/vmware/esxupdate/esxupdate.conf"
+$svc | Stop-VMHostService -Confirm:$false
+
 # Check for OpenManage
 if ($DellOMCheck) {
     $patches = Get-VMHostPatch -Server $vSphereServer -VMHost $Server
     $foundOM = $false
     $foundDellImage = $false
-
-    WriteHost "Updating esxupdate.conf"
-    $svc = Get-VMHostService $server | ? { $_.Key -eq 'TSM-SSH' }
-    if ($svc.Running -eq $false) {
-        $svc | Start-VMHostService
-        Start-Sleep 5
-    }
-    & 'C:\Program Files (x86)\PuTTY\plink.exe' -l $HostCredential.GetNetworkCredential().UserName -pw $HostCredential.GetNetworkCredential().Password $server "sed -re 's|file = ?$|file = /var/tmp/esxupdate.debug|' -i /etc/vmware/esxupdate/esxupdate.conf"
 
     foreach ($patch in $patches) {
         if ($patch.Id -match "OpenManage") {
@@ -90,24 +91,6 @@ if ($DellOMCheck) {
     if ($foundDellImage -eq $false) {
         WriteWarning "host was not built using the Dell-customized ESXi image"
     }
-
-    if ($foundOM -eq $false) {
-        WriteWarning "Dell OpenManage not installed.  Please use VMware Update Manager to install."
-#    $ds = Get-Datastore -Server $vSphereServer | ? { $_.Name -eq 'NAS:virtcluster-Mass-utility01' }
-#    if ($ds -eq $null) {
-#        WriteError "Could not find NAS:virtcluster-Mass-utility01 iSCSI LUN!"
-#        WriteError "DellOM installation failed."
-#    } else {
-#        $dellOMPath = "/vmfs/volumes/" + $ds.Name + "/Dell_OpenManage_ESXi410_OM650/metadata.zip"
-#        Install-VMHostPatch -Server $vSphereServer -VMHost $server -HostPath $dellOMPath
-#
-#        WriteHost "Enabling CIM OEM Providers"
-#        Set-VMHostAdvancedConfiguration -Server $vSphereServer -VMHost $server -Name UserVars.CIMoemProviderEnabled -Value 1
-#    }
-    } #else {
-        WriteHost "Enabling CIM OEM Providers"
-        $null = Set-VMHostAdvancedConfiguration -Server $vSphereServer -VMHost $server -Name UserVars.CIMoemProviderEnabled -Value 1
-#   }
 }
 
 if ($ConfigureNTP) {
