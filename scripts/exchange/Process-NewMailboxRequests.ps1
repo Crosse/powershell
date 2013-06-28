@@ -59,6 +59,16 @@ if ($module -eq $null) {
     return
 }
 
+$module = Import-Module -Force -PassThru .\EmailTemplateFunctions.psm1
+if ($module -eq $null) {
+    $Subject = "Mailbox Provisioning:  Could not load EmailTemplateFunctions Module!"
+    $output = "Could not import module EmailTemplateFunctions.psm1."
+    if ($SendEmail) {
+        Send-MailMessage -From $From -To $To -Subject $Subject -Body $output -SmtpServer $SmtpServer
+    }
+    return
+}
+
 if ($EnableForLync) {
     $module = Import-Module -Force -PassThru Lync
     if ($module -eq $null) {
