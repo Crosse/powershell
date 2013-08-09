@@ -102,16 +102,16 @@ function New-SqlServerMirroringSession {
 
         try {
             Write-Verbose "Starting mirroring session on mirror server"
-            $setPartnerMirror = "ALTER DATABASE $Database SET PARTNER = 'TCP://$($PrimaryServerInstance.Split('\')[0]):$($primaryEndpoint.port)'"
+            $setPartnerMirror = "ALTER DATABASE [$Database] SET PARTNER = 'TCP://$($PrimaryServerInstance.Split('\')[0]):$($primaryEndpoint.port)'"
             Send-SqlNonQuery $mirrorConn $setPartnerMirror | Out-Null
 
             Write-Verbose "Starting mirroring session on primary server"
-            $setPartnerPrimary = "ALTER DATABASE $Database SET PARTNER = 'TCP://$($MirrorServerInstance.Split('\')[0]):$($mirrorEndpoint.port)'"
+            $setPartnerPrimary = "ALTER DATABASE [$Database] SET PARTNER = 'TCP://$($MirrorServerInstance.Split('\')[0]):$($mirrorEndpoint.port)'"
             Send-SqlNonQuery $primaryConn $setPartnerPrimary | Out-Null
 
             if ($WitnessServerInstance) {
                 Write-Verbose "Adding witness server to mirroring session"
-                $setPartnerWitness = "ALTER DATABASE $Database SET WITNESS = 'TCP://$($WitnessServerInstance.Split('\')[0]):$($witnessEndpoint.port)'"
+                $setPartnerWitness = "ALTER DATABASE [$Database] SET WITNESS = 'TCP://$($WitnessServerInstance.Split('\')[0]):$($witnessEndpoint.port)'"
                 Send-SqlNonQuery $primaryConn $setPartnerWitness | Out-Null
             }
         } catch {

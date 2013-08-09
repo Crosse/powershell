@@ -104,7 +104,7 @@ function Backup-Database {
         return
     }
 
-    $cmd = "BACKUP {0} {1} TO DISK = '{2}'" -f $backupType, $Database, $BackupPath
+    $cmd = "BACKUP {0} [{1}] TO DISK = '{2}'" -f $backupType, $Database, $BackupPath
 
     $withOptions = @(BuildWithOptions $PSCmdlet.MyInvocation.BoundParameters)
     if ($withOptions.Count -gt 0) {
@@ -211,7 +211,7 @@ function Restore-Database {
         return
     }
 
-    $cmd = "RESTORE {0} {1} FROM DISK = '{2}'" -f $backupType, $Database, $RestorePath
+    $cmd = "RESTORE {0} [{1}] FROM DISK = '{2}'" -f $backupType, $Database, $RestorePath
 
     $withOptions = @(BuildWithOptions $PSCmdlet.MyInvocation.BoundParameters)
     if ($withOptions.Count -gt 0) {
