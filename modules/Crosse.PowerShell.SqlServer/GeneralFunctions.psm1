@@ -320,3 +320,74 @@ function Get-SqlServerInstance {
         }
     }
 }
+
+function Get-SqlDatabase {
+    [CmdletBinding()]
+    param (
+            [Parameter(Mandatory=$true,
+                ValueFromPipeline=$true,
+                ValueFromPipelineByPropertyName=$true)]
+            [ValidateNotNullOrEmpty()]
+            [string]
+            $InstanceName,
+
+            [Parameter(Mandatory=$false,
+                ValueFromPipelineByPropertyName=$true)]
+            [string]
+            $Database,
+
+            [Parameter(Mandatory=$false)]
+            [switch]
+            $OnlyUserDatabases
+          )
+
+    PROCESS {
+        try {
+            $conn = Open-SqlConnection -Server $InstanceName
+            $query = "SELECT @@SERVERNAME AS InstanceName
+                        , name
+                        , database_id
+                        , create_date
+                        , compatibility_level
+                        , state_desc
+                        , recovery_model_desc
+                        , page_verify_option_desc
+                      FROM sys.databases"
+
+            $where = @()
+            if (![String]::IsNullOrEmpty($Database)) {
+                $where += "name = '$Database'"
+            }
+
+            if ($OnlyUserDatabases) {
+                $where += "LEN(owner_sid) > 1"
+            }
+
+            if ($where.Count -gt 0) {
+                $whereClause = "WHERE " + ($where -join " AND ")
+                $query += "
+                      $whereClause"
+            }
+
+            Write-Verbose $query
+
+            $databases = Send-SqlQuery -SqlConnection $conn -Command $query
+            foreach ($db in $databases) {
+                New-Object PSObject -Property @{
+                    InstanceName        = $db.InstanceName
+                    Name                = $db.name
+                    DatabaseId          = $db.database_id
+                    WhenCreated         = [DateTime]::SpecifyKind([DateTime]$db.create_date, 'Utc').ToLocalTime()
+                    CompatibilityLevel  = $db.compatibility_level
+                    State               = $db.state_desc
+                    RecoveryModel       = $db.recovery_model_desc
+                    PageVerifyOption    = $db.page_verify_option_desc
+                }
+            }
+        } catch {
+            throw
+        } finally {
+            Close-SqlConnection -SqlConnection $conn
+        }
+    }
+}
