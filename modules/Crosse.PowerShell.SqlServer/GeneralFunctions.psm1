@@ -234,3 +234,89 @@ function Send-SqlQuery {
     return $rows
 }
 
+function Get-SqlServerInstance {
+    [CmdletBinding(DefaultParameterSetName="NamedInstance")]
+    param (
+            [Parameter(Mandatory=$true,
+                ValueFromPipeline=$true)]
+            [ValidateNotNullOrEmpty()]
+            [string]
+            $ComputerName,
+
+            [Parameter(Mandatory=$false,
+                ValueFromPipelineByPropertyName=$true,
+                ParameterSetName="NamedInstance")]
+            [string]
+            $InstanceName,
+
+            [Parameter(Mandatory=$false,
+                ParameterSetName="DefaultInstance")]
+            [switch]
+            $DefaultInstance
+          )
+    PROCESS {
+        if ([String]::IsNullOrEmpty($InstanceName)) {
+            if ($DefaultInstance) {
+                Write-Verbose "Querying for the default instance of SQL Server on $ComputerName"
+                $services = Get-Service -ComputerName $ComputerName -Name "MSSQLSERVER"
+            } else {
+                Write-Verbose "Querying list of all SQL Server instances on $ComputerName"
+                $services = Get-Service -ComputerName $ComputerName -DisplayName "SQL Server (*"
+            }
+        } else {
+            Write-Verbose "Querying for the named instance $InstanceName on $ComputerName"
+            $services = Get-Service -ComputerName $ComputerName -DisplayName "SQL Server ($InstanceName)*"
+        }
+        foreach ($service in $services) {
+            $info = New-Object PSObject -Property @{
+                InstanceName        = $null
+                ProductVersion      = $null
+                ProductLevel        = $null
+                Edition             = $null
+                IsClustered         = $null
+                IsAlwaysOnEnabled   = $null
+                IsWindowsAuthOnly   = $null
+            }
+
+            if ($service.Name.Contains("$")) {
+                $instance = $ComputerName + "\" + $service.Name.Replace("MSSQL$", "")
+            } else {
+                $instance = $ComputerName
+            }
+
+            if ($service.Status -ne "Running") {
+                Write-Warning "SQL Server $($service.Name) is in the $($service.Status)` state."
+                Write-Output $info
+                continue
+            }
+
+            try {
+                Write-Verbose "Getting version information for instance $instance"
+                $conn = Open-SqlConnection -Server $instance
+                $version = Send-SqlQuery -SqlConnection $conn -Command `
+                "SELECT @@SERVERNAME AS ServerName
+                        , SERVERPROPERTY('ProductVersion') AS ProductVersion
+                        , SERVERPROPERTY('ProductLevel') AS ProductLevel
+                        , SERVERPROPERTY('Edition') AS Edition
+                        , SERVERPROPERTY('IsClustered') AS IsClustered
+                        , SERVERPROPERTY('IsHadrEnabled') AS IsAlwaysOnEnabled
+                        , SERVERPROPERTY('IsIntegratedSecurityOnly') AS IsWindowsAuthOnly
+                "
+
+                $info.InstanceName        = $version.ServerName
+                $info.ProductVersion      = $version.ProductVersion
+                $info.ProductLevel        = $version.ProductLevel
+                $info.Edition             = $version.Edition
+                $info.IsClustered         = [Nullable[Boolean]]$version.IsClustered
+                $info.IsAlwaysOnEnabled   = [Nullable[Boolean]]$version.IsAlwaysOnEnabled
+                $info.IsWindowsAuthOnly   = [Nullable[Boolean]]$version.IsWindowsAuthOnly
+
+                Write-Output $info
+            } catch {
+                throw
+            } finally {
+                Close-SqlConnection -SqlConnection $conn
+            }
+        }
+    }
+}
