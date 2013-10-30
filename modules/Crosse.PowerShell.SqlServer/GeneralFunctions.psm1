@@ -196,6 +196,7 @@ function Send-SqlQuery {
 
     #Write-Verbose "Executing: `"$Command`""
 
+    $reader = $null
     try {
         $reader = $cmd.ExecuteReader()
         $rows = @()
@@ -205,7 +206,17 @@ function Send-SqlQuery {
 
             $values = @{}
             for ($i = 0; $i -lt $reader.FieldCount; $i++) {
-                $values[$reader.GetName($i)] = $row[$i]
+                if ([String]::IsNullOrEmpty($reader.GetName($i))) {
+                    $colName = "Column_" + ($i + 1)
+                } else {
+                    $colName = $reader.GetName($i)
+                }
+
+                if ($row[$i] -is [DBNull]) {
+                    $values[$colName] = $null
+                } else {
+                    $values[$colName] = $row[$i]
+                }
             }
 
             $rows += New-Object PSObject -Property $values
@@ -214,7 +225,9 @@ function Send-SqlQuery {
         throw
     } finally {
         $cmd.Dispose()
-        $reader.Close()
+        if ($reader -ne $null) {
+            $reader.Close()
+        }
     }
 
     #Write-Verbose "Retrieved $($rows.Count) row(s) from the database"
