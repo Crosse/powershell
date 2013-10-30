@@ -62,7 +62,7 @@ function Set-ADAttribute {
 
             [Parameter(Mandatory=$true)]
             [AllowNull()]
-            [object]
+            [object[]]
             # Specifies the value to assign to the attribute.
             $Value
         )
@@ -102,10 +102,17 @@ function Set-ADAttribute {
                 }
             }
         } else {
-            $dirEntry.InvokeSet($Attribute, $Value)
-            $dirEntry.PSBase.CommitChanges()
-            if ($? -eq $true) {
-                Write-Verbose "Set $Attribute to $Value for $Identity"
+            try {
+                $dirEntry.Properties.Item($Attribute).Clear()
+                foreach ($val in $Value) {
+                    $null = $dirEntry.Properties.Item($Attribute).Add($val)
+                }
+                $dirEntry.CommitChanges()
+                if ($? -eq $true) {
+                    Write-Verbose "Set $Attribute to $Value for $Identity"
+                }
+            } catch {
+                Write-Error $_
             }
         }
 
