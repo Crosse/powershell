@@ -48,7 +48,6 @@ $To         = @("wrightst@jmu.edu")
 $Title      = "Exchange Statistics for $(Get-Date -Format d)"
 $MaxDatabaseSizeInBytes = 250*1GB
 
-##################################
 $cwd = [System.IO.Path]::GetDirectoryName(($MyInvocation.MyCommand).Definition)
 
 [UInt64]$totalStorageBytes = 0
