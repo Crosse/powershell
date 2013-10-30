@@ -1,4 +1,5 @@
 function Get-SqlServerProperties {
+    [CmdletBinding()]
     param (
             [Parameter(Mandatory=$true)]
             [ValidateNotNull()]
@@ -44,6 +45,7 @@ function Get-SqlServerProperties {
 }
 
 function Get-SqlDatabaseProperties {
+    [CmdletBinding()]
     param (
             [Parameter(Mandatory=$true)]
             [ValidateNotNull()]
@@ -70,6 +72,7 @@ function Get-SqlDatabaseProperties {
 }
 
 function Open-SqlConnection {
+    [CmdletBinding()]
     param (
             [Parameter(Mandatory=$true)]
             [ValidateNotNullOrEmpty()]
@@ -100,6 +103,7 @@ function Open-SqlConnection {
 }
 
 function Close-SqlConnection {
+    [CmdletBinding()]
     param (
             [Parameter(Mandatory=$false)]
             [System.Data.SqlClient.SqlConnection]
@@ -116,6 +120,7 @@ function Close-SqlConnection {
 }
 
 function Send-SqlScalarQuery {
+    [CmdletBinding()]
     param (
             [Parameter(Mandatory=$true)]
             [ValidateNotNull()]
@@ -144,6 +149,7 @@ function Send-SqlScalarQuery {
 }
 
 function Send-SqlNonQuery {
+    [CmdletBinding()]
     param (
             [Parameter(Mandatory=$true)]
             [ValidateNotNull()]
@@ -172,6 +178,7 @@ function Send-SqlNonQuery {
 }
 
 function Send-SqlQuery {
+    [CmdletBinding()]
     param (
             [Parameter(Mandatory=$true)]
             [ValidateNotNull()]
