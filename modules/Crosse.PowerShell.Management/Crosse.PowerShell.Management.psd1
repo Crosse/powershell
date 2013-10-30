@@ -47,7 +47,7 @@ Copyright = 'Copyright (c) 2012 Seth Wright <wrighst@jmu.edu>'
 # Description = ''
 
 # Minimum version of the Windows PowerShell engine required by this module
-PowerShellVersion = '2.0'
+PowerShellVersion = '3.0'
 
 # Name of the Windows PowerShell host required by this module
 # PowerShellHostName = ''
