@@ -141,34 +141,9 @@ function Close-SqlConnection {
     }
 }
 
-function Send-SqlScalarQuery {
-    [CmdletBinding()]
-    param (
-            [Parameter(Mandatory=$true)]
-            [ValidateNotNull()]
-            [System.Data.SqlClient.SqlConnection]
-            $SqlConnection,
 
-            [Parameter(Mandatory=$true)]
-            [ValidateNotNullOrEmpty()]
-            [string]
-            $Command
-          )
-    
-    $cmd = $SqlConnection.CreateCommand()
-    $cmd.CommandText = $Command
 
-    #Write-Verbose "Executing: `"$Command`""
-    try {
-        $result = $cmd.ExecuteScalar()
-    } catch {
-        throw
-    } finally {
-        $cmd.Dispose()
-    }
 
-    return $result
-}
 
 function Send-SqlNonQuery {
     [CmdletBinding()]
@@ -199,35 +174,66 @@ function Send-SqlNonQuery {
     return $result
 }
 
+################################################################################
+<#
+    .SYNOPSIS
+    Sends a SQL query to a database and returns the result.
+
+    .DESCRIPTION
+    Sends a SQL query to a SQL Server database and returns the result.
+
+    .INPUTS
+    System.Data.SqlClient.SqlConnection.  An open SQL connection to run the query against.
+
+    System.String.  The query to run.
+
+    .OUTPUTS
+    An array of PSObjects representing the returned data.
+#>
+################################################################################
 function Send-SqlQuery {
-    [CmdletBinding(DefaultParameterSetName="ImplicitConnection")]
+    [CmdletBinding(DefaultParameterSetName="ImplicitQuery")]
     param (
             [Parameter(Mandatory=$true,
-                ParameterSetName="ExplicitConnection")]
-            [ValidateNotNull()]
-            [System.Data.SqlClient.SqlConnection]
-            $SqlConnection,
-
-            [Parameter(Mandatory=$true,
-                ParameterSetName="ImplicitConnection")]
+                ParameterSetName="ImplicitQuery")]
             [ValidateNotNull()]
             [string]
+            # The MSSQL instance to run the query against.  This can be either
+            # a named instance ("SERVER\INSTANCENAME") or a default instance
+            # ("SERVER").
             $InstanceName,
 
-            [Parameter(Mandatory=$true,
-                ParameterSetName="ImplicitConnection")]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="ImplicitQuery")]
             [ValidateNotNull()]
             [string]
-            $Database,
+            # The database to run the query against.  If not specified, defaults
+            # to the "master" database.
+            $Database = "master",
+
+            [Parameter(Mandatory=$true,
+                ParameterSetName="ExplicitQuery")]
+            [ValidateNotNull()]
+            [System.Data.SqlClient.SqlConnection]
+            # A connection to an MSSQL server that has been previously opened
+            # with the Open-SqlConnection cmdlet.
+            $SqlConnection,
+
+            [Parameter(Mandatory=$false)]
+            [switch]
+            # Return only the left-most column of the first row of data.  Also
+            # called a "scalar" query.
+            $SingleResult,
 
             [Parameter(Mandatory=$true)]
             [ValidateNotNullOrEmpty()]
             [Alias("Command")]
             [string]
+            # The SQL query to run.
             $Query
           )
 
-    if ($PSCmdlet.ParameterSetName -eq 'ImplicitConnection') {
+    if ($PSCmdlet.ParameterSetName -eq 'ImplicitQuery') {
         try {
             $conn = Open-SqlConnection -Server $InstanceName -Database $Database
         } catch {
@@ -245,44 +251,48 @@ function Send-SqlQuery {
 
     $reader = $null
     try {
-        Write-Verbose "Executing: `"$Query`""
-        $reader = $cmd.ExecuteReader()
-        $rows = @()
-        while ($reader.Read()) {
-            $row = New-Object Object[] $reader.FieldCount
-            $reader.GetValues($row) | Out-Null
+        if ($SingleResult) {
+            $result = $cmd.ExecuteScalar()
+        } else {
+            Write-Verbose "Executing: `"$Query`" against $($conn.Datasource)"
+            $reader = $cmd.ExecuteReader()
+            $result = @()
+            while ($reader.Read()) {
+                $row = New-Object Object[] $reader.FieldCount
+                $reader.GetValues($row) | Out-Null
 
-            $values = @{}
-            for ($i = 0; $i -lt $reader.FieldCount; $i++) {
-                if ([String]::IsNullOrEmpty($reader.GetName($i))) {
-                    $colName = "Column_" + ($i + 1)
-                } else {
-                    $colName = $reader.GetName($i)
-                }
+                $values = @{}
+                for ($i = 0; $i -lt $reader.FieldCount; $i++) {
+                    if ([String]::IsNullOrEmpty($reader.GetName($i))) {
+                        $colName = "Column_" + ($i + 1)
+                    } else {
+                        $colName = $reader.GetName($i)
+                    }
 
-                if ($row[$i] -is [DBNull]) {
-                    $values[$colName] = $null
-                } else {
-                    $values[$colName] = $row[$i]
+                    if ($row[$i] -is [DBNull]) {
+                        $values[$colName] = $null
+                    } else {
+                        $values[$colName] = $row[$i]
+                    }
                 }
+                $result += New-Object PSObject -Property $values
             }
-
-            $rows += New-Object PSObject -Property $values
         }
     } catch {
         throw
     } finally {
-        $cmd.Dispose()
-        if ($reader -ne $null) {
+        if (!$SingleResult -and $reader) {
             $reader.Close()
+            $reader.Dispose()
         }
+        $cmd.Dispose()
     }
 
-    if ($PSCmdlet.ParameterSetName -eq "ImplicitConnection") {
-        Close-SqlConnection $conn -Verbose
+    if ($PSCmdlet.ParameterSetName -eq "ImplicitQuery") {
+        Close-SqlConnection $conn
     }
 
-    return $rows
+    return $result
 }
 
 function Get-SqlServerInstance {

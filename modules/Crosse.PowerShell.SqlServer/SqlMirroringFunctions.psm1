@@ -243,13 +243,13 @@ function Grant-PrivilegesOnEndpoint {
 
     # "105" is the ENDPOINT class.
     $checkPrivs = "SELECT COUNT(*) FROM sys.server_permissions WHERE grantee_principal_id = $($login.principal_id) AND class = 105 AND major_id = $($Endpoint.endpoint_id) AND type = 'CO'"
-    $privCount = Send-SqlScalarQuery $SqlConnection $checkPrivs
+    $privCount = Send-SqlQuery -SqlConnection $SqlConnection -SingleResult -Query $checkPrivs
     if ($privCount -gt 0) {
         Write-Verbose "CONNECT privileges already exist on the $($Endpoint.name) endpoint for user $DatabaseUser on instance $($SqlConnection.Datasource)"
     } else {
         $grantPrivs = "GRANT CONNECT ON ENDPOINT::$($Endpoint.name) TO [$DatabaseUser]"
         Send-SqlNonQuery $SqlConnection $grantPrivs | Out-Null
-        $privCount = Send-SqlScalarQuery $SqlConnection $checkPrivs
+        $privCount = Send-SqlQuery -SqlConnection $SqlConnection -SingleResult -Query $checkPrivs
         if ($privCount -eq 0) {
             throw "Could not grant CONNECT privileges to $DatabaseUser on instance $($SqlConnection.Datasource), endpoint $($Endpoint.name)"
         }
