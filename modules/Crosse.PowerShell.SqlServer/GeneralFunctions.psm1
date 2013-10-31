@@ -141,34 +141,88 @@ function Close-SqlConnection {
     }
 }
 
+################################################################################
+<#
+    .SYNOPSIS
+    Sends a SQL statement to a database and returns the result.
 
+    .DESCRIPTION
+    Sends a SQL query to a SQL Server database and returns the result.  Useful
+    for statements that do not return row data, such as UPDATEs and DELETEs.
 
+    .INPUTS
+    System.Data.SqlClient.SqlConnection.  An open SQL connection to run the query against.
 
+    System.String.  The query to run.
 
+    .OUTPUTS
+    A System.String of the response from the server, if any.
+#>
+################################################################################
 function Send-SqlNonQuery {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="Implicit")]
     param (
-            [Parameter(Mandatory=$true)]
+            [Parameter(Mandatory=$true,
+                ParameterSetName="Implicit")]
+            [ValidateNotNull()]
+            [string]
+            # The MSSQL instance to run the statement against.  This can be
+            # either a named instance ("SERVER\INSTANCENAME") or a default
+            # instance ("SERVER").
+            $InstanceName,
+
+            [Parameter(Mandatory=$false,
+                ParameterSetName="Implicit")]
+            [ValidateNotNull()]
+            [string]
+            # The database to run the statement against.  If not specified,
+            # defaults to the "master" database.
+            $Database = "master",
+
+            [Parameter(Mandatory=$true,
+                ParameterSetName="Explicit")]
             [ValidateNotNull()]
             [System.Data.SqlClient.SqlConnection]
+            # A connection to an MSSQL server that has been previously opened
+            # with the Open-SqlConnection cmdlet.
             $SqlConnection,
 
             [Parameter(Mandatory=$true)]
             [ValidateNotNullOrEmpty()]
+            [Alias("Command")]
+            [Alias("Query")]
             [string]
-            $Command
+            # The SQL query to run.
+            $Statement
           )
     
-    $cmd = $SqlConnection.CreateCommand()
-    $cmd.CommandText = $Command
+    if ($PSCmdlet.ParameterSetName -eq 'Implicit') {
+        try {
+            $conn = Open-SqlConnection -Server $InstanceName -Database $Database
+        } catch {
+            if ($conn -ne $null) {
+                Close-SqlConnection $conn
+            }
+            throw
+        }
+    } else {
+        $conn = $SqlConnection
+    }
 
-    #Write-Verbose "Executing: `"$Command`""
+    $cmd = $conn.CreateCommand()
+    $cmd.CommandText = $Statement
+
     try {
+        Write-Verbose "Executing: `"$Statement`""
         $result = $cmd.ExecuteNonQuery()
     } catch {
         throw
     } finally {
         $cmd.Dispose()
+    }
+
+    if ($PSCmdlet.ParameterSetName -eq "ImplicitQuery") {
+        Close-SqlConnection $conn
     }
 
     return $result
