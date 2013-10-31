@@ -1,56 +1,37 @@
-function Get-InstalledPatch {
+#requires -version 3
+
+workflow Get-InstalledPatch {
     [CmdletBinding()]
     param (
-            [Parameter(Mandatory=$false,
-                ValueFromPipeline=$true)]
-            [ValidateNotNullOrEmpty()]
-            [string]
-            $ComputerName = "localhost",
-
             [Parameter(Mandatory=$false)]
             [ValidateNotNullOrEmpty()]
             [string[]]
+            $ComputerName,
+
+            [Parameter(Mandatory=$true)]
+            [ValidateNotNullOrEmpty()]
+            [string]
             $HotFixID
         )
 
-    PROCESS {
-        $os = Get-WmiObject -ComputerName $ComputerName `
-                            -Class Win32_OperatingSystem `
+    foreach -parallel ($Computer in $ComputerName) {
+        Write-Verbose -Message "Searching for HotFix $HotFixID on $Computer"
+        $hotfix = Get-WmiObject -PSComputerName $Computer `
+                    -Class Win32_QuickFixEngineering `
+                    -Filter "HotFixID = '$HotFixID'"
 
-        $hotfixes = @()
-        if ([String]::IsNullOrEmpty($HotFixID)) {
-            Write-Verbose "Getting all HotFixIDs"
-            $hotfixes = Get-WmiObject -ComputerName $ComputerName -Class Win32_QuickFixEngineering
+        if ($hotfix -eq $null -or [String]::IsNullOrEmpty($hotfix)) {
+            Write-Verbose -Message "Did not find HotFixID $HotFixID on $Computer"
         } else {
-            foreach ($hfid in $HotFixID) {
-                $hotfix = Get-WmiObject -ComputerName $ComputerName `
-                                -Class Win32_QuickFixEngineering `
-                                -Filter "HotFixID = '$hfid'"
-
-                if ($hotfix -eq $null) {
-                    Write-Verbose "Did not find HotFixID $hfid"
-                    New-Object PSObject -Property @{
-                        "ComputerName"  = $ComputerName
-                        "HotFixID"      = $hfid
-                        "Installed"     = $false
-                        "Description"   = $null
-                        "InstalledOn"   = $null
-                    }
-                } else {
-                    Write-Verbose "Found HotFixID $($hotfix.HotFixId)"
-                    $hotfixes += $hotfix
-                }
-            }
-        }
-
-        foreach ($hotfix in $hotfixes) {
-            New-Object PSObject -Property @{
-                "ComputerName"  = $ComputerName
+            Write-Verbose -Message "Found HotFixID $($hotfix.HotFixId) on $Computer"
+            $p2 = New-Object -TypeName PSObject -Property @{
+                "ComputerName"  = $Computer
                 "HotFixID"      = $hotfix.HotFixID
                 "Installed"     = $true
                 "Description"   = $hotfix.Description
                 "InstalledOn"   = $hotfix.InstalledOn
             }
+            Write-Output -InputObject $p2
         }
     }
 }
