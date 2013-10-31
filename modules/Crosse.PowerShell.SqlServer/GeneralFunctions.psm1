@@ -234,18 +234,21 @@ function Send-SqlQuery {
         }
     }
 
-    #Write-Verbose "Retrieved $($rows.Count) row(s) from the database"
+    if ($PSCmdlet.ParameterSetName -eq "ImplicitConnection") {
+        Close-SqlConnection $conn -Verbose
+    }
+
     return $rows
 }
 
 function Get-SqlServerInstance {
     [CmdletBinding(DefaultParameterSetName="NamedInstance")]
     param (
-            [Parameter(Mandatory=$true,
+            [Parameter(Mandatory=$false,
                 ValueFromPipeline=$true)]
             [ValidateNotNullOrEmpty()]
             [string]
-            $ComputerName,
+            $ComputerName = "localhost",
 
             [Parameter(Mandatory=$false,
                 ValueFromPipelineByPropertyName=$true,
