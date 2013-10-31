@@ -340,9 +340,15 @@ function Get-SqlDatabase {
             [string]
             $Database,
 
-            [Parameter(Mandatory=$false)]
+            [Parameter(Mandatory=$false,
+                ParameterSetName="User")]
             [switch]
-            $OnlyUserDatabases
+            $OnlyUserDatabases,
+
+            [Parameter(Mandatory=$false,
+                ParameterSetName="System")]
+            [switch]
+            $OnlySystemDatabases
           )
 
     PROCESS {
@@ -365,6 +371,10 @@ function Get-SqlDatabase {
 
             if ($OnlyUserDatabases) {
                 $where += "LEN(owner_sid) > 1"
+            }
+
+            if ($OnlySystemDatabases) {
+                $where += "LEN(owner_sid) = 1"
             }
 
             if ($where.Count -gt 0) {
