@@ -182,26 +182,52 @@ function Send-SqlNonQuery {
 }
 
 function Send-SqlQuery {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="ImplicitConnection")]
     param (
-            [Parameter(Mandatory=$true)]
+            [Parameter(Mandatory=$true,
+                ParameterSetName="ExplicitConnection")]
             [ValidateNotNull()]
             [System.Data.SqlClient.SqlConnection]
             $SqlConnection,
 
+            [Parameter(Mandatory=$true,
+                ParameterSetName="ImplicitConnection")]
+            [ValidateNotNull()]
+            [string]
+            $InstanceName,
+
+            [Parameter(Mandatory=$true,
+                ParameterSetName="ImplicitConnection")]
+            [ValidateNotNull()]
+            [string]
+            $Database,
+
             [Parameter(Mandatory=$true)]
             [ValidateNotNullOrEmpty()]
+            [Alias("Command")]
             [string]
-            $Command
+            $Query
           )
 
-    $cmd = $SqlConnection.CreateCommand()
-    $cmd.CommandText = $Command
+    if ($PSCmdlet.ParameterSetName -eq 'ImplicitConnection') {
+        try {
+            $conn = Open-SqlConnection -Server $InstanceName -Database $Database
+        } catch {
+            if ($conn -ne $null) {
+                Close-SqlConnection $conn
+            }
+            throw
+        }
+    } else {
+        $conn = $SqlConnection
+    }
 
-    #Write-Verbose "Executing: `"$Command`""
+    $cmd = $conn.CreateCommand()
+    $cmd.CommandText = $Query
 
     $reader = $null
     try {
+        Write-Verbose "Executing: `"$Query`""
         $reader = $cmd.ExecuteReader()
         $rows = @()
         while ($reader.Read()) {
