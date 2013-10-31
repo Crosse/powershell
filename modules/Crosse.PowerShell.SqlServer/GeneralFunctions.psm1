@@ -3,15 +3,16 @@ function Get-SqlServerProperties {
     param (
             [Parameter(Mandatory=$true)]
             [ValidateNotNull()]
+            [Alias("Server")]
             [string]
-            $Server,
+            $InstanceName,
 
             [Parameter(Mandatory=$false)]
             [ValidateNotNull()]
             [System.Management.Automation.PSCredential]
             $Credential
           )
-    $serverName, $instance = $Server.Split('\')
+    $serverName, $instance = $InstanceName.Split('\')
 
     Write-Verbose "Server: $serverName"
 
@@ -76,8 +77,9 @@ function Open-SqlConnection {
     param (
             [Parameter(Mandatory=$true)]
             [ValidateNotNullOrEmpty()]
+            [Alias("Server")]
             [string]
-            $Server,
+            $InstanceName,
 
             [Parameter(Mandatory=$false)]
             [ValidateNotNullOrEmpty()]
@@ -89,15 +91,15 @@ function Open-SqlConnection {
             $Async
           )
 
-    $connString = "Data Source={0};Initial Catalog={1};Integrated Security=SSPI;" -f $Server, $Database
+    $connString = "Data Source={0};Initial Catalog={1};Integrated Security=SSPI;" -f $InstanceName, $Database
     if ($Async) {
         $connString += "Asynchronous Processing=true;"
     }
     $conn = New-Object System.Data.SqlClient.SqlConnection $connString
-    Write-Verbose "Opening connection to $Server"
+    Write-Verbose "Opening connection to $InstanceName"
     $conn.Open()
     if ($conn.State -ne 'Open') {
-        throw "Could not open SQL connection to the server $Server"
+        throw "Could not open SQL connection to the server $InstanceName"
     }
     return $conn
 }
