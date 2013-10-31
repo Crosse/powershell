@@ -84,7 +84,7 @@ function Open-SqlConnection {
             [Parameter(Mandatory=$false)]
             [ValidateNotNullOrEmpty()]
             [string]
-            $Database="master",
+            $Database = "master",
 
             [Parameter(Mandatory=$false)]
             [switch]
