@@ -437,4 +437,83 @@ function BuildWithOptions {
     return $withOptions
 }
 
-Export-ModuleMember Backup-Database, Restore-Database
+function Get-SqlServerBackupInformation {
+    [CmdletBinding(DefaultParameterSetName="All")]
+    param (
+            [Parameter(Mandatory=$true,
+                ValueFromPipelineByPropertyName=$true)]
+            [ValidateNotNullOrEmpty()]
+            [string]
+            $InstanceName,
+
+            [Parameter(Mandatory=$true,
+                ValueFromPipelineByPropertyName=$true)]
+            [ValidateNotNullOrEmpty()]
+            [string]
+            $Database,
+
+            [Parameter(Mandatory=$false,
+                ParameterSetName="All")]
+            [switch]
+            $LastBackup = $true,
+
+            [Parameter(Mandatory=$false,
+                ParameterSetName="SpecifyKind")]
+            [switch]
+            $LastFullBackup,
+
+            [Parameter(Mandatory=$false,
+                ParameterSetName="SpecifyKind")]
+            [switch]
+            $LastIncrementalBackup,
+
+            [Parameter(Mandatory=$false,
+                ParameterSetName="SpecifyKind")]
+            [switch]
+            $LastDifferentialBackup
+          )
+
+    $query = @"
+SELECT
+	sdb.Name AS Name, 
+	bus.server_name AS ServerName, 
+	MAX(bus.backup_finish_date) AS LastBackupTime, 
+	CASE bus.type
+		WHEN 'D' THEN 'Full'
+		WHEN 'I' THEN 'Differential'
+		WHEN 'L' THEN 'Log'
+		WHEN 'F' THEN 'File/Filegroup'
+		WHEN 'G' THEN 'Differential File'
+		WHEN 'P' THEN 'Partial'
+		WHEN 'Q' THEN 'Differential Partial'
+	END AS BackupType
+FROM sys.sysdatabases sdb 
+LEFT OUTER JOIN msdb.dbo.backupset bus 
+	ON bus.database_name = sdb.name 
+<WHERECLAUSE>
+GROUP BY bus.server_name, sdb.Name, bus.type
+ORDER BY Name, LastBackupTime
+"@
+
+    if ($LastBackup) {
+        $query = $query.Replace("<WHERECLAUSE>", "")
+    } else {
+        $where = @()
+        if ($LastFullBackup) {
+            $where += "bus.type = 'D'"
+        }
+        if ($LastIncrementalBackup) {
+            $where += "bus.type = 'L'"
+        }
+        if ($LastDifferentialBackup) {
+            $where += "bus.type = 'I'"
+        }
+        $whereClause = "WHERE " + ($where -join " OR ")
+        Write-Verbose $whereClause
+        $query = $query.Replace("<WHERECLAUSE>", $whereClause)
+    }
+    $conn = Open-SqlConnection -Server $InstanceName
+    Send-SqlQuery -SqlConnection $conn -Command $query
+}
+
+Export-ModuleMember Backup-Database, Restore-Database, Get-SqlServerBackupInformation
