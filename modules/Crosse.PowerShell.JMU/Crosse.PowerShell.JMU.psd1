@@ -55,7 +55,8 @@ TypesToProcess = @()
 FormatsToProcess = @()
 
 # Modules to import as nested modules of the module specified in ModuleToProcess
-NestedModules = 'Search-LockoutEvents.psm1'
+NestedModules = 'Search-LockoutEvents.psm1',
+                'Get-LockedUser.psm1'
 
 # Functions to export from this module
 FunctionsToExport = '*'
@@ -70,10 +71,12 @@ VariablesToExport = '*'
 AliasesToExport = '*'
 
 # List of all modules packaged with this module
-ModuleList =    'Search-LockoutEvents.psm1'
+ModuleList =    'Search-LockoutEvents.psm1',
+                'Get-LockedUser.psm1'
 
 # List of all files packaged with this module
-FileList =      'Search-LockoutEvents.psm1'
+FileList =      'Search-LockoutEvents.psm1',
+                'Get-LockedUser.psm1'
 
 # Private data to pass to the module specified in ModuleToProcess
 PrivateData = ''
