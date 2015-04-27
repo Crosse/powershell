@@ -113,7 +113,7 @@ function Get-EventData {
 
     foreach ($prop in $Property) {
         $query = "//event:Data[@Name='$prop']/text()"
-        $values[$prop] = $root.SelectNodes($query, $nsmgr).Data
+        $values[$prop] = $root.SelectSingleNode($query, $nsmgr).Data
     }
     $values
 }
