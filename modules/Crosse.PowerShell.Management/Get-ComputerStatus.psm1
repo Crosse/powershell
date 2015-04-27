@@ -43,7 +43,7 @@ function Get-ComputerStatus {
             $result.IpAddress = $dns.AddressList[0].IpAddressToString
         } catch {
             $result.DnsStatus = "NotFound"
-            Write-Verbose "$ComputerName : Name not found in DNS."
+            Write-Warning "$ComputerName : Name not found in DNS."
             if (!$Force) {
                 return $result
             }
@@ -54,7 +54,7 @@ function Get-ComputerStatus {
         $result.PingRoundTripTime = $pingResult.RoundTripTime
 
         if ($pingResult.Status -ne 'Success') {
-            Write-Verbose "$ComputerName : Did not respond to ping."
+            Write-Warning "$ComputerName : Did not respond to ping."
             if (!$Force) {
                 return $result
             }
