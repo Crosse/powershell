@@ -2,9 +2,9 @@ function Search-LockoutEvents {
     [CmdletBinding(SupportsShouldProcess=$true, ConfirmImpact="High")]
 
     param (
-            [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
+            [Parameter(Mandatory=$false, ValueFromPipeline=$true)]
             [String]
-            # The user to search for.
+            # The user to search for.  If no user is specified, all lockout events will be returned.
             $User,
 
             [Parameter(Mandatory=$false)]
@@ -37,14 +37,16 @@ function Search-LockoutEvents {
     $startTime = $Start.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
     $endTime = $End.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
     $xPathQuery = @"
+    if (![String]::IsNullOrEmpty($User)) {
+        $userQuery = @"
+        and *[EventData[Data[@Name="TargetUserName"] = "$User" ]]
+"@
+    }
 <QueryList>
 <Query Id="0" Path="$EventLogName">
     <Select Path="$EventLogName">
-        *[System[(EventID=4740 or EventID=4625)
-        and
-        TimeCreated[@SystemTime &gt;= "$startTime" and @SystemTime &lt;= "$endTime"]]]
-        and
-        *[EventData[Data[@Name="TargetUserName"] = "$User" ]]
+        *[System[(EventID=4740 or EventID=4625) and TimeCreated[@SystemTime &gt;= "$startTime" and @SystemTime &lt;= "$endTime"]]]
+$userQuery
     </Select>
 </Query>
 </QueryList>
