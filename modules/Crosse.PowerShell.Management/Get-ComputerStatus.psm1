@@ -9,7 +9,11 @@ function Get-ComputerStatus {
             [Parameter(Mandatory=$false)]
             [switch]
             # Indicates whether to force all tests to run.
-            $Force=$false
+            $Force=$false,
+
+            [switch]
+            # Test extraneous services such as Remote Registry, Remote Firewall, Remote Services, file sharing, etc.
+            $TestServices = $true
         )
 
     BEGIN {
@@ -18,19 +22,24 @@ function Get-ComputerStatus {
 
     PROCESS {
         $result = New-Object PSObject -Property @{
-            "DnsStatus"         = "NotFound"
-            "HostName"          = $ComputerName
-            "IpAddress"         = $null
-            "PingStatus"        = $null
-            "PingRoundTripTime" = $null
-            "WmiStatus"         = $null
-            "WmiError"          = $null
-            "Manufacturer"      = $null
-            "Model"             = $null
-            "OSVersion"         = $null
-            "OSName"            = $null
-            "PSRemotingStatus"  = $null
-            "PSRemotingError"   = $null
+            "DnsStatus"                         = "NotFound"
+            "HostName"                          = $ComputerName
+            "IpAddress"                         = $null
+            "PingStatus"                        = $null
+            "PingRoundTripTime"                 = $null
+            "WmiStatus"                         = $null
+            "WmiError"                          = $null
+            "Manufacturer"                      = $null
+            "Model"                             = $null
+            "OSVersion"                         = $null
+            "OSName"                            = $null
+            "PSRemotingStatus"                  = $null
+            "PSRemotingError"                   = $null
+            "WinRSStatus"                       = $null
+            "WinRSError"                        = $null
+            # Services to test
+            "FileSharingEnabled"                = $false
+            "RemoteDesktopEnabled"              = $false
         }
 
         Write-Verbose "$ComputerName : starting."
@@ -61,49 +70,75 @@ function Get-ComputerStatus {
         }
 
         Write-Verbose "$ComputerName : Attempting WMI connections"
-        $error.Clear()
-        $computerSystem = Get-WmiObject -ComputerName $ComputerName -Class Win32_ComputerSystem
-        if ($computerSystem -eq $null) {
-            Write-Verbose "$ComputerName : Could not connect to WMI (Win32_ComputerSystem)"
-            $result.WmiStatus = "Failed"
-            $result.WmiError = $error[0].Exception
-            if (!$Force) {
-                return $result
-            }
-        } else {
+        try {
+            $computerSystem = Get-WmiObject -ComputerName $ComputerName -Class Win32_ComputerSystem -ErrorAction Stop
+
             $result.WmiStatus = "Success (ComputerSystem)"
             $result.Manufacturer = $computerSystem.Manufacturer
             $result.Model = $computerSystem.Model
 
-            $error.Clear()
-            $operatingSystem = Get-WmiObject -ComputerName $ComputerName -Class Win32_OperatingSystem
-            if ($operatingSystem -eq $null) {
-                Write-Verbose "$ComputerName : Could not connect to WMI (Win32_OperatingSystem)"
-                $result.WmiStatus += "/Failed (OperatingSystem)"
-                $result.WmiError += $error[0].Exception
-                if (!$Force) {
-                    return $result
-                }
-            } else {
+            try {
+                $operatingSystem = Get-WmiObject -ComputerName $ComputerName -Class Win32_OperatingSystem -ErrorAction Stop
+
                 $result.WmiStatus = "Success"
                 $result.OSVersion = $operatingSystem.Version
                 $result.OSName = $operatingSystem.Name.Split("|")[0]
+            } catch {
+                Write-Warning "$ComputerName : Could not connect to WMI (Win32_OperatingSystem)"
+                $result.WmiStatus += "/Failed (OperatingSystem)"
+                $result.WmiError += $_
+                if (!$Force) {
+                    return $result
+                }
+            }
+        } catch {
+            Write-Warning "$ComputerName : Could not connect to WMI (Win32_ComputerSystem)"
+            $result.WmiStatus = "Failed"
+            $result.WmiError = $_
+            if (!$Force) {
+                return $result
             }
         }
 
         Write-Verbose "$ComputerName : Attempting Remote PowerShell (WS-Man) connection"
-        $error.Clear()
-        $serverName = Invoke-Command -ComputerName $ComputerName `
-                        -ScriptBlock { Get-Item Env:ComputerName } `
-                        -ErrorAction SilentlyContinue
-        if ($serverName -eq $null) {
-            Write-Verbose "$ComputerName : Could not connect to server via Remote PowerShell"
-            $result.PSRemotingStatus = "Failed"
-            $result.PSRemotingError = $error[0].Exception
-        } else {
+        try {
+            $null = Test-WSMan $ComputerName -ErrorAction Stop
             $result.PSRemotingStatus = "Success"
+        } catch {
+            Write-Warning "$ComputerName : Could not connect to server via remote PowerShell"
+            $result.PSRemotingStatus = "Failed"
+            $result.PSRemotingError = ([xml]$_.Exception.Message).WSManFault.Message
         }
 
-        return $result
+        Write-Verbose "$ComputerName : Attempting WinRS connection"
+        $error.Clear()
+        $cmdResult = winrs.exe -r:$ComputerName "SET COMPUTERNAME"
+        if ($? -and ![String]::IsNullOrEmpty($cmdResult)) {
+            $result.WinRSStatus = "Success"
+        } else {
+            Write-Warning "$ComputerName : Could not connect to server via WinRS"
+            $result.WinRSStatus = "Failed"
+            $result.WinRSError = $error[0].Exception
+        }
+
+        if ($TestServices) {
+            # FileSharingEnabled
+            Write-Verbose "$ComputerName : Testing file share access"
+            if (Test-Path "\\$ComputerName\ADMIN$\") {
+                $result.FileSharingEnabled = $true
+            } else {
+                Write-Warning "$ComputerName : Could not enumerate ADMIN$ file share"
+            }
+
+            # RemoteDesktopEnabled
+            Write-Verbose "$ComputerName : Testing Remote Desktop"
+            if (Test-NetConnection -ComputerName $ComputerName -CommonTCPPort RDP) {
+                $result.RemoteDesktopEnabled = $true
+            } else {
+                Write-Warning "$ComputerName : Could not connect to RDP port"
+            }
+        }
+
+        return $result | Select @SelectHash
     }
 }
