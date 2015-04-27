@@ -9,7 +9,7 @@ function Search-LockoutEvents {
 
             [Parameter(Mandatory=$false)]
             [DateTime]
-            # The starting time for the search.  The default is one hour from the current time.
+            # The starting time for the search.  The default is one hour ago.
             $Start = (Get-Date).AddHours(-1),
 
             [Parameter(Mandatory=$false)]
