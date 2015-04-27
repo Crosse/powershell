@@ -40,9 +40,9 @@ function Search-LockoutEvents {
     BEGIN {
         $processLookup = @{
             'EdgeTransport.exe' = 'SMTP'
-            'Microsoft.Exchange.Imap4.exe' = 'IMAP'
-            'w3wp.exe' = 'OWA/Phone'
-            'Microsoft.Exchange.Pop3.exe' = 'POP'
+            'Microsoft.Exchange.Imap4.exe' = 'IMAP4'
+            'w3wp.exe' = 'OWA/EAS/EWS/Outlook'
+            'Microsoft.Exchange.Pop3.exe' = 'POP3'
         }
 
         if ($FuzzySearch) {
