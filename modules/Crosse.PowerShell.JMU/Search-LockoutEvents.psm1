@@ -33,6 +33,15 @@ function Search-LockoutEvents {
             $ResultSize = [Long]::MaxValue
           )
 
+    BEGIN {
+        $processLookup = @{
+            'EdgeTransport.exe' = 'SMTP'
+            'Microsoft.Exchange.Imap4.exe' = 'IMAP'
+            'w3wp.exe' = 'OWA/Phone'
+            'Microsoft.Exchange.Pop3.exe' = 'POP'
+        }
+    }
+
     PROCESS {
         $sw = New-Object System.Diagnostics.Stopwatch
         $startTime = $Start.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
@@ -72,11 +81,30 @@ $userQuery
             while (($evt = $logReader.ReadEvent()) -ne $null) {
                 $props = Get-EventData -Event $evt
 
+                $source = ""
+                if ($props["ProcessName"]) {
+                    foreach ($p in $processLookup.Keys) {
+                        if ($props["ProcessName"].EndsWith($p)) {
+                            $source = $processLookup[$p]
+                            break
+                        }
+                    }
+                }
+                switch ($evt.Id) {
+                    4740 { $eventType = "AccountLockout" }
+                    4625 { $eventType = "InvalidPasswordAttempt" }
+                    default { $eventType = "SethMessedUp" }
+                }
                 New-Object PSObject -Property @{
+                    RecordId = $evt.RecordId
+                    TimeCreated = $evt.TimeCreated
                     UserName = $props["TargetUserName"]
-                    ServerName = $props["SubjectUserName"]
+                    TargetDomainName = $props["TargetDomainName"]
                     WorkstationName = $props["WorkstationName"]
                     IPAddress = $props["IpAddress"]
+                    ProcessName = $props["ProcessName"]
+                    Source = $source
+                    EventType = $eventType
                 }
                 $i++
                 if ($i -ge $ResultSize) { break }
