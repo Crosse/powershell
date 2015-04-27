@@ -33,15 +33,18 @@ function Search-LockoutEvents {
             $ResultSize = [Long]::MaxValue
           )
 
-    $sw = New-Object System.Diagnostics.Stopwatch
-    $startTime = $Start.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
-    $endTime = $End.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
-    $xPathQuery = @"
-    if (![String]::IsNullOrEmpty($User)) {
-        $userQuery = @"
+    PROCESS {
+        $sw = New-Object System.Diagnostics.Stopwatch
+        $startTime = $Start.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
+        $endTime = $End.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
+
+        if (![String]::IsNullOrEmpty($User) -and !$FuzzySearch) {
+            $userQuery = @"
         and *[EventData[Data[@Name="TargetUserName"] = "$User" ]]
 "@
-    }
+        }
+
+        $xPathQuery = @"
 <QueryList>
 <Query Id="0" Path="$EventLogName">
     <Select Path="$EventLogName">
@@ -52,36 +55,36 @@ $userQuery
 </QueryList>
 "@
 
-    $events = @()
-    $total = $ComputerName.Count
-    foreach ($c in $ComputerName) {
-        $pctComplete = ($ComputerName.Count - $total) / $ComputerName.Count * 100
-        $total--
-        Write-Progress -Activity "Searching event logs" -Status "Querying $c" -PercentComplete $pctComplete
-        Write-Verbose "Starting search on $c"
-        $sw.Start()
-        $session = New-Object System.Diagnostics.Eventing.Reader.EventLogSession $c
-        $logQuery = New-Object System.Diagnostics.Eventing.Reader.EventLogQuery $EventLogName, "LogName", $xPathQuery
-        $logQuery.Session = $session
-        $logReader = New-Object System.Diagnostics.Eventing.Reader.EventLogReader $logQuery
+        $events = @()
+        $total = $ComputerName.Count
+        foreach ($c in $ComputerName) {
+            $pctComplete = ($ComputerName.Count - $total) / $ComputerName.Count * 100
+            $total--
+            Write-Progress -Activity "Searching event logs" -Status "Querying $c" -PercentComplete $pctComplete
+            Write-Verbose "Starting search on $c"
+            $sw.Start()
+            $session = New-Object System.Diagnostics.Eventing.Reader.EventLogSession $c
+            $logQuery = New-Object System.Diagnostics.Eventing.Reader.EventLogQuery $EventLogName, "LogName", $xPathQuery
+            $logQuery.Session = $session
+            $logReader = New-Object System.Diagnostics.Eventing.Reader.EventLogReader $logQuery
 
-        $i = 0
-        while (($evt = $logReader.ReadEvent()) -ne $null) {
-            $props = Get-EventData -Event $evt
+            $i = 0
+            while (($evt = $logReader.ReadEvent()) -ne $null) {
+                $props = Get-EventData -Event $evt
 
-            New-Object PSObject -Property @{
-                UserName = $props["TargetUserName"]
-                ServerName = $props["SubjectUserName"]
-                WorkstationName = $props["WorkstationName"]
-                IPAddress = $props["IpAddress"]
+                New-Object PSObject -Property @{
+                    UserName = $props["TargetUserName"]
+                    ServerName = $props["SubjectUserName"]
+                    WorkstationName = $props["WorkstationName"]
+                    IPAddress = $props["IpAddress"]
+                }
+                $i++
+                if ($i -ge $ResultSize) { break }
             }
-            $i++
-            if ($i -ge $ResultSize) { break }
+            $sw.Stop()
+            Write-Verbose "Search ended on $c (took $($sw.ElapsedMilliseconds)ms) and found $i events"
         }
-        $sw.Stop()
-        Write-Verbose "Search ended on $c (took $($sw.ElapsedMilliseconds)ms) and found $i events"
-    }
-    Write-Progress -Activity "Searching event logs" -Status "Done." -Completed
+        Write-Progress -Activity "Searching event logs" -Status "Done." -Completed
     }
 }
 
