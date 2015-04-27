@@ -99,7 +99,7 @@ function Get-EventData {
             $Property = @()
           )
 
-    $xml = [xml]$e.ToXml()
+    $xml = [xml]$Event.ToXml()
     $root = $xml.DocumentElement
     $nsmgr = New-Object System.Xml.XmlNamespaceManager $xml.NameTable
     $nsmgr.AddNamespace("event", $xml.DocumentElement.NamespaceURI)
