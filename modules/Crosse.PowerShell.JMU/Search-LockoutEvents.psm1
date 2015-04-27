@@ -51,7 +51,11 @@ function Search-LockoutEvents {
 "@
 
     $events = @()
+    $total = $ComputerName.Count
     foreach ($c in $ComputerName) {
+        $pctComplete = ($ComputerName.Count - $total) / $ComputerName.Count * 100
+        $total--
+        Write-Progress -Activity "Searching event logs" -Status "Querying $c" -PercentComplete $pctComplete
         Write-Verbose "Starting search on $c"
         $sw.Start()
         if ($ResultSize) {
@@ -77,6 +81,7 @@ function Search-LockoutEvents {
                 IPAddress = $props["IpAddress"]
             }
         }
+    Write-Progress -Activity "Searching event logs" -Status "Done." -Completed
     }
 }
 
