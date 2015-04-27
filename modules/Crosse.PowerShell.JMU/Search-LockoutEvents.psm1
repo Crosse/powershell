@@ -30,7 +30,11 @@ function Search-LockoutEvents {
             [Parameter(Mandatory=$false)]
             # The number of events to return.  By default, all events are returned.
             [Long]
-            $ResultSize = [Long]::MaxValue
+            $ResultSize = [Long]::MaxValue,
+
+            [Parameter(Mandatory=$false)]
+            [Switch]
+            $FuzzySearch = $false
           )
 
     BEGIN {
@@ -39,6 +43,10 @@ function Search-LockoutEvents {
             'Microsoft.Exchange.Imap4.exe' = 'IMAP'
             'w3wp.exe' = 'OWA/Phone'
             'Microsoft.Exchange.Pop3.exe' = 'POP'
+        }
+
+        if ($FuzzySearch) {
+            Write-Verbose "Fuzzy searching has been enabled.  This will take longer than a strict search to perform, but may also return more (better?) results."
         }
     }
 
@@ -80,6 +88,10 @@ $userQuery
             $i = 0
             while (($evt = $logReader.ReadEvent()) -ne $null) {
                 $props = Get-EventData -Event $evt
+
+                if ($FuzzySearch -and $props["TargetUserName"] -notlike "*$User*") {
+                    continue
+                }
 
                 $source = ""
                 if ($props["ProcessName"]) {
