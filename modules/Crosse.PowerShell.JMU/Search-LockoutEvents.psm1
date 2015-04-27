@@ -77,7 +77,7 @@ function Search-LockoutEvents {
             New-Object PSObject -Property @{
                 UserName = $props["TargetUserName"]
                 ServerName = $props["SubjectUserName"]
-                ClientName = $props["WorkstationName"]
+                WorkstationName = $props["WorkstationName"]
                 IPAddress = $props["IpAddress"]
             }
         }
