@@ -38,12 +38,12 @@ function Search-LockoutEvents {
     $endTime = $End.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
     $xPathQuery = @"
 <QueryList>
-<Query Id="0">
+<Query Id="0" Path="$EventLogName">
     <Select Path="$EventLogName">
-        *[System[TimeCreated[@SystemTime &gt;= "$startTime" and @SystemTime &lt;= "$endTime"]]] 
-        and 
-        *[System[(EventID=4740 or EventID=4625)]]
-        and 
+        *[System[(EventID=4740 or EventID=4625)
+        and
+        TimeCreated[@SystemTime &gt;= "$startTime" and @SystemTime &lt;= "$endTime"]]]
+        and
         *[EventData[Data[@Name="TargetUserName"] = "$User" ]]
     </Select>
 </Query>
