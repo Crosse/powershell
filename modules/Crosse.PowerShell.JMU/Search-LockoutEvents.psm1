@@ -34,8 +34,8 @@ function Search-LockoutEvents {
           )
 
     $sw = New-Object System.Diagnostics.Stopwatch
-    $startTime = "{0}Z" -f $Start.ToUniversalTime().ToString('s')
-    $endTime = "{0}Z" -f $End.ToUniversalTime().ToString('s')
+    $startTime = $Start.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
+    $endTime = $End.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
     $xPathQuery = @"
 <QueryList>
 <Query Id="0">
