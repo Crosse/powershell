@@ -106,7 +106,6 @@ function Get-EventData {
     $values = @{}
     $root = $xml.DocumentElement
     if ($Property.Count -eq 0) {
-        Write-Verbose "No explictly-requestes properties; returning all"
         foreach ($prop in $root.SelectNodes("//event:Data", $nsmgr)) {
             $Property += $prop.Name
         }
