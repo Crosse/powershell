@@ -90,12 +90,13 @@ function Get-EventData {
     param (
             [Parameter(Mandatory=$true,
                 ValueFromPipeline=$true)]
+            [ValidateNotNullOrEmpty()]
             [System.Diagnostics.Eventing.Reader.EventLogRecord]
             $Event,
 
             [Parameter(Mandatory=$false)]
             [String[]]
-            $Property
+            $Property = @()
           )
 
     $xml = [xml]$e.ToXml()
