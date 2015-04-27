@@ -100,11 +100,11 @@ function Get-EventData {
           )
 
     $xml = [xml]$Event.ToXml()
-    $root = $xml.DocumentElement
     $nsmgr = New-Object System.Xml.XmlNamespaceManager $xml.NameTable
     $nsmgr.AddNamespace("event", $xml.DocumentElement.NamespaceURI)
-    $values = @{}
 
+    $values = @{}
+    $root = $xml.DocumentElement
     if ($Property.Count -eq 0) {
         Write-Verbose "No explictly-requestes properties; returning all"
         foreach ($prop in $root.SelectNodes("//event:Data", $nsmgr)) {
