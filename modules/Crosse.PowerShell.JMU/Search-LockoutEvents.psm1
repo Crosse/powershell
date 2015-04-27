@@ -60,29 +60,27 @@ $userQuery
         Write-Progress -Activity "Searching event logs" -Status "Querying $c" -PercentComplete $pctComplete
         Write-Verbose "Starting search on $c"
         $sw.Start()
-        if ($ResultSize) {
-            $events += Get-WinEvent -ComputerName $c `
-                                    -LogName $EventLogName `
-                                    -FilterXPath $xPathQuery `
-                                    -MaxEvents $ResultSize `
-                                    -ErrorAction SilentlyContinue
-        } else {
-            $events += Get-WinEvent -ComputerName $c `
-                                    -LogName $EventLogName `
-                                    -FilterXPath $xPathQuery #`
-                                    #-ErrorAction SilentlyContinue
-        }
-        $sw.Stop()
-        Write-Verbose "Search ended on $c (took $($sw.ElapsedMilliseconds)ms) and found $($events.Count) events"
-        foreach ($event in $events) {
-            $props = Get-EventData -Event $event -Property TargetUserName, SubjectUserName, IpAddress, WorkstationName
+        $session = New-Object System.Diagnostics.Eventing.Reader.EventLogSession $c
+        $logQuery = New-Object System.Diagnostics.Eventing.Reader.EventLogQuery $EventLogName, "LogName", $xPathQuery
+        $logQuery.Session = $session
+        $logReader = New-Object System.Diagnostics.Eventing.Reader.EventLogReader $logQuery
+
+        $i = 0
+        while (($evt = $logReader.ReadEvent()) -ne $null) {
+            $props = Get-EventData -Event $evt
+
             New-Object PSObject -Property @{
                 UserName = $props["TargetUserName"]
                 ServerName = $props["SubjectUserName"]
                 WorkstationName = $props["WorkstationName"]
                 IPAddress = $props["IpAddress"]
             }
+            $i++
+            if ($i -ge $ResultSize) { break }
         }
+        $sw.Stop()
+        Write-Verbose "Search ended on $c (took $($sw.ElapsedMilliseconds)ms) and found $i events"
+    }
     Write-Progress -Activity "Searching event logs" -Status "Done." -Completed
     }
 }
