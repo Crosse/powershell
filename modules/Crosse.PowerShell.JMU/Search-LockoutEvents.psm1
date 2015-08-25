@@ -79,7 +79,7 @@ $userQuery
             $total--
             Write-Progress -Activity "Searching event logs" -Status "Querying $c" -PercentComplete $pctComplete
             Write-Verbose "Starting search on $c"
-            $sw.Start()
+            $sw.Restart()
             $session = New-Object System.Diagnostics.Eventing.Reader.EventLogSession $c
             $logQuery = New-Object System.Diagnostics.Eventing.Reader.EventLogQuery $EventLogName, "LogName", $xPathQuery
             $logQuery.Session = $session
