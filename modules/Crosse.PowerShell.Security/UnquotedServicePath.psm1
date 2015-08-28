@@ -109,7 +109,7 @@ function Repair-UnquotedServicePath {
                     "This operation will properly quote the path for the `"$svcName`" service.
     Old Path: $($svcWmiInstance.PathName)
     New Path: $binPath", "Repair Unquoted Path for `"$svcName`" service")) {
-            $result = $svcWmiInstance.Change($null,"`"$path`"",$null,$null,$null,$null,$null,$null,$null,$null,$null)
+            $result = $svcWmiInstance.Change($null,$binPath,$null,$null,$null,$null,$null,$null,$null,$null,$null)
             if ($result.ReturnValue -ne 0) {
                 Write-Error "An error occurred trying to modify the service's path!"
             } else {
