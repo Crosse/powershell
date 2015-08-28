@@ -113,7 +113,12 @@ function Repair-UnquotedServicePath {
             if ($result.ReturnValue -ne 0) {
                 Write-Error "An error occurred trying to modify the service's path!"
             } else {
-                Get-WmiObject -ComputerName $ComputerName -Class Win32_Service -Filter "Name = '$($Service.Name)'"
+                $svcWmiInstance = Get-WmiObject -ComputerName $ComputerName -Class Win32_Service -Filter "Name = '$($Service.Name)'"
+                New-Object PSObject -Property @{
+                    ComputerName= $ComputerName
+                    Name        = $svcName
+                    PathName    = $svcWmiInstance.PathName
+                    Service     = (Get-Service -ComputerName $ComputerName -Name $svcName)
             }
         }
     }
