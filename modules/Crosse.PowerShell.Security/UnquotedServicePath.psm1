@@ -63,7 +63,7 @@ function Find-InsecureServicePath {
     }
 }
 
-function Repair-UnquotedServicePath {
+function Repair-ServicePath {
     [CmdletBinding(SupportsShouldProcess=$true,
             ConfirmImpact="High")]
     param (
