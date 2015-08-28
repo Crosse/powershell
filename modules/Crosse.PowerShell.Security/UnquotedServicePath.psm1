@@ -17,14 +17,14 @@ function Find-UnquotedServicePaths {
         $paths = @{}
         foreach ($svc in $services) {
             $svcName = $svc.Name
-            $path = $svc.PathName
+            $path = $svc.PathName.Trim()
 
             #Write-Verbose "[$svcName] Path: $path"
             if ($path.StartsWith('"')) { continue }
             if ($path -notmatch '\s') { continue }
 
             # Getting here means that the path is unquoted.
-            $pieces = $path.Split()
+            $pieces = @($path.Split(" `t", [StringSplitOptions]::RemoveEmptyEntries) | % { $_.Trim() })
             $found = $false
 
             for ($i = $pieces.Count - 1; $i -ge 0; $i--) {
@@ -101,7 +101,10 @@ function Repair-UnquotedServicePath {
             return
         }
 
-        $binPath = "`"{0}`" {1}" -f $Command, $Arguments
+        $binPath = "`"{0}`"" -f $Command.Trim()
+        if (![String]::IsNullOrEmpty($Arguments)) {
+            $binPath += " " + $Arguments.Trim()
+        }
         if ($PSCmdlet.ShouldProcess("Repairing unquoted path for the `"$svcName`" service on $ComputerName",
                     "This operation will properly quote the path for the `"$svcName`" service.
     Old Path: $($svcWmiInstance.PathName)
