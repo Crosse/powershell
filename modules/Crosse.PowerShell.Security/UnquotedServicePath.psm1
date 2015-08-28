@@ -1,4 +1,4 @@
-function Find-UnquotedServicePaths {
+function Find-InsecureServicePath {
     [CmdletBinding()]
     param (
             [Parameter(Mandatory=$false,
