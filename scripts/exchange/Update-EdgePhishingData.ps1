@@ -50,11 +50,12 @@ foreach ($file in $files) {
     Write-Verbose "Saving $file to disk"
     Out-File -FilePath $file -InputObject $fileData -Encoding ASCII
 
+
     if ($fileData -and [String]::IsNullOrEmpty($error[0])) {
         for ($i = 1; $i -le 4; $i++) {
             $server = "it-exet$($i).jmu.edu"
             $remotePath = "\\$($server)$($dataPath)\$($file)"
-            
+
             Write-Verbose "Pushing $file to $server"
             $error.Clear()
             Copy-Item $file $remotePath
@@ -66,6 +67,5 @@ foreach ($file in $files) {
     } else {
         Write-Output "Error downloading file: $($error[0].ToString())"
     }
-    Write-Output ""
 }
 Stop-Transcript
