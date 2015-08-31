@@ -6,8 +6,8 @@
 # $Rev$
 # 
 # DESCRIPTION:  Creates mailboxes in Exchange
-# 
-# 
+#
+#
 # Copyright (c) 2009,2010 Seth Wright <wrightst@jmu.edu>
 #
 # Permission to use, copy, modify, and distribute this software for any
