@@ -51,7 +51,7 @@ foreach ($user in $trainingUsers) {
     $error.clear()
     Disable-Mailbox -Identity $user.Name -Confirm:$false -DomainController $DomainController
     if (![String]::IsNullOrEmpty($error[0])) {
-      $results += "`n==> An error occurred disabling the mailbox:  $error[0]"
+      $results += "`n==> An error occurred disabling the mailbox:  $($error[0])"
       continue
     }
   }
@@ -63,7 +63,7 @@ foreach ($user in $trainingUsers) {
     -Alias $user.UserPrincipalName.Replace(".ad", "") `
     -DomainController $DomainController
   if (![String]::IsNullOrEmpty($error[0])) {
-    $results += "`n==> An error occurred enabling the mailbox:  $error[0]"
+    $results += "`n==> An error occurred enabling the mailbox:  $($error[0])"
   } else {
     $results += "done.`n"
   }
