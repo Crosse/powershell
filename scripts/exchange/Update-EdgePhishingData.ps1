@@ -31,6 +31,7 @@ $localReplyAddresses = "E:\Scripts\local_phishing_reply_addresses.txt"
 Write-Output "baseUrl = `"$baseUrl`""
 Write-Output "dataPath = `"$dataPath`""
 Write-Output "files = `"$files`""
+Write-Output "$pwd"
 Write-Output ""
 
 $wc = New-Object System.Net.WebClient
