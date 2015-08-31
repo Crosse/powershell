@@ -17,6 +17,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 ################################################################################
+[CmdletBinding()]param ()
 
 $now = Get-Date
 Start-Transcript "update_edgephishingdata_$($now.Year)-$($now.Month)-$($now.Day)-$($now.Hour).log"
@@ -34,9 +35,10 @@ $wc = New-Object System.Net.WebClient
 
 foreach ($file in $files) {
     $error.Clear()
-    $fileData = $wc.DownloadString("$($baseUrl)/$($file)")
-    
+    Write-Verbose "Downloading $file"
+    $fileData = $wc.DownloadString("$($baseUrl)/$($file)") -split "`n"
     # Write the file out locally first.
+    Write-Verbose "Saving $file to disk"
     Out-File -FilePath $file -InputObject $fileData -Encoding ASCII
 
     if ($fileData -and [String]::IsNullOrEmpty($error[0])) {
@@ -44,6 +46,7 @@ foreach ($file in $files) {
             $server = "it-exet$($i).jmu.edu"
             $remotePath = "\\$($server)$($dataPath)\$($file)"
             
+            Write-Verbose "Pushing $file to $server"
             $error.Clear()
             Out-File -FilePath $remotePath -Force -InputObject $fileData -Encoding ASCII
             
