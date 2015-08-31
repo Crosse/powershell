@@ -69,6 +69,6 @@ foreach ($user in $trainingUsers) {
   }
 }
 
-& "$cwd\Send-Email.ps1" -From $From -To $To -Subject $Title -Body $results -SmtpServer $SmtpServer 
+Send-MailMessage -From $From -To $To -Subject $Title -Body $results -SmtpServer $SmtpServer
 
 Stop-Transcript
