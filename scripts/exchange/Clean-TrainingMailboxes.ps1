@@ -21,8 +21,8 @@
 
 # Change these to suit your environment
 $SmtpServer = "mailgw.jmu.edu"
-$From       = "it-exmaint@jmu.edu"
-$To         = "wrightst@jmu.edu, millerca@jmu.edu"
+$From       = "Exchange System <it-exmaint@jmu.edu>"
+$To         = "wrightst@jmu.edu"
 $Title      = "Training Mailboxes"
 
 $DomainController = "jmuadc1.ad.jmu.edu"
