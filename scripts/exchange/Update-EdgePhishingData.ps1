@@ -1,13 +1,8 @@
 ################################################################################
-# 
-# $URL$
-# $Author$
-# $Date$
-# $Rev$
 #
 # DESCRIPTION:  Updates the AntiPhishing data files on the edge transports
-# 
-# Copyright (c) 2009,2010 Seth Wright <wrightst@jmu.edu>
+#
+# Copyright (c) 2009-2015 Seth Wright <wrightst@jmu.edu>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
