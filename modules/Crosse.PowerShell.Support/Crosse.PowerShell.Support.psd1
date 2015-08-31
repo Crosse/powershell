@@ -63,7 +63,8 @@ NestedModules = 'DnsFunctions.psm1',
                 'EventLogSummary.psm1',
                 'Speech.psm1',
                 'Connect-RemoteServer.psm1',
-                'JobControl.psm1'
+                'JobControl.psm1',
+                'Invoke-TimedScriptBlock.psm1'
 
 # Functions to export from this module
 FunctionsToExport = '*'
@@ -87,7 +88,8 @@ ModuleList =    'DnsFunctions.psm1',
                 'EventLogSummary.psm1',
                 'Speech.psm1',
                 'Connect-RemoteServer.psm1',
-                'JobControl.psm1'
+                'JobControl.psm1',
+                'Invoke-TimedScriptBlock.psm1'
 
 # List of all files packaged with this module
 FileList =      'DnsFunctions.psm1',
@@ -99,7 +101,8 @@ FileList =      'DnsFunctions.psm1',
                 'EventLogSummary.psm1',
                 'Speech.psm1',
                 'Connect-RemoteServer.psm1',
-                'JobControl.psm1'
+                'JobControl.psm1',
+                'Invoke-TimedScriptBlock.psm1'
 
 # Private data to pass to the module specified in ModuleToProcess
 PrivateData = ''
