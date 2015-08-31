@@ -23,8 +23,7 @@ Start-Transcript "update_edgephishingdata_$($now.Year)-$($now.Month)-$($now.Day)
 
 $baseUrl = "http://svn.code.sf.net/p/aper/code/"
 $dataPath = "\e$\Program Files\Microsoft\Exchange Server\V14\TransportRoles\Agents\AntiPhishing\bin\Data"
-$files = @( "phishing_reply_addresses",
-            "phishing_links" )
+$files = @( "phishing_reply_addresses" )
 
 Write-Output "baseUrl = `"$baseUrl`""
 Write-Output "dataPath = `"$dataPath`""
