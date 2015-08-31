@@ -21,7 +21,7 @@
 $now = Get-Date
 Start-Transcript "update_edgephishingdata_$($now.Year)-$($now.Month)-$($now.Day)-$($now.Hour).log"
 
-$baseUrl = "https://aper.svn.sourceforge.net/svnroot/aper/"
+$baseUrl = "http://svn.code.sf.net/p/aper/code/"
 $dataPath = "\e$\Program Files\Microsoft\Exchange Server\V14\TransportRoles\Agents\AntiPhishing\bin\Data"
 $files = @( "phishing_reply_addresses",
             "phishing_links" )
