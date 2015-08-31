@@ -57,11 +57,9 @@ foreach ($file in $files) {
             
             Write-Verbose "Pushing $file to $server"
             $error.Clear()
-            Out-File -FilePath $remotePath -Force -InputObject $fileData -Encoding ASCII
-            
-            if ([String]::IsNullOrEmpty($error[0])) {
-                Write-Output "Copied $file to $server"
-            } else {
+            Copy-Item $file $remotePath
+
+            if (![String]::IsNullOrEmpty($error[0])) {
                 Write-Output "Error copying $file to $server"
             }
         }
