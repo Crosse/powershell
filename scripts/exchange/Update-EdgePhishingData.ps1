@@ -26,6 +26,8 @@ $baseUrl = "http://svn.code.sf.net/p/aper/code/"
 $dataPath = "\e$\Program Files\Microsoft\Exchange Server\V14\TransportRoles\Agents\AntiPhishing\bin\Data"
 $files = @( "phishing_reply_addresses" )
 
+$localReplyAddresses = "E:\Scripts\local_phishing_reply_addresses.txt"
+
 Write-Output "baseUrl = `"$baseUrl`""
 Write-Output "dataPath = `"$dataPath`""
 Write-Output "files = `"$files`""
@@ -37,6 +39,13 @@ foreach ($file in $files) {
     $error.Clear()
     Write-Verbose "Downloading $file"
     $fileData = $wc.DownloadString("$($baseUrl)/$($file)") -split "`n"
+
+    # Append local data
+    if (Test-Path $localReplyAddresses) {
+        Write-Verbose "Local reply addresses file found.  Appending to $file"
+        $fileData += Get-Content $localReplyAddresses
+    }
+
     # Write the file out locally first.
     Write-Verbose "Saving $file to disk"
     Out-File -FilePath $file -InputObject $fileData -Encoding ASCII
