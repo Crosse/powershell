@@ -71,12 +71,21 @@ function Get-ADAttribute {
             [Parameter(Mandatory=$true)]
             [string[]]
             # Specifies which attributes to return.
-            $Attributes
+            $Attributes,
+
+            [Parameter(Mandatory=$false)]
+            [string]
+            # The domain controller to target.
+            $DomainController
         )
 
     BEGIN {
         $schema = [System.DirectoryServices.ActiveDirectory.ActiveDirectorySchema]::GetCurrentSchema()
-        $pc = New-Object System.DirectoryServices.AccountManagement.PrincipalContext Domain
+        if ([String]::IsNullOrEmpty($DomainController)) {
+            $pc = New-Object System.DirectoryServices.AccountManagement.PrincipalContext Domain
+        } else {
+            $pc = New-Object System.DirectoryServices.AccountManagement.PrincipalContext Domain, $DomainController
+        }
 
         $int64Attributes = New-Object System.Collections.ArrayList
         foreach ($attribute in $Attributes) {

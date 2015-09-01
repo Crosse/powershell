@@ -64,11 +64,20 @@ function Set-ADAttribute {
             [AllowNull()]
             [object[]]
             # Specifies the value to assign to the attribute.
-            $Value
+            $Value,
+
+            [Parameter(Mandatory=$false)]
+            [string]
+            # The domain controller to target.
+            $DomainController
         )
 
     BEGIN {
-        $pc = New-Object System.DirectoryServices.AccountManagement.PrincipalContext Domain
+        if ([String]::IsNullOrEmpty($DomainController)) {
+            $pc = New-Object System.DirectoryServices.AccountManagement.PrincipalContext Domain
+        } else {
+            $pc = New-Object System.DirectoryServices.AccountManagement.PrincipalContext Domain, $DomainController
+        }
     }
     PROCESS {
         $props = New-Object PSObject -Property @{
