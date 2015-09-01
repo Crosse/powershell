@@ -75,12 +75,6 @@ function Get-ADAttribute {
         )
 
     BEGIN {
-        $assembly = [Reflection.Assembly]::LoadWithPartialName("System.DirectoryServices.AccountManagement")
-        if ($assembly -eq $null) {
-            Write-Error "Could not load the System.DirectoryServices.AccountManagement assembly"
-            return
-        }
-
         $schema = [System.DirectoryServices.ActiveDirectory.ActiveDirectorySchema]::GetCurrentSchema()
         $pc = New-Object System.DirectoryServices.AccountManagement.PrincipalContext Domain
 
