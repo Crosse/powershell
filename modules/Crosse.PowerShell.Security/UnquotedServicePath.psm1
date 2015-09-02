@@ -72,10 +72,10 @@ function Repair-ServicePath {
             [System.ServiceProcess.ServiceController]
             $Service,
 
-            [Parameter(Mandatory=$true,
+            [Parameter(Mandatory=$false,
                 ValueFromPipelineByPropertyName)]
             [String]
-            $ComputerName,
+            $ComputerName = (Get-Item Env:\COMPUTERNAME).Value,
 
             [Parameter(Mandatory=$true,
                 ValueFromPipelineByPropertyName)]
