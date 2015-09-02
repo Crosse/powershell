@@ -120,7 +120,59 @@ function Repair-ServicePath {
                     Name        = $svcName
                     PathName    = $svcWmiInstance.PathName
                     Service     = (Get-Service -ComputerName $ComputerName -Name $svcName)
+                }
             }
         }
+    }
+}
+
+function FindCommand {
+    [CmdletBinding()]
+    param (
+            [Parameter(Mandatory=$true)]
+            [ValidateNotNullOrEmpty()]
+            [String]
+            $Command,
+
+            [Parameter(Mandatory=$false)]
+            [ValidateNotNullOrEmpty()]
+            [String]
+            $ComputerName = (Get-Item Env:\COMPUTERNAME).Value
+          )
+
+    BEGIN {
+        Set-StrictMode -Version Latest
+    }
+
+    PROCESS {
+        Write-Verbose "Command: $Command"
+
+        # WMI requires escaping of the backslashes
+        $escapedPath = $Command.Replace('\', '\\')
+
+        # First, just see if the path as-presented is the path to a real file.
+        $file = Get-WmiObject -ComputerName $ComputerName `
+                -Class CIM_DataFile -Filter "Name = '$escapedPath'"
+
+        if ($file -ne $null) {
+            return $file
+        }
+
+        $found = $false
+        $pathext = (Get-Item Env:\PATHEXT).Value.Split(';')
+        foreach ($ext in $pathext) {
+            # We couldn't find a valid file using the path as-is, so start
+            # tacking on (in order of precedence) valid command extensions to see
+            # if we get a hit.
+            $escapedPath = $Command.Replace('\', '\\') + $ext
+            $file = Get-WmiObject -ComputerName $ComputerName `
+                    -Class CIM_DataFile -Filter "Name = '$escapedPath'"
+
+            if ($file) {
+                Write-Verbose "Found file by appending ${ext}: $($file.Name)"
+                return $file
+            }
+        }
+        Write-Warning "Command not found: $Command"
     }
 }
