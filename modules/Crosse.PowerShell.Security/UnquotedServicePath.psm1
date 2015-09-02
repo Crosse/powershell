@@ -34,8 +34,31 @@ function Find-InsecureServicePath {
             $svcName = $svc.Name
             $path = $svc.PathName.Trim()
 
-            #Write-Verbose "[$svcName] Path: $path"
-            if ($path.StartsWith('"')) { continue }
+            if ($path.StartsWith('"')) {
+                # This service path is already (hopefully) properly quoted.
+                # Extract the command (which should be the first part of the
+                # string in quotes) and the arguments, the ship the command
+                # off to check whether it's actually a valid command.
+                $commandEndIndex = $path.IndexOf('"', 1)
+                $command = $path.Substring(1, $commandEndIndex - 1)
+                $arguments = $path.Substring($commandEndIndex + 1).Trim()
+
+                Write-Verbose "[$svcName] - Quoted path found. Testing command $command"
+                # First check the cache.
+                if ($paths.Keys -contains $command) {
+                    $file = $paths[$command]
+                } else {
+                    $file = FindCommand -ComputerName $ComputerName -Command $command
+                    $paths[$command] = $file
+                }
+
+                if ($file) {
+                } else {
+                    Write-Error "[$svcName] - Quoted path found, but the command was not: $path"
+                }
+                # Whatever the outcome, we're done with this service.
+                continue
+            }
 
             if ($path -notmatch '\s') {
                 # Not handling this case yet.
