@@ -47,7 +47,7 @@ function Find-InsecureServicePath {
             $pieces = @($path.Split(" `t", [StringSplitOptions]::RemoveEmptyEntries) | % { $_.Trim() })
             $found = $false
 
-            for ($i = $pieces.Count - 1; $i -ge 0; $i--) {
+            for ($i = 0; $i -lt $pieces.Count; $i++) {
                 $command = $pieces[0..$i] -join " "
 
                 # First check the cache.
