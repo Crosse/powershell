@@ -5,15 +5,26 @@ function Find-InsecureServicePath {
                 ValueFromPipeline=$true)]
             [ValidateNotNullOrEmpty()]
             [string]
-            $ComputerName = (Get-Item Env:\COMPUTERNAME).Value
+            $ComputerName = (Get-Item Env:\COMPUTERNAME).Value,
+
+            [Parameter(Mandatory=$false)]
+            [ValidateNotNullOrEmpty()]
+            [string[]]
+            $Service = $null
           )
 
     BEGIN {
         Set-StrictMode -Version Latest
     }
     PROCESS {
-        Write-Verbose "Getting services for $ComputerName"
-        $services = Get-WmiObject -ComputerName $ComputerName -Class Win32_Service | Sort Name
+        if ($Service) {
+            $services = Get-WmiObject -ComputerName $ComputerName `
+                        -Class Win32_Service -Filter "Name = '$Service'" | Sort Name
+        } else {
+            $services = Get-WmiObject -ComputerName $ComputerName `
+                        -Class Win32_Service | Sort Name
+        }
+
         $paths = @{}
         foreach ($svc in $services) {
             $svcName = $svc.Name
