@@ -1,4 +1,4 @@
-function Find-InsecureServicePath {
+function Test-ServicePath {
     [CmdletBinding()]
     param (
             [Parameter(Mandatory=$false,
