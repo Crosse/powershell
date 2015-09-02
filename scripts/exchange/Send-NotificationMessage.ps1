@@ -40,7 +40,6 @@ $rejectedItems = @()
 $badItems = @()
 
 foreach ($item in $csv) {
-    $From = "Exchange System <it-exmaint@jmu.edu>"
     $To = $item.Address
     $Subject = $item.Subject
     $Body = $encoder.GetString([Convert]::FromBase64String($item.MessageBody))
