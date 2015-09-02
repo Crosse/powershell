@@ -32,7 +32,12 @@ function Find-InsecureServicePath {
 
             #Write-Verbose "[$svcName] Path: $path"
             if ($path.StartsWith('"')) { continue }
-            if ($path -notmatch '\s') { continue }
+
+            if ($path -notmatch '\s') {
+                # Not handling this case yet.
+                Write-Verbose "[$svcName] - Command does not contain any spaces."
+                continue
+            }
 
             # Getting here means that the path is unquoted.
             $pieces = @($path.Split(" `t", [StringSplitOptions]::RemoveEmptyEntries) | % { $_.Trim() })
