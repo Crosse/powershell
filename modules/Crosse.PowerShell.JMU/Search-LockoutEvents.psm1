@@ -142,7 +142,13 @@ function Get-EventData {
             $Property = @()
           )
 
-    $xml = [xml]$Event.ToXml()
+    try {
+        $xml = [xml]$Event.ToXml()
+    } catch {
+        Write-Warning "Unable to convert data to XML: $_"
+        return
+    }
+
     $nsmgr = New-Object System.Xml.XmlNamespaceManager $xml.NameTable
     $nsmgr.AddNamespace("event", $xml.DocumentElement.NamespaceURI)
 
