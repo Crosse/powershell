@@ -26,7 +26,11 @@ function Find-InsecureServicePath {
         }
 
         $paths = @{}
-        foreach ($svc in $services) {
+        for ($j = 0; $j -lt $services.Count; $j++) {
+            $svc = $services[$j]
+            [Int]$pct = ($j/$services.Count) * 100
+            Write-Progress -Activity "Finding insecure service paths on $ComputerName" `
+                        -Status $svc.Name -PercentComplete $pct
             $svcName = $svc.Name
             $path = $svc.PathName.Trim()
 
