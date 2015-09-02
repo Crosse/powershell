@@ -31,7 +31,7 @@ try {
 } catch {
     $e = $_
     Send-MailMessage -From $From -To "wrightst@jmu.edu" -SmtpServer $SmtpServer `
-        -UseSSL -Subject "Provisioning Email Process FAILED" -Body $e
+        -UseSSL -Subject "New Mailbox Notifications:  FAILED" -Body $e
     throw $e
 }
 
