@@ -20,7 +20,7 @@ function Search-LockoutEvents {
             [Parameter(Mandatory=$false)]
             [String[]]
             # The computer where the logs reside.  Defaults to the local machine.
-            $ComputerName = $(Get-Content Env:\COMPUTERNAME),
+            $ComputerName = $(Get-Content Env:\COMPUTERNAME).Value,
 
             [Parameter(Mandatory=$false)]
             [String]
