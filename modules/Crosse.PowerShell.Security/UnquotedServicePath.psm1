@@ -45,9 +45,13 @@ function Find-InsecureServicePath {
                 if ($paths.Keys -contains $command) {
                     $file = $paths[$command]
                 } else {
-                    $file = Get-WmiObject -ComputerName $ComputerName `
-                            -Class CIM_DataFile -Filter "Name = '$($command.Replace("\", "\\"))'"
+                    $file = FindCommand -ComputerName $ComputerName -Command $command
                     $paths[$command] = $file
+
+                    if ($file -and $command -ine $file.Name) {
+                        Write-Warning "[$svcName] - Service's command and actual path do not match: `"$command`" vs. `"$($file.Name)`""
+                        $command = $file.Name
+                    }
                 }
 
                 if ($file) {
