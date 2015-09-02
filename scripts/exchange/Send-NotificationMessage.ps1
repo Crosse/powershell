@@ -13,6 +13,13 @@ param (
 
 $processedPath = Join-Path $Path "Processed"
 $files = Get-ChildItem (Join-Path $Path "*.csv")
+
+if ($files -eq $null) {
+    Send-MailMessage -From $From -To "wrightst@jmu.edu" -SmtpServer $SmtpServer `
+        -UseSSL -Subject "New Mailbox Notifications:  Nothing to do!" -Body "No files to process."
+    return
+}
+
 $csv = $files | % { Import-Csv $_ } | Sort Address
 Write-Verbose "Found $($csv.Count) items"
 
