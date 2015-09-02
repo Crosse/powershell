@@ -202,27 +202,5 @@ if ($SendEmail -eq $true) {
     Send-MailMessage -From $From -To $To -Subject $Subject -Body $sortedOutput -SmtpServer $SmtpServer
 }
 
-# Take care of disabled Lync people.  Band-aid for now.
-$disabledUsers = adfind -bit -list -q -f "(&(userAccountControl:AND:=2)(msRTCSIP-PrimaryUserAddress=*))" cn | Sort-Object
-if ($disabledUsers -ne $null) {
-    $Subject = "Lync Users Deprovisioned"
-    $Body = "The following users were found to be disabled in Active Directory, and thus we attempted to disable them in Lync:`n`n"
-    foreach ($user in $disabledUsers) {
-        try {
-            Disable-CsUser -Identity $user -ErrorAction Stop
-            $Body += "SUCCESS: [ {0,-8} ]`n" -f $user
-        } catch {
-            $Body += "FAILURE: [ {0,-8} ] - {1}`n" -f $user, $_
-        }
-    }
-
-    Write-Host $Subject
-    Write-Host $Body
-
-    if ($SendEmail -eq $true) {
-        Send-MailMessage -From $From -To $To -Subject $Subject -Body $Body -SmtpServer $SmtpServer
-    }
-}
-
 Stop-Transcript
 
