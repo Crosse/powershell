@@ -224,3 +224,5 @@ function FindCommand {
         Write-Warning "Command not found: $Command"
     }
 }
+
+Export-ModuleMember -Function Test-ServicePath, Repair-ServicePath
