@@ -59,6 +59,7 @@ function Find-InsecureServicePath {
                     break
                 }
             }
+
             if ($found) {
                 if ($command -match '\s') {
                     Write-Verbose "[$svcName] - Path needs to be quoted ($command)"
