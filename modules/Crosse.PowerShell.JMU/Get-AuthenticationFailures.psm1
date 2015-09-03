@@ -41,7 +41,7 @@ $userQuery
 "@
     }
     PROCESS {
-        $hits = @{}
+        $events = @{}
         $total = $ComputerName.Count
         foreach ($c in $ComputerName) {
             $pctComplete = ($ComputerName.Count - $total) / $ComputerName.Count * 100
@@ -55,8 +55,8 @@ $userQuery
             $logReader = New-Object System.Diagnostics.Eventing.Reader.EventLogReader $logQuery
 
             $i = 0
-            while (($evt = $logReader.ReadEvent()) -ne $null) {
-                $props = Get-EventData -Event $evt
+            while (($logEvent = $logReader.ReadEvent()) -ne $null) {
+                $props = Get-EventData -Event $logEvent
                 $user = $props["TargetUserName"]
                 if ($props) {
                     if ([String]::IsNullOrEmpty($user)) {
@@ -66,10 +66,10 @@ $userQuery
                         $props["IpAddress"] = $null
                     }
 
-                    if ($hits[$user] -eq $null) {
-                        $hits[$user] = @()
+                    if ($events[$user] -eq $null) {
+                        $events[$user] = @()
                     }
-                    $hits[$user] += $props
+                    $events[$user] += $props
                 }
             }
             $sw.Stop()
@@ -78,16 +78,16 @@ $userQuery
         Write-Progress -Activity "Searching event logs" -Status "Done." -Completed
 
         Write-Verbose "Calculating Statistics"
-        foreach ($hit in $hits.Keys) {
+        foreach ($event in $events.Keys) {
             $obj = New-Object PSObject -Property @{
-                UserName                = $hit
-                TotalFailedAuths        = $hits[$hit].Count
-                FailedAuthsPerSecond    = [Math]::Round($hits[$hit].Count / ($End - $Start).TotalSeconds, 2)
-                IPAddresses             = @($hits[$hit] | % { $_["IpAddress"] } | Sort -Unique)
+                UserName                = $event
+                TotalFailedAuths        = $events[$event].Count
+                FailedAuthsPerSecond    = [Math]::Round($events[$event].Count / ($End - $Start).TotalSeconds, 2)
+                IPAddresses             = @($events[$event] | % { $_["IpAddress"] } | Sort -Unique)
             }
             if ($IncludeEvents) {
                 $obj = Add-Member -InputObject $obj -MemberType NoteProperty `
-                       -Name "Events" -Value @($hits[$hit]) -PassThru
+                       -Name "Events" -Value @($events[$event]) -PassThru
             }
             $obj
         }
