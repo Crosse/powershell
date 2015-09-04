@@ -4,7 +4,7 @@ function Invoke-TimedScriptBlock {
             $ScriptBlock
           )
 
-    $sw = New System.Diagnostics.Stopwatch 
+    $sw = New-Object System.Diagnostics.Stopwatch
     $sw.Start()
     $ScriptBlock.Invoke()
     $sw.Stop()
