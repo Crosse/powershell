@@ -1,4 +1,4 @@
-function Get-AuthenticationFailures {
+function Get-AuthenticationEvents {
     [CmdletBinding()]
     param (
             [Parameter(Mandatory=$false)]
@@ -21,6 +21,12 @@ function Get-AuthenticationFailures {
             $End = (Get-Date),
 
             [switch]
+            $IncludeSuccessful = $true,
+
+            [switch]
+            $IncludeFailures = $true,
+
+            [switch]
             $IncludeEvents = $false
           )
 
@@ -29,11 +35,25 @@ function Get-AuthenticationFailures {
         $startTime = $Start.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
         $endTime = $End.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
 
+        if (!$IncludeSuccessful -and !$IncludeFailures) {
+            throw "Cannot specify both -IncludeSuccessful and -IncludeFailures"
+        }
+
+        $eventIDs = @()
+        if ($IncludeSuccessful) {
+            $eventIDs += "4624"
+        }
+        if ($IncludeFailures) {
+            $eventIDs += "4625"
+        }
+
+        $eventIDs = "(" + (($eventIDs | % { "EventID=$_" }) -join " or ") + ")"
+
         $xPathQuery = @"
 <QueryList>
 <Query Id="0" Path="$EventLogName">
     <Select Path="$EventLogName">
-        *[System[EventID=4625 and TimeCreated[@SystemTime &gt;= "$startTime" and @SystemTime &lt;= "$endTime"]]]
+        *[System[$eventIDs and TimeCreated[@SystemTime &gt;= "$startTime" and @SystemTime &lt;= "$endTime"]]]
 $userQuery
     </Select>
 </Query>
@@ -81,8 +101,8 @@ $userQuery
         foreach ($event in $events.Keys) {
             $obj = New-Object PSObject -Property @{
                 UserName                = $event
-                TotalFailedAuths        = $events[$event].Count
-                FailedAuthsPerSecond    = [Math]::Round($events[$event].Count / ($End - $Start).TotalSeconds, 2)
+                TotalAuthAttempts       = $events[$event].Count
+                AuthAttemptsPerSecond   = [Math]::Round($events[$event].Count / ($End - $Start).TotalSeconds, 2)
                 IPAddresses             = @($events[$event] | % { $_["IpAddress"] } | Sort -Unique)
             }
             if ($IncludeEvents) {
