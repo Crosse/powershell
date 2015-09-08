@@ -2,20 +2,28 @@
         SupportsShouldProcess=$true,
         ConfirmImpact="High")]
 param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$true,
+            ParameterSetName="SourceConnector")]
+        [ValidateNotNullOrEmpty()]
+        [object]
+        $SourceReceiveConnector,
+
+        [Parameter(Mandatory=$true,
+            ParameterSetName="SourceServer")]
         [ValidateNotNullOrEmpty()]
         [string]
         $SourceServer,
+
+        [Parameter(Mandatory=$true,
+            ParameterSetName="SourceServer")]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $ConnectorName,
 
         [Parameter(Mandatory=$true)]
         [ValidateNotNullOrEmpty()]
         [string]
         $Server,
-
-        [Parameter(Mandatory=$true)]
-        [ValidateNotNullOrEmpty()]
-        [string]
-        $ConnectorName,
 
         [switch]
         $ShowCommand = $false
@@ -28,7 +36,14 @@ BEGIN {
 }
 
 PROCESS {
-    $source = & $getCommand -Identity $SourceServer\$ConnectorName -ErrorAction SilentlyContinue
+    if ($SourceReceiveConnector -ne $null) {
+        $source = $SourceReceiveConnector
+        $ConnectorName = $SourceReceiveConnector.Name
+        $SourceServer = $SourceReceiveConnector.Server
+    } else {
+        $source = & $getCommand -Identity $SourceServer\$ConnectorName -ErrorAction SilentlyContinue
+    }
+
     $dest = & $getCommand $Server\$ConnectorName -ErrorAction SilentlyContinue
 
     if ($source -eq $null) {
