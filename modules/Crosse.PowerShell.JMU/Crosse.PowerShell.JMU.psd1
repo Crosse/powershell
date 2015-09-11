@@ -58,7 +58,8 @@ FormatsToProcess = @()
 NestedModules = 'Search-LockoutEvents.psm1',
                 'Get-LockedUser.psm1',
                 'Search-ACSFailedAuthLogs.psm1',
-                'Get-AuthenticationFailures.psm1'
+                'Get-AuthenticationFailures.psm1',
+                'Get-ReservedIdentifier.psm1'
 
 # Functions to export from this module
 FunctionsToExport = '*'
@@ -76,13 +77,15 @@ AliasesToExport = '*'
 ModuleList =    'Search-LockoutEvents.psm1',
                 'Get-LockedUser.psm1',
                 'Search-ACSFailedAuthLogs.psm1',
-                'Get-AuthenticationFailures.psm1'
+                'Get-AuthenticationFailures.psm1',
+                'Get-ReservedIdentifier.psm1'
 
 # List of all files packaged with this module
 FileList =      'Search-LockoutEvents.psm1',
                 'Get-LockedUser.psm1',
                 'Search-ACSFailedAuthLogs.psm1',
-                'Get-AuthenticationFailures.psm1'
+                'Get-AuthenticationFailures.psm1',
+                'Get-ReservedIdentifier.psm1'
 
 # Private data to pass to the module specified in ModuleToProcess
 PrivateData = ''
