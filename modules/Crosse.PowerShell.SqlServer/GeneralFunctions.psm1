@@ -82,7 +82,7 @@ function Get-SqlDatabaseProperties {
     }
 
     $cmd = "SELECT * FROM sys.databases WHERE name = '$Database'"
-    $props = @(Send-SqlQuery $SqlConnection $cmd)
+    $props = @(Send-SqlQuery -SqlConnection $SqlConnection -Query $cmd)
     
     if ($props.Count -gt 1) {
         throw "Multiple results returned when getting properties for database $Database"
