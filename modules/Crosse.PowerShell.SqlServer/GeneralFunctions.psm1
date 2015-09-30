@@ -490,6 +490,7 @@ function Get-SqlDatabase {
             Write-Verbose $query
 
             $databases = Send-SqlQuery -SqlConnection $conn -Command $query
+            $ti = (Get-Culture).TextInfo
             foreach ($db in $databases) {
                 New-Object PSObject -Property @{
                     InstanceName        = $db.InstanceName
@@ -497,9 +498,9 @@ function Get-SqlDatabase {
                     DatabaseId          = $db.database_id
                     WhenCreated         = [DateTime]::SpecifyKind([DateTime]$db.create_date, 'Utc').ToLocalTime()
                     CompatibilityLevel  = $db.compatibility_level
-                    State               = $db.state_desc
-                    RecoveryModel       = $db.recovery_model_desc
-                    PageVerifyOption    = $db.page_verify_option_desc
+                    State               = $ti.ToTitleCase($db.state_desc.ToLower())
+                    RecoveryModel       = $ti.ToTitleCase($db.recovery_model_desc.ToLower())
+                    PageVerifyOption    = $ti.ToTitleCase($db.page_verify_option_desc.ToLower())
                 }
             }
         } catch {
