@@ -25,6 +25,11 @@ param (
         [string]
         $Server,
 
+        [Parameter(Mandatory=$false)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $NewConnectorName,
+
         [switch]
         $ShowCommand = $false
         )
@@ -44,7 +49,10 @@ PROCESS {
         $source = & $getCommand -Identity $SourceServer\$ConnectorName -ErrorAction SilentlyContinue
     }
 
-    $dest = & $getCommand $Server\$ConnectorName -ErrorAction SilentlyContinue
+    if ([String]::IsNullOrEmpty($NewConnectorName)) {
+        $NewConnectorName = $ConnectorName
+        $dest = & $getCommand $Server\$ConnectorName -ErrorAction SilentlyContinue
+    }
 
     if ($source -eq $null) {
         throw "Source connector must exist"
@@ -90,10 +98,10 @@ PROCESS {
 
     if ($dest -eq $null) {
         $command = $newCommand
-        $cmd = "$command -Server $Server -Name '$ConnectorName'"
+        $cmd = "$command -Server $Server -Name '$NewConnectorName'"
     } else {
         $command = $setCommand
-        $cmd = "$command -Identity '$Server\$ConnectorName'"
+        $cmd = "$command -Identity '$Server\$NewConnectorName'"
     }
 
     foreach ($param in $params) {
