@@ -136,8 +136,6 @@ function Close-SqlConnection {
             $SqlConnection.Close()
         }
         $SqlConnection.Dispose()
-    } else {
-        Write-Warning "Cannot close a null SQL connection."
     }
 }
 
