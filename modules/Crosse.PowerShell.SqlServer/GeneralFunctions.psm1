@@ -510,3 +510,70 @@ function Get-SqlDatabase {
         }
     }
 }
+
+function Get-SqlDatabaseMirroringProperties {
+    [CmdletBinding()]
+    param (
+            [Parameter(Mandatory=$true,
+                ValueFromPipeline=$true,
+                ValueFromPipelineByPropertyName=$true)]
+            [ValidateNotNullOrEmpty()]
+            [string]
+            $InstanceName,
+
+            [Parameter(Mandatory=$true,
+                ValueFromPipelineByPropertyName=$true)]
+            [Alias("Name")]
+            [string]
+            $Database
+          )
+
+    PROCESS {
+        try {
+            $db = Get-SqlDatabase -InstanceName $InstanceName -Database $Database -IncludeSystemDatabases
+
+            $conn = Open-SqlConnection -Server $InstanceName
+            # First, is the database mirrored?
+            $query = "SELECT @@SERVERNAME As InstanceName
+                        , mirroring_witness_state_desc
+                        , mirroring_role_desc
+                        , mirroring_partner_instance
+                        , mirroring_witness_name
+                        , mirroring_safety_level_desc
+                      FROM sys.database_mirroring
+                      WHERE database_id = $($db.DatabaseId)"
+
+            $res = Send-SqlQuery -SqlConnection $conn -Command $query
+            if ($res.mirroring_partner_instance -eq $null) {
+                New-Object PSObject -Property @{
+                    InstanceName        = $db.InstanceName
+                    IsMirrored          = $false
+                    Name                = $db.Name
+                    State               = $db.State
+                    WitnessState        = $null
+                    MirroringRole       = $null
+                    PartnerInstance     = $null
+                    WitnessName         = $null
+                    SafetyLevel         = $null
+                }
+            } else {
+                $ti = (Get-Culture).TextInfo
+                New-Object PSObject -Property @{
+                    InstanceName        = $db.InstanceName
+                    IsMirrored          = $true
+                    Name                = $db.Name
+                    State               = $db.State
+                    WitnessState        = $ti.ToTitleCase($res.mirroring_witness_state_desc.ToLower())
+                    MirroringRole       = $ti.ToTitleCase($res.mirroring_role_desc.ToLower())
+                    PartnerInstance     = $res.mirroring_partner_instance
+                    WitnessName         = $res.mirroring_witness_name
+                    SafetyLevel         = $ti.ToTitleCase($res.mirroring_safety_level_desc.ToLower())
+                }
+            }
+        } catch {
+            throw
+        } finally {
+            Close-SqlConnection -SqlConnection $conn
+        }
+    }
+}
