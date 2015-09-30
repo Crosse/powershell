@@ -388,6 +388,7 @@ function Get-SqlServerInstance {
             }
             $info = New-Object PSObject -Property @{
                 InstanceName        = $instance
+                State               = $service.Status
                 ProductVersion      = $null
                 ProductLevel        = $null
                 Edition             = $null
