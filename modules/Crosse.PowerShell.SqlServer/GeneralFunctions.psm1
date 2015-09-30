@@ -381,8 +381,13 @@ function Get-SqlServerInstance {
             $services = Get-Service -ComputerName $ComputerName -DisplayName "SQL Server ($InstanceName)*"
         }
         foreach ($service in $services) {
+            if ($service.Name.Contains("$")) {
+                $instance = $ComputerName + "\" + $service.Name.Replace("MSSQL$", "")
+            } else {
+                $instance = $ComputerName
+            }
             $info = New-Object PSObject -Property @{
-                InstanceName        = $null
+                InstanceName        = $instance
                 ProductVersion      = $null
                 ProductLevel        = $null
                 Edition             = $null
@@ -391,11 +396,6 @@ function Get-SqlServerInstance {
                 IsWindowsAuthOnly   = $null
             }
 
-            if ($service.Name.Contains("$")) {
-                $instance = $ComputerName + "\" + $service.Name.Replace("MSSQL$", "")
-            } else {
-                $instance = $ComputerName
-            }
 
             if ($service.Status -ne "Running") {
                 Write-Warning "SQL Server $($service.Name) is in the $($service.Status)` state."
