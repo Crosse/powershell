@@ -427,7 +427,8 @@ function Get-SqlServerInstance {
 
                 Write-Output $info
             } catch {
-                throw
+                #throw
+                Write-Error $_.Exception.InnerException.Message
             } finally {
                 Close-SqlConnection -SqlConnection $conn
             }
