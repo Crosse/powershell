@@ -19,7 +19,7 @@ param (
 
         [Int64]
         # The upper limit above which no mailbox quota should be raised.
-        $UpperLimit=6GB,
+        $UpperLimit=8GB,
 
         [Parameter(Mandatory=$false)]
         [string]
