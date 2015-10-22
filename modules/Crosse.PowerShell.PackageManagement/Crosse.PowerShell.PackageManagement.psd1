@@ -56,7 +56,7 @@ PowerShellVersion = '2.0'
 # PowerShellHostVersion = ''
 
 # Minimum version of the .NET Framework required by this module
-DotNetFrameworkVersion = ''
+DotNetFrameworkVersion = '3.0'
 
 # Minimum version of the common language runtime (CLR) required by this module
 # CLRVersion = ''
@@ -68,7 +68,7 @@ DotNetFrameworkVersion = ''
 # RequiredModules = @()
 
 # Assemblies that must be loaded prior to importing this module
-# RequiredAssemblies = @()
+RequiredAssemblies = @("System.IO.Packaging")
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module
 ScriptsToProcess = @('Startup.ps1')
