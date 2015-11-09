@@ -1,4 +1,4 @@
-function Get-ServerCertificateChain {
+function Get-CertificateChain {
     [CmdletBinding()]
     param (
             [Parameter(Mandatory=$true,

@@ -24,7 +24,7 @@ Author = 'Seth Wright'
 CompanyName = 'James Madison University'
 
 # Copyright statement for this module
-Copyright = 'Copyright © 2011 Seth Wright <wrightst@jmu.edu>'
+Copyright = 'Copyright © 2011-2015 Seth Wright <wrightst@jmu.edu>'
 
 # Description of the functionality provided by this module
 Description = 'Functions used to work with certificates and certificate requests.'
@@ -64,7 +64,7 @@ FormatsToProcess = @()
 
 # Modules to import as nested modules of the module specified in ModuleToProcess
 NestedModules = 'CertificateFunctions.psm1',
-                'GetServerCertificateChain.psm1'
+                'GetCertificateChain.psm1'
 
 # Functions to export from this module
 FunctionsToExport = '*'
@@ -80,11 +80,11 @@ AliasesToExport = '*'
 
 # List of all modules packaged with this module
 ModuleList =    'CertificateFunctions.psm1',
-                'GetServerCertificateChain.psm1'
+                'GetCertificateChain.psm1'
 
 # List of all files packaged with this module
 FileList =      'CertificateFunctions.psm1',
-                'GetServerCertificateChain.psm1'
+                'GetCertificateChain.psm1'
 
 # Private data to pass to the module specified in ModuleToProcess
 PrivateData = ''
