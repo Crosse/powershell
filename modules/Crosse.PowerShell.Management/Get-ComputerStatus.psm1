@@ -139,6 +139,6 @@ function Get-ComputerStatus {
             }
         }
 
-        return $result | Select @SelectHash
+        return $result | Select-Object @SelectHash
     }
 }

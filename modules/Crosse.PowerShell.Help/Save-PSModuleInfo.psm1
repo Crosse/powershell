@@ -14,7 +14,7 @@ function Save-PSModuleInfo {
     PROCESS {
         $ovp = $VerbosePreference
         $VerbosePreference = "SilentlyContinue"
-        $modules = Get-Module -ListAvailable | ? { $_.ModuleBase -match '.:\\(Windows\\system32\\WindowsPowerShell|Program Files)' }
+        $modules = Get-Module -ListAvailable | Where-Object { $_.ModuleBase -match '.:\\(Windows\\system32\\WindowsPowerShell|Program Files)' }
         $c = $modules.Count
         for ($i = 0; $i -lt $c; $i++) {
             $m = $modules[$i]

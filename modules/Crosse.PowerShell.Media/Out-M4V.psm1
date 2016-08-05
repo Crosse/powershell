@@ -253,7 +253,7 @@ function Out-M4V {
             $command = "& '$MediaInfoCLIPath' --Output=XML `"$($inputFile.FullName)`""
             [xml]$info = Invoke-Expression "$command"
 
-            $audio = @($info.MediaInfo.File.Track | ? { $_.type -match "Audio" })
+            $audio = @($info.MediaInfo.File.Track | Where-Object { $_.type -match "Audio" })
             if ($audio -eq $null) {
                 Write-Error "Error getting audio track information from source."
                 return
@@ -346,15 +346,15 @@ function Out-M4V {
 
             #$audioTracks = $audioTracks | Sort-Object Track, Name, Encoder
 
-            $trackNumbers = ($audioTracks | % { $_.Track }) -join ','
-            $trackEncodings = ($audioTracks | % { $_.Encoder }) -join ','
-            $trackNames = ($audioTracks | % { $_.Name }) -join ','
-            $mixdown = ($audioTracks | % { $_.Mixdown}) -join ','
+            $trackNumbers = ($audioTracks | Foreach-Object { $_.Track }) -join ','
+            $trackEncodings = ($audioTracks | Foreach-Object { $_.Encoder }) -join ','
+            $trackNames = ($audioTracks | Foreach-Object { $_.Name }) -join ','
+            $mixdown = ($audioTracks | Foreach-Object { $_.Mixdown}) -join ','
 
             $audioOptions = "--audio `"$trackNumbers`" --aencoder `"$trackEncodings`" --mixdown `"$mixdown`" --aname `"$trackNames`""
 
             if ([String]::IsNullOrEmpty($MaxVideoFormat)) {
-                $video = $info.MediaInfo.File.Track | ? { $_.type -match "Video" }
+                $video = $info.MediaInfo.File.Track | Where-Object { $_.type -match "Video" }
                 if ($video -eq $null) {
                     Write-Error "Error getting video track information from source."
                     return
@@ -369,7 +369,7 @@ function Out-M4V {
 
             if ($LookupChapterNames) {
                 $chapterCount = 0
-                $menu = $info.Mediainfo.File.track | ? { $_.type -eq 'Menu' }
+                $menu = $info.Mediainfo.File.track | Where-Object { $_.type -eq 'Menu' }
                 $enumerator = $menu.GetEnumerator()
                 while ($enumerator.MoveNext() -eq $true) {
                     $chapterCount++

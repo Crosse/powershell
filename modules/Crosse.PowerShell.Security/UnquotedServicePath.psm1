@@ -19,10 +19,10 @@ function Test-ServicePath {
     PROCESS {
         if ($Service) {
             $services = Get-WmiObject -ComputerName $ComputerName `
-                        -Class Win32_Service -Filter "Name = '$Service'" | Sort Name
+                        -Class Win32_Service -Filter "Name = '$Service'" | Sort-Object Name
         } else {
             $services = Get-WmiObject -ComputerName $ComputerName `
-                        -Class Win32_Service | Sort Name
+                        -Class Win32_Service | Sort-Object Name
         }
 
         $paths = @{}
@@ -67,7 +67,7 @@ function Test-ServicePath {
             }
 
             # Getting here means that the path is unquoted.
-            $pieces = @($path.Split(" `t", [StringSplitOptions]::RemoveEmptyEntries) | % { $_.Trim() })
+            $pieces = @($path.Split(" `t", [StringSplitOptions]::RemoveEmptyEntries) | Foreach-Object { $_.Trim() })
             $found = $false
 
             for ($i = 0; $i -lt $pieces.Count; $i++) {

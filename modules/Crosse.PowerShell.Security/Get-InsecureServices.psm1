@@ -14,7 +14,7 @@ function Get-InsecureServices {
         WRITE_OWNER = 0x00080000
     }
     $rightsToCheck = 0
-    $rights.Values | % { $rightsToCheck = $rightsToCheck -bor $_ }
+    $rights.Values | Foreach-Object { $rightsToCheck = $rightsToCheck -bor $_ }
 
     if ([String]::IsNullOrEmpty($ComputerName)) {
         $services = Get-Service
@@ -28,7 +28,7 @@ function Get-InsecureServices {
         $service = $services[$i]
         [Int]$pctComplete = [Math]::Floor($i / $services.Count * 100)
         Write-Progress -Activity "Evaluating services" -Status "$pctComplete% Complete" -CurrentOperation $service.Name -PercentComplete $pctComplete
-        $sddl = sc.exe "\\$ComputerName" sdshow $service.Name | ? { $_ }
+        $sddl = sc.exe "\\$ComputerName" sdshow $service.Name | Where-Object { $_ }
 
         try {
             $sd = New-Object System.Security.AccessControl.CommonSecurityDescriptor($false, $false, $sddl)
@@ -37,7 +37,7 @@ function Get-InsecureServices {
             continue
         }
 
-        if ($sd.DiscretionaryAcl | ? {
+        if ($sd.DiscretionaryAcl | Where-Object {
                 $_.AceQualifier -eq [System.Security.AccessControl.AceQualifier]::AccessAllowed `
                 -and $_.SecurityIdentifier -eq $everyoneSid `
                 -and $_.AccessMask -band $RightsToCheck }) {

@@ -56,13 +56,13 @@ ORDER BY Timestamp ASC
 
         $logs = @()
         foreach ($c in $ComputerName) {
-            $l = Get-ChildItem "\\$c\$LogPath" | ? { $_.LastWriteTime -gt $Start } | % { $_.FullName }
+            $l = Get-ChildItem "\\$c\$LogPath" | Where-Object { $_.LastWriteTime -gt $Start } | Foreach-Object { $_.FullName }
             Write-Verbose "Found $($l.Count) log files on $c within the requested timeframe"
             $logs += $l
         }
         Write-Verbose "Will query $($logs.Count) total log files on $($ComputerName.Count) computer(s)"
 
-        $logs = $logs | % { "`'$_`'" }
+        $logs = $logs | Foreach-Object { "`'$_`'" }
         $logs = $logs -join ",`n    "
         $query = $query.Replace("[LogFiles]", $logs)
 

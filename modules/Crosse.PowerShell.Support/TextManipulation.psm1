@@ -33,13 +33,13 @@ function Get-HexDump {
           );
 
     $OFS=""
-    Get-Content -Encoding byte $Path -ReadCount $Width -totalcount $Bytes | % {
+    Get-Content -Encoding byte $Path -ReadCount $Width -totalcount $Bytes | Foreach-Object {
         $byte = $_
             if (($byte -eq 0).count -ne $Width)
             {
-                $hex = $byte | % {
+                $hex = $byte | Foreach-Object {
                     " " + ("{0:x}" -f $_).PadLeft(2,"0")}
-                $char = $byte | % {
+                $char = $byte | Foreach-Object {
                     if ([char]::IsLetterOrDigit($_))
                     { [char] $_ } else { "." }}
                 "$hex $char"
@@ -140,6 +140,6 @@ function Remove-ExtraWhitespace {
           )
 
     PROCESS {
-        (Get-Content $FilePath | % { $_.TrimEnd() }) | Out-File -FilePath $FilePath -Force -Encoding ASCII
+        (Get-Content $FilePath | Foreach-Object { $_.TrimEnd() }) | Out-File -FilePath $FilePath -Force -Encoding ASCII
     }
 }

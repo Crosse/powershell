@@ -163,7 +163,7 @@ function Get-ChapterInformation {
 
 
     if ($BestResult) {
-        return @($results | sort Confirmations -Descending)[0]
+        return @($results | Sort-Object Confirmations -Descending)[0]
     } else {
         return $results
     }

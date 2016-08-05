@@ -45,7 +45,7 @@ function Out-HtmlHelp {
 
         if ($CopyCssTemplate) {
             Write-Host "Copying template CSS file to $OutputDir"
-            copy "$PSScriptRoot\powershell-help.css" $OutputDir
+            Copy-Item "$PSScriptRoot\powershell-help.css" $OutputDir
         }
 
         $indices = New-Object System.Collections.HashTable
@@ -73,7 +73,7 @@ function Out-HtmlHelp {
         if ($CopyCssTemplate -and 
                 (Test-Path (Join-Path $finalDir "powershell-help.css")) -eq $false) {
             Write-Host "Copying template CSS file to $finalDir"
-            copy "$PSScriptRoot\powershell-help.css" $finalDir
+            Copy-Item "$PSScriptRoot\powershell-help.css" $finalDir
         }
 
         $fileName = Join-Path $finalDir $($HelpInfo.Name + ".html")
@@ -281,7 +281,7 @@ function Out-HtmlHelp {
         }
 
         Write-Host "Copying master index page..."
-        copy "$PSScriptRoot\frames_template.html" "$OutputDir\index.html"
+        Copy-Item "$PSScriptRoot\frames_template.html" "$OutputDir\index.html"
 
         Write-Host "Finished."
     }

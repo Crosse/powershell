@@ -47,7 +47,7 @@ function Get-AuthenticationEvents {
             $eventIDs += "4625"
         }
 
-        $eventIDs = "(" + (($eventIDs | % { "EventID=$_" }) -join " or ") + ")"
+        $eventIDs = "(" + (($eventIDs | Foreach-Object { "EventID=$_" }) -join " or ") + ")"
 
         $xPathQuery = @"
 <QueryList>
@@ -103,7 +103,7 @@ $userQuery
                 UserName                = $event
                 TotalAuthAttempts       = $events[$event].Count
                 AuthAttemptsPerSecond   = [Math]::Round($events[$event].Count / ($End - $Start).TotalSeconds, 2)
-                IPAddresses             = @($events[$event] | % { $_["IpAddress"] } | Sort -Unique)
+                IPAddresses             = @($events[$event] | Foreach-Object { $_["IpAddress"] } | Sort-Object -Unique)
             }
             if ($IncludeEvents) {
                 $obj = Add-Member -InputObject $obj -MemberType NoteProperty `
