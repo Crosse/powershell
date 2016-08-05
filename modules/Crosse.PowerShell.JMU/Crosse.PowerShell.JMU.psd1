@@ -1,4 +1,4 @@
-@{
+﻿@{
 
 # Script module or binary module file associated with this manifest
 ModuleToProcess = ''
@@ -16,7 +16,7 @@ Author = 'Seth Wright'
 CompanyName = 'James Madison University'
 
 # Copyright statement for this module
-Copyright = 'Copyright � 2015 Seth Wright <wrightst@jmu.edu>'
+Copyright = 'Copyright © 2015 Seth Wright <wrightst@jmu.edu>'
 
 # Description of the functionality provided by this module
 Description = 'Cmdlets that may only be useful to JMU'
