@@ -58,8 +58,7 @@
 #>
 ################################################################################
 function Get-ADAttribute {
-    [CmdletBinding(SupportsShouldProcess=$true,
-            ConfirmImpact="High")]
+    [CmdletBinding()]
     param (
             [Parameter(Mandatory=$true,
                 ValueFromPipeline=$true)]

@@ -239,8 +239,7 @@ function Restore-Database {
 }
 
 function PerformBackupOrRecovery {
-    [CmdletBinding(SupportsShouldProcess=$true,
-            ConfirmImpact="High")]
+    [CmdletBinding()]
     param (
             [Parameter(Mandatory=$true)]
             [ValidateNotNullOrEmpty()]

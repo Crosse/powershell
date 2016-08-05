@@ -1,8 +1,6 @@
 # XXX This function DOES NOT WORK.
 function Get-LdapUser {
-    [CmdletBinding(SupportsShouldProcess=$true,
-            ConfirmImpact="High")]
-
+    [CmdletBinding()]
     param (
             [Parameter(Mandatory=$true)]
             [string]

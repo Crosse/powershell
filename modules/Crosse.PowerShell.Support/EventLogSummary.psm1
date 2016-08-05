@@ -183,8 +183,7 @@ function Get-EventLogSummary {
 #>
 ################################################################################
 function Send-EventLogSummaryMailMessage {
-    [CmdletBinding(SupportsShouldProcess=$true,
-            ConfirmImpact="High")]
+    [CmdletBinding()]
     param (
             [Parameter(Mandatory=$true,
                 ValueFromPipeline=$true)]
