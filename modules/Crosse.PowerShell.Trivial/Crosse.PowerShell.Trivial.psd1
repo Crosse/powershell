@@ -4,7 +4,7 @@
 ModuleToProcess = ''
 
 # Version number of this module.
-ModuleVersion = '1.0'
+ModuleVersion = '2.0'
 
 # ID used to uniquely identify this module
 GUID = '644e2ae3-6006-4c6b-9a8e-8735f7363f5d'
@@ -13,16 +13,16 @@ GUID = '644e2ae3-6006-4c6b-9a8e-8735f7363f5d'
 Author = 'Seth Wright'
 
 # Company or vendor of this module
-CompanyName = 'James Madison University'
+CompanyName = 'crosse productions'
 
 # Copyright statement for this module
-Copyright = 'Copyright © 2011 Seth Wright <wrightst@jmu.edu>'
+Copyright = 'Copyright © 2016 Seth Wright <seth@crosse.org>'
 
 # Description of the functionality provided by this module
 Description = 'Trivial functions that do not belong anywhere else.'
 
 # Minimum version of the Windows PowerShell engine required by this module
-PowerShellVersion = '2.0'
+PowerShellVersion = '3.0'
 
 # Name of the Windows PowerShell host required by this module
 PowerShellHostName = ''
@@ -57,7 +57,8 @@ FormatsToProcess = @()
 # Modules to import as nested modules of the module specified in ModuleToProcess
 NestedModules = 'GeoLocation.psm1',
                 'Weather.psm1',
-                'Get-ConsoleColors.psm1'
+                'Get-ConsoleColors.psm1',
+                'Get-PublicIPAddress.psm1'
 
 # Functions to export from this module
 FunctionsToExport = '*'
@@ -74,12 +75,14 @@ AliasesToExport = '*'
 # List of all modules packaged with this module
 ModuleList =    'GeoLocation.psm1',
                 'Weather.psm1',
-                'Get-ConsoleColors.psm1'
+                'Get-ConsoleColors.psm1',
+                'Get-PublicIPAddress.psm1'
 
 # List of all files packaged with this module
 FileList =      'GeoLocation.psm1',
                 'Weather.psm1',
-                'Get-ConsoleColors.psm1'
+                'Get-ConsoleColors.psm1',
+                'Get-PublicIPAddress.psm1'
 
 # Private data to pass to the module specified in ModuleToProcess
 PrivateData = ''
