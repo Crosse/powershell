@@ -1,6 +1,6 @@
 ################################################################################
 #
-# Copyright (c) 2011 Seth Wright <seth@crosse.org>
+# Copyright (c) 2016 Seth Wright <seth@crosse.org>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -16,21 +16,22 @@
 #
 ################################################################################
 
-################################################################################
 <#
     .SYNOPSIS
     Gets the current geographic location based on the compters's IP address.
 
     .DESCRIPTION
-    Gets the current geographic location of the computer based on the computer's
-    IP address.  This is only as good as the geolocation database.
+    Gets the current geographic location of the computer based on the
+    computer's IP address using freegeoip.net. (This is only as good as the
+    geolocation database.)
 
     .INPUTS
-    None.  You cannot pipe data into this cmdlet.
+    None. You cannot pipe data into this cmdlet.
 
     .OUTPUTS
-    System.Xml.XmlElement.  Get-GeoLocation returns various details about the
-    currentl location as based on the computer's IP address.
+    System.Management.Automation.PSCustomObject.  Get-GeoLocation returns
+    various details about the current location as based on the computer's IP
+    address.
 
     .EXAMPLE
     PS C:\> Get-GeoLocation
@@ -47,12 +48,42 @@
     MetroCode   : 569
 
 #>
-################################################################################
 function Get-GeoLocation {
-    $wc = New-Object System.Net.WebClient
-    [xml]$response = $wc.DownloadString("http://freegeoip.net/xml/")
-    $wc.Dispose()
+    [CmdletBinding()]
+    param (
+            [Parameter(Mandatory=$false,
+                ValueFromPipeline=$true)]
+            [ValidateNotNullOrEmpty()]
+            [string]
+            # The IP address to geolocate.
+            $IPAddress
+          )
 
-    return $response.Response
+    if ($PSBoundParameters.ContainsKey("IPAddress") -eq $false) {
+        Write-Verbose "Getting public IP address"
+        $IPAddress = Get-PublicIPAddress
+        if ([String]::IsNullOrEmpty($ip)) {
+            throw "Unable to determine public IP address"
+        }
+    }
+
+    Write-Verbose "Querying location data for IP address $IPAddress"
+    $VerbosePreference = "SilentlyContinue"
+    $results = Invoke-RestMethod -UseBasicParsing "https://freegeoip.net/json/$IPAddress"
+
+    # This is only to make it look prettier.
+    return New-Object -TypeName PSObject -Property @{
+        IPAddress   = $ip
+        CountryCode = $results.country_code
+        CountryName = $results.country_name
+        RegionCode  = $results.region_code
+        RegionName  = $results.region_name
+        City        = $results.city
+        ZipCode     = $results.zip_code
+        TimeZone    = $results.time_zone
+        Latitude    = $results.latitude
+        Longitude   = $results.longitude
+        MetroCode   = $results.metro_code
+    }
 }
 
