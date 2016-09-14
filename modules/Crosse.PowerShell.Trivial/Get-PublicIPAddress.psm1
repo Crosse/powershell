@@ -1,6 +1,6 @@
 ################################################################################
 #
-# Copyright (c) 2012 Seth Wright <wrightst@jmu.edu>
+# Copyright (c) 2016 Seth Wright <seth@crosse.org>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -18,36 +18,24 @@
 
 <#
     .SYNOPSIS
-    Closes a package file.
+    Gets the computer's public IP address.
 
     .DESCRIPTION
-    Closes a package file.
+    Gets the current public IP address of this computer by using "ipify", a simple IP address API (https://www.ipify.org/)
 
     .INPUTS
-    A System.IO.Packaging.Package object.
+    None.  You cannot pipe data into this cmdlet.
 
     .OUTPUTS
-    None.
+    System.String.  Get-PublicIPAddress returns the public IP address.
 
     .EXAMPLE
-    Close-Package $package
-
-    This example illustrates closing a package that had previously been
-    opened and saved into the variable "$package".
-
-    .LINK
-
-#Requires -Version 2.0
+    PS C:\> Get-PublicIPAddress
+    203.0.113.147
 #>
-
-function Export-PackagedModule {
+function Get-PublicIPAddress {
     [CmdletBinding()]
-    param (
-            [Parameter(Mandatory=$true,
-                ValueFromPipeline=$true)]
-            [System.Management.Automation.PSModuleInfo]
-            $Name,
+    param ()
 
-
-          )
+    Invoke-RestMethod -UseBasicParsing 'https://api.ipify.org'
 }

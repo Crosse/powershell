@@ -1,3 +1,21 @@
+################################################################################
+#
+# Copyright (c) 2016 Seth Wright <seth@crosse.org>
+#
+# Permission to use, copy, modify, and distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#
+################################################################################
+
 <#
     .SYNOPSIS
     Requests the current weather observations from Weather Underground for a
@@ -90,24 +108,21 @@ function Get-Weather {
             [switch]
             # Whether to return the data in an easy-to-read format ($false) or
             # to return all the data received from Weather Underground.
-            $AsObject=$false
+            $AsObject = $false
 
           )
 
     if ([String]::IsNulLOrEmpty($Location)) {
         $Location = (Get-GeoLocation).ZipCode
         if ($Location -eq $null) {
-            Write-Error "Cannot dynamically determine Location."
+            throw "Cannot dynamically determine Location."
         }
         Write-Verbose "Found location $Location"
     }
 
-    $api = "http://api.wunderground.com/auto/wui/geo/WXCurrentObXML/index.xml?query="
-    $wc = New-Object System.Net.WebClient
-    $wc.Dispose()
+    $query = "http://api.wunderground.com/auto/wui/geo/WXCurrentObXML/index.xml?query={0}" -f $Location
 
-    $query = $api + $Location
-    [xml]$weather = $wc.DownloadString($query)
+    [xml]$weather = Invoke-RestMethod -UseBasicParsing -Uri $query
 
     if (!$AsObject) {
         $result = "For {0} it is currently {1} degrees, with {2} skies." -f

@@ -16,7 +16,7 @@ Author = 'Seth Wright'
 CompanyName = 'James Madison University'
 
 # Copyright statement for this module
-Copyright = 'Copyright © 2011 Seth Wright <wrightst@jmu.edu>'
+Copyright = 'Copyright © 2016 Seth Wright <wrightst@jmu.edu>'
 
 # Description of the functionality provided by this module
 Description = 'Trivial functions that do not belong anywhere else.'
