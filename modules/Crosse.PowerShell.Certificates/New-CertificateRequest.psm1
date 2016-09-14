@@ -1,6 +1,6 @@
 ################################################################################
 #
-# Copyright (c) 2011 Seth Wright <seth@crosse.org>
+# Copyright (c) 2011-2016 Seth Wright <seth@crosse.org>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -27,6 +27,12 @@
     certificate request is also stored in either the user's or the machine's
     certificate store, and can be completed using the Complete-CertificateRequest
     cmdlet.
+
+    There are also convenience cmdlets for each certificate type:
+        - New-ServerCertificateRequest
+        - New-ClientCertificateRequest
+        - New-SmimeCertificateRequest
+        - New CodeSigningCertificateRequest
 
     .INPUTS
     None
@@ -89,152 +95,176 @@
 function New-CertificateRequest {
     [CmdletBinding()]
     param (
-            [Parameter(Mandatory=$true,
-                ParameterSetName="ServerCertificate")]
-            [Parameter(Mandatory=$true,
-                ParameterSetName="ServerCertificateExplicitSubject")]
+            [Parameter(Mandatory=$true, ParameterSetName="RSAServerCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="RSAClientCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="RSASmimeCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="RSACodeSigningCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="RSAServerCertificateExplicitSubject")]
+            [Parameter(Mandatory=$true, ParameterSetName="RSAClientCertificateExplicitSubject")]
+            [Parameter(Mandatory=$true, ParameterSetName="RSASmimeCertificateExplicitSubject")]
+            [Parameter(Mandatory=$true, ParameterSetName="RSACodeSigningCertificateExplicitSubject")]
+            [switch]
+            # Generate an RSA certificate request.
+            $RSA,
+
+            [Parameter(Mandatory=$true, ParameterSetName="ECCServerCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="ECCClientCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="ECCSmimeCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="ECCCodeSigningCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="ECCServerCertificateExplicitSubject")]
+            [Parameter(Mandatory=$true, ParameterSetName="ECCClientCertificateExplicitSubject")]
+            [Parameter(Mandatory=$true, ParameterSetName="ECCSmimeCertificateExplicitSubject")]
+            [Parameter(Mandatory=$true, ParameterSetName="ECCCodeSigningCertificateExplicitSubject")]
+            [switch]
+            # Generate an ECC (ECDSA) certificate request.
+            $ECC,
+
+            [Parameter(Mandatory=$false)]
+            [ValidateSet(256, 384, 521, 2048, 4096, 8192, 16384)]
+            [int]
+            # The length of the key in bits.
+            # For RSA certificates, the default is 2048. Valid values for RSA certificates are 2048, 4096, 8192, and 16384.
+            # For ECC certificates, the default is 256. Valid values for ECC certificates are 256, 384, or 521.
+            $KeyLength = -1,
+
+            [Parameter(Mandatory=$true, ParameterSetName="RSAServerCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="RSAServerCertificateExplicitSubject")]
+            [Parameter(Mandatory=$true, ParameterSetName="ECCServerCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="ECCServerCertificateExplicitSubject")]
             [switch]
             # Specifies that this should be a server certificate.
             $ServerCertificate,
 
-            [Parameter(Mandatory=$true,
-                ParameterSetName="ClientCertificate")]
-            [Parameter(Mandatory=$true,
-                ParameterSetName="ClientCertificateExplicitSubject")]
+
+            [Parameter(Mandatory=$true, ParameterSetName="RSAClientCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="RSAClientCertificateExplicitSubject")]
+            [Parameter(Mandatory=$true, ParameterSetName="ECCClientCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="ECCClientCertificateExplicitSubject")]
             [switch]
-            # Specifies that this should be a server certificate.
+            # Specifies that this should be a client certificate.
             $ClientCertificate,
 
-            [Parameter(Mandatory=$true,
-                ParameterSetName="SmimeCertificate")]
-            [Parameter(Mandatory=$true,
-                ParameterSetName="SmimeCertificateExplicitSubject")]
+            [Parameter(Mandatory=$true, ParameterSetName="RSASmimeCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="RSASmimeCertificateExplicitSubject")]
+            [Parameter(Mandatory=$true, ParameterSetName="ECCSmimeCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="ECCSmimeCertificateExplicitSubject")]
             [switch]
-            # Specifies that this should be a server certificate.
+            # Specifies that this should be an S/MIME (email) certificate.
             $SmimeCertificate,
 
-            [Parameter(Mandatory=$true,
-                ParameterSetName="CodeSigningCertificate")]
-            [Parameter(Mandatory=$true,
-                ParameterSetName="CodeSigningCertificateExplicitSubject")]
+            [Parameter(Mandatory=$true, ParameterSetName="RSACodeSigningCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="RSACodeSigningCertificateExplicitSubject")]
+            [Parameter(Mandatory=$true, ParameterSetName="ECCCodeSigningCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="ECCCodeSigningCertificateExplicitSubject")]
             [switch]
-            # Specifies that this should be a server certificate.
+            # Specifies that this should be a code-signing certificate.
             $CodeSigningCertificate,
 
-            [Parameter(Mandatory=$false)]
-            [ValidateSet(2048, 4096, 8192, 16384)]
-            [int]
-            # The length of the key in bits.  The default is 2048.  Valid values are 2048, 4096, 8192, and 16384.
-            $KeyLength=2048,
-
-            [Parameter(Mandatory=$true,
-                ParameterSetName="ServerCertificateExplicitSubject")]
-            [Parameter(Mandatory=$true,
-                ParameterSetName="ClientCertificateExplicitSubject")]
-            [Parameter(Mandatory=$true,
-                ParameterSetName="SmimeCertificateExplicitSubject")]
-            [Parameter(Mandatory=$true,
-                ParameterSetName="CodeSigningCertificateExplicitSubject")]
+            [Parameter(Mandatory=$true, ParameterSetName="RSAServerCertificateExplicitSubject")]
+            [Parameter(Mandatory=$true, ParameterSetName="RSAClientCertificateExplicitSubject")]
+            [Parameter(Mandatory=$true, ParameterSetName="RSASmimeCertificateExplicitSubject")]
+            [Parameter(Mandatory=$true, ParameterSetName="RSACodeSigningCertificateExplicitSubject")]
+            [Parameter(Mandatory=$true, ParameterSetName="ECCServerCertificateExplicitSubject")]
+            [Parameter(Mandatory=$true, ParameterSetName="ECCClientCertificateExplicitSubject")]
+            [Parameter(Mandatory=$true, ParameterSetName="ECCSmimeCertificateExplicitSubject")]
+            [Parameter(Mandatory=$true, ParameterSetName="ECCCodeSigningCertificateExplicitSubject")]
             [ValidateNotNullOrEmpty()]
             [string]
-            # Used to manually specify the full distinguished name that will
-            # be used for the certificate's Subject field.
+            # Used to manually specify the full distinguished name that will be used for the certificate's Subject field.
             $SubjectName,
 
-            [Parameter(Mandatory=$false,
-                ParameterSetName="ClientCertificate")]
-            [Parameter(Mandatory=$true,
-                ParameterSetName="SmimeCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="RSAClientCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="RSASmimeCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="ECCClientCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="ECCSmimeCertificate")]
             [ValidateNotNullOrEmpty()]
             [string]
             # The entity's email address.
             $EmailAddress,
 
-            [Parameter(Mandatory=$true,
-                ParameterSetName="ServerCertificate")]
-            [Parameter(Mandatory=$true,
-                ParameterSetName="ClientCertificate")]
-            [Parameter(Mandatory=$true,
-                ParameterSetName="SmimeCertificate")]
-            [Parameter(Mandatory=$true,
-                ParameterSetName="CodeSigningCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="RSAServerCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="RSAClientCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="RSASmimeCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="RSACodeSigningCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="ECCServerCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="ECCClientCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="ECCSmimeCertificate")]
+            [Parameter(Mandatory=$true, ParameterSetName="ECCCodeSigningCertificate")]
             [ValidateNotNullOrEmpty()]
             [string]
-            # The common name of the entity.  For a server certificate, this
-            # could be the server name.  For a client certificate, this could
-            # be the user's email address or user name.
+            # The common name of the entity.  For a server certificate, this could be the server name.  For a client certificate, this could be the user's email address or user name.
             $CommonName,
 
-            [Parameter(Mandatory=$false,
-                ParameterSetName="ServerCertificate")]
-            [Parameter(Mandatory=$false,
-                ParameterSetName="ClientCertificate")]
-            [Parameter(Mandatory=$false,
-                ParameterSetName="SmimeCertificate")]
-            [Parameter(Mandatory=$false,
-                ParameterSetName="CodeSigningCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="RSAServerCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="RSAClientCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="RSASmimeCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="RSACodeSigningCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="ECCServerCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="ECCClientCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="ECCSmimeCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="ECCCodeSigningCertificate")]
             [ValidateNotNullOrEmpty()]
             [string]
             # The department or organizational unit in charge of the entity.
             $OrganizationalUnit,
 
-            [Parameter(Mandatory=$false,
-                ParameterSetName="ServerCertificate")]
-            [Parameter(Mandatory=$false,
-                ParameterSetName="ClientCertificate")]
-            [Parameter(Mandatory=$false,
-                ParameterSetName="SmimeCertificate")]
-            [Parameter(Mandatory=$false,
-                ParameterSetName="CodeSigningCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="RSAServerCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="RSAClientCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="RSASmimeCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="RSACodeSigningCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="ECCServerCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="ECCClientCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="ECCSmimeCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="ECCCodeSigningCertificate")]
             [ValidateNotNullOrEmpty()]
             [string]
             # The organzation or company in charge of the entity.
             $Organization,
 
-            [Parameter(Mandatory=$false,
-                ParameterSetName="ServerCertificate")]
-            [Parameter(Mandatory=$false,
-                ParameterSetName="ClientCertificate")]
-            [Parameter(Mandatory=$false,
-                ParameterSetName="SmimeCertificate")]
-            [Parameter(Mandatory=$false,
-                ParameterSetName="CodeSigningCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="RSAServerCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="RSAClientCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="RSASmimeCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="RSACodeSigningCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="ECCServerCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="ECCClientCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="ECCSmimeCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="ECCCodeSigningCertificate")]
             [ValidateNotNullOrEmpty()]
             [string]
             # The city (or locality) in which the organization resides.
             $Locality,
 
-            [Parameter(Mandatory=$false,
-                ParameterSetName="ServerCertificate")]
-            [Parameter(Mandatory=$false,
-                ParameterSetName="ClientCertificate")]
-            [Parameter(Mandatory=$false,
-                ParameterSetName="SmimeCertificate")]
-            [Parameter(Mandatory=$false,
-                ParameterSetName="CodeSigningCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="RSAServerCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="RSAClientCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="RSASmimeCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="RSACodeSigningCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="ECCServerCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="ECCClientCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="ECCSmimeCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="ECCCodeSigningCertificate")]
             [ValidateNotNullOrEmpty()]
             [string]
             # The non-abbreviated state or province in which the organization resides.
             $State,
 
-            [Parameter(Mandatory=$false,
-                ParameterSetName="ServerCertificate")]
-            [Parameter(Mandatory=$false,
-                ParameterSetName="ClientCertificate")]
-            [Parameter(Mandatory=$false,
-                ParameterSetName="SmimeCertificate")]
-            [Parameter(Mandatory=$false,
-                ParameterSetName="CodeSigningCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="RSAServerCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="RSAClientCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="RSASmimeCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="RSACodeSigningCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="ECCServerCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="ECCClientCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="ECCSmimeCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="ECCCodeSigningCertificate")]
             [ValidateNotNullOrEmpty()]
             [ValidateLength(2, 2)]
             [string]
             # The 2-letter abbreviation of the country in which the organization resides.
             $Country,
 
-            [Parameter(Mandatory=$false,
-                ParameterSetName="ServerCertificate")]
-            [Parameter(Mandatory=$false,
-                ParameterSetName="ServerCertificateExplicitSubject")]
+            [Parameter(Mandatory=$false, ParameterSetName="RSAServerCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="RSAServerCertificateExplicitSubject")]
+            [Parameter(Mandatory=$false, ParameterSetName="ECCServerCertificate")]
+            [Parameter(Mandatory=$false, ParameterSetName="ECCServerCertificateExplicitSubject")]
             [ValidateNotNullOrEmpty()]
             [string[]]
             # An array of alternative DNS names that should be bound to the
@@ -249,7 +279,7 @@ function New-CertificateRequest {
 
             [Parameter(Mandatory=$false)]
             [string]
-            # An option description of the certificate.
+            # An optional description of the certificate.
             $Description
           )
 
@@ -259,11 +289,29 @@ function New-CertificateRequest {
         # block, except that it sets these contant-value-type things apart
         # from the actual code, where I can document them all in one place.
 
+        if ($KeyLength -eq -1) {
+            if ($ECC) { $KeyLength = 256 }
+            if ($RSA) { $KeyLength = 2048 }
+        }
+
+        if ($ECC -and $KeyLength -gt 521) {
+            throw "Valid Key Length for ECC certificates are: 256, 384, 521."
+        }
+        if ($RSA -and $KeyLength -lt 2048) {
+            throw "Valid Key Length for RSA certificates are: 2048, 4096, 8192, 16384."
+        }
+
         # The name of the cryptographic provider.  Specifying this also sets the
-        # key's ProviderType.  In this case, the ProviderType is
-        # XCN_PROV_RSA_SCHANNEL.
-        # http://msdn.microsoft.com/en-us/library/windows/desktop/aa379427.aspx
-        $ProviderName = "Microsoft RSA SChannel Cryptographic Provider"
+        # key's ProviderType.  
+        if ($RSA) {
+            # In this case, the ProviderType is XCN_PROV_RSA_SCHANNEL.
+            # http://msdn.microsoft.com/en-us/library/windows/desktop/aa379427.aspx
+            $ProviderName = "Microsoft RSA SChannel Cryptographic Provider"
+        } else {
+            # For ECC certificates, a little more work has to be done, but this is the
+            # provider name.
+            $ProviderName = "Microsoft Software Key Storage Provider"
+        }
 
         # This is an SDDL string specifying that the
         # NT AUTHORITY\SYSTEM and the BUILTIN\Administrators group have
@@ -351,6 +399,12 @@ function New-CertificateRequest {
         #
         # http://msdn.microsoft.com/en-us/library/windows/desktop/aa374936.aspx
         $XCNCryptStringBase64RequestHeader = 0x3
+
+        # The algorithm names for ECC certificates.
+        $ECDSA_Algorithms = @{}
+        $ECDSA_Algorithms[256] = 371
+        $ECDSA_Algorithms[384] = 372
+        $ECDSA_Algorithms[512] = 373
     }
 
     PROCESS {
@@ -403,6 +457,11 @@ function New-CertificateRequest {
         $key.KeySpec = $X509KeySpec
         $key.ExportPolicy = $X509PrivateKeyExportFlagsAllowExport
         $key.Length = $KeyLength
+        if ($ECC) {
+            $algorithm = New-Object -ComObject "X509Enrollment.CObjectId.1"
+            $algorithm.InitializeFromName($ECDSA_Algorithms[$KeyLength])
+            $key.Algorithm = $algorithm
+        }
         if ($ServerCertificate) {
             $key.MachineContext = $true
             # Use an SDDL appropriate for a server certificate.
@@ -411,7 +470,11 @@ function New-CertificateRequest {
             # Store the key in the user's store and use an SDDL
             # appropriate for a client certificate.
             $key.MachineContext = $false
-            $key.SecurityDescriptor = $ClientCertificateSDDL
+            try {
+                $key.SecurityDescriptor = $ClientCertificateSDDL
+            } catch {
+                Write-Warning "Unable to set SDDL on private key; this may not be a problem."
+            }
         }
 
         $key.Create()
@@ -556,356 +619,5 @@ function New-CertificateRequest {
         }
 
         return $csr
-    }
-}
-
-################################################################################
-<#
-    .SYNOPSIS
-    Creates a new S/MIME certificate request.
-
-    .DESCRIPTION
-    Creates a new S/MIME certificate request and returns the Base64-encoded
-    request text suitable for submitting to a third-party certificate authority.
-    The certificate request is also stored in the user's certificate store, and
-    can be completed using the Complete-CertificateRequest cmdlet.
-
-    .INPUTS
-    None
-        You cannot pipe objects to the cmdlet.
-
-    .OUTPUTS
-    System.String.  New-SmimeCertificateRequest returns the generated X509,
-    Base64-encoded certificate request that can be submitted to a third-
-    party certificate authority.
-
-    .EXAMPLE
-    C:\PS> New-SmimeCertificateRequest -EmailAddress "asdf@asdf.com" -CommonName "Joe User"
-    -----BEGIN NEW CERTIFICATE REQUEST-----
-    [...]
-    -----END NEW CERTIFICATE REQUEST-----
-
-    The above example generates a certificate request suitable for use as an
-    S/MIME certificate for email protection.
-#>
-################################################################################
-function New-SmimeCertificateRequest {
-    [CmdletBinding()]
-    param (
-            [Parameter(Mandatory=$true)]
-            [string]
-            # The user's email address.
-            $EmailAddress,
-
-            [Parameter(Mandatory=$true)]
-            [string]
-            # The user's full name.
-            $CommonName,
-
-            [Parameter(Mandatory=$false)]
-            [ValidateNotNullOrEmpty()]
-            [string]
-            # The department or organizational unit in charge of the entity.
-            $OrganizationalUnit,
-
-            [Parameter(Mandatory=$false)]
-            [ValidateNotNullOrEmpty()]
-            [string]
-            # The organzation or company in charge of the entity.
-            $Organization,
-
-            [Parameter(Mandatory=$false)]
-            [ValidateNotNullOrEmpty()]
-            [string]
-            # The city or locality in which the organization resides.
-            $Locality,
-
-            [Parameter(Mandatory=$false)]
-            [ValidateNotNullOrEmpty()]
-            [string]
-            # The non-abbreviated state or province in which the organization
-            # resides.
-            $State,
-
-            [Parameter(Mandatory=$false)]
-            [ValidateNotNullOrEmpty()]
-            [ValidateLength(2, 2)]
-            [string]
-            # The 2-letter abbreviation of the country in which the organization
-            # resides.
-            $Country,
-
-            [Parameter(Mandatory=$false)]
-            [ValidateSet(2048, 4096, 8192, 16384)]
-            [int]
-            # The length of the key.  The default is 2048.
-            $KeyLength=2048
-          )
-
-    New-CertificateRequest  -SmimeCertificate @PSBoundParameters
-}
-
-################################################################################
-<#
-    .SYNOPSIS
-    Creates a new client certificate request.
-
-    .DESCRIPTION
-    Creates a new client certificate request and returns the Base64-encoded
-    request text suitable for submitting to a third-party certificate authority.
-    The certificate request is also stored in the user's certificate store, and
-    can be completed using the Complete-CertificateRequest cmdlet.
-
-    .INPUTS
-    None
-        You cannot pipe objects to the cmdlet.
-
-    .OUTPUTS
-    System.String.  New-ClientCertificateRequest returns the generated X509,
-    Base64-encoded certificate request that can be submitted to a third-
-    party certificate authority.
-
-    .EXAMPLE
-    C:\PS> New-ClientCertificateRequest -CommonName "Joe User"
-    -----BEGIN NEW CERTIFICATE REQUEST-----
-    [...]
-    -----END NEW CERTIFICATE REQUEST-----
-
-    The above example generates a certificate request suitable for use as a
-    client certificate.
-#>
-################################################################################
-function New-ClientCertificateRequest {
-    [CmdletBinding()]
-    param (
-            [Parameter(Mandatory=$false)]
-            [ValidateSet(2048, 4096, 8192, 16384)]
-            [int]
-            # The length of the key.  The default is 2048.
-            $KeyLength=2048,
-
-            [Parameter(Mandatory=$true)]
-            [ValidateNotNullOrEmpty()]
-            [string]
-            # The common name of the entity. For a client certificate,
-            # this could be the user's email address.
-            $CommonName,
-
-            [Parameter(Mandatory=$false)]
-            [ValidateNotNullOrEmpty()]
-            [string]
-            # The department or organizational unit in charge of the entity.
-            $OrganizationalUnit,
-
-            [Parameter(Mandatory=$false)]
-            [ValidateNotNullOrEmpty()]
-            [string]
-            # The organzation or company in charge of the entity.
-            $Organization,
-
-            [Parameter(Mandatory=$false)]
-            [ValidateNotNullOrEmpty()]
-            [string]
-            # The city or locality in which the organization resides.
-            $Locality,
-
-            [Parameter(Mandatory=$false)]
-            [ValidateNotNullOrEmpty()]
-            [string]
-            # The non-abbreviated state or province in which the organization
-            # resides.
-            $State,
-
-            [Parameter(Mandatory=$false)]
-            [ValidateNotNullOrEmpty()]
-            [ValidateLength(2, 2)]
-            [string]
-            # The 2-letter abbreviation of the country in which the organization
-            # resides.
-            $Country
-          )
-
-    New-CertificateRequest -ClientCertificate @PSBoundParameters
-}
-
-################################################################################
-<#
-    .SYNOPSIS
-    Creates a new code-signing certificate request.
-
-    .DESCRIPTION
-    Creates a new code-signing certificate request and returns the Base64-encoded
-    request text suitable for submitting to a third-party certificate authority.
-    The certificate request is also stored in the user's certificate store, and
-    can be completed using the Complete-CertificateRequest cmdlet.
-
-    .INPUTS
-    None
-        You cannot pipe objects to the cmdlet.
-
-    .OUTPUTS
-    System.String.  New-CodeSigningCertificateRequest returns the generated X509,
-    Base64-encoded certificate request that can be submitted to a third-
-    party certificate authority.
-
-    .EXAMPLE
-    C:\PS> New-CodeSigningCertificateRequest -EmailAddress "asdf@asdf.com" -CommonName "Joe User"
-    -----BEGIN NEW CERTIFICATE REQUEST-----
-    [...]
-    -----END NEW CERTIFICATE REQUEST-----
-
-    The above example generates a certificate request suitable for use as an
-    S/MIME certificate for email protection.
-#>
-################################################################################
-function New-CodeSigningCertificateRequest {
-    [CmdletBinding()]
-    param (
-            [Parameter(Mandatory=$true)]
-            [string]
-            # The user's email address.
-            $EmailAddress,
-
-            [Parameter(Mandatory=$true)]
-            [string]
-            # The user's full name.
-            $CommonName,
-
-            [Parameter(Mandatory=$false)]
-            [ValidateNotNullOrEmpty()]
-            [string]
-            # The department or organizational unit in charge of the entity.
-            $OrganizationalUnit,
-
-            [Parameter(Mandatory=$false)]
-            [ValidateNotNullOrEmpty()]
-            [string]
-            # The organzation or company in charge of the entity.
-            $Organization,
-
-            [Parameter(Mandatory=$false)]
-            [ValidateNotNullOrEmpty()]
-            [string]
-            # The city or locality in which the organization resides.
-            $Locality,
-
-            [Parameter(Mandatory=$false)]
-            [ValidateNotNullOrEmpty()]
-            [string]
-            # The non-abbreviated state or province in which the organization
-            # resides.
-            $State,
-
-            [Parameter(Mandatory=$false)]
-            [ValidateNotNullOrEmpty()]
-            [ValidateLength(2, 2)]
-            [string]
-            # The 2-letter abbreviation of the country in which the organization
-            # resides.
-            $Country,
-
-            [Parameter(Mandatory=$false)]
-            [ValidateSet(2048, 4096, 8192, 16384)]
-            [int]
-            # The length of the key.  The default is 2048.
-            $KeyLength=2048
-          )
-
-    New-CertificateRequest  -CodeSigningCertificate @PSBoundParameters
-}
-
-
-################################################################################
-<#
-    .SYNOPSIS
-    Completes a pending certificate request.
-
-    .DESCRIPTION
-    Completes a pending certificate request.  The pending request should be
-    stored in either the user's or the machine's certificate store.
-
-    .INPUTS
-    None
-        You cannot pipe objects to the cmdlet.
-
-    .OUTPUTS
-    System.String
-        An indication of whether the cmdlet was successful is printed.
-
-    .EXAMPLE
-    C:\PS> Complete-CertificateRequest -CACertificateResponse .\response.cer -CertificateStore Machine
-    Certificate Request completed successfully.
-#>
-################################################################################
-function Complete-CertificateRequest {
-    [CmdletBinding()]
-    param (
-            [Parameter(Mandatory=$true)]
-            [ValidateNotNullOrEmpty()]
-            [System.IO.FileInfo]
-            # The path to a certificate response file received from a
-            # certification authority.
-            $CACertificateResponse,
-
-            [Parameter(Mandatory=$false)]
-            [ValidateSet("Machine", "User")]
-            [string]
-            # The certificate store in which to look for the pending certificate request.
-            $CertifcateStore
-          )
-
-    BEGIN {
-        # The X509CertificateEnrollmentContext enum specifies that
-        # "ContextMachine" is 0x2, which means store the certificate in the
-        # Machine store.
-        # http://msdn.microsoft.com/en-us/library/windows/desktop/aa379399.aspx
-        $X509CertEnrollmentContextUser = 1
-        $X509CertEnrollmentContextMachine = 2
-
-        # The EncodingType enum value specifying that the encoding should
-        # be represented in a specified format.
-        #
-        # http://msdn.microsoft.com/en-us/library/windows/desktop/aa374936.aspx
-        $XCNCryptStringBase64Header = 0x0
-
-        # InstallResponseRestrictionFlags =
-        #   AllowNone                   = 0x00000000,
-        #   AllowNoOutstandingRequest   = 0x00000001,
-        #   AllowUntrustedCertificate   = 0x00000002,
-        #   AllowUntrustedRoot          = 0x00000004
-        #
-        # http://msdn.microsoft.com/en-us/library/windows/desktop/aa376782.aspx
-        $InstallResponseRestrictionFlags = 0x4
-    }
-
-    PROCESS {
-        if ((Test-Path $CACertificateResponse) -eq $false) {
-            Write-Error "$CACertificateResponse does not exist."
-            return
-        }
-        Write-Verbose "Found file $CACertificateResponse"
-
-        $response = Get-Content $CACertificateResponse
-
-        $enrollment = New-Object -ComObject "X509Enrollment.CX509Enrollment.1"
-        if ($CertifcateStore -eq "Machine") {
-            $enrollment.Initialize($X509CertEnrollmentContextMachine)
-        } else {
-            $enrollment.Initialize($X509CertEnrollmentContextUser)
-        }
-
-        # http://msdn.microsoft.com/en-us/library/windows/desktop/aa378051.aspx
-        # The $null value is the optional password field, which you typically
-        # don't want for a server certificate.
-        $enrollment.InstallResponse($InstallResponseRestrictionFlags,
-                                    $response,
-                                    $XCNCryptStringBase64Header,
-                                    $null)
-
-        if ($enrollment.Status.ErrorText -match "successful") {
-            Write-Host "Certificate Request completed successfully."
-        } else {
-            Write-Host $enrollment.Status.ErrorText
-        }
     }
 }

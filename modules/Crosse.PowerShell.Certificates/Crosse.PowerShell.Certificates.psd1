@@ -21,10 +21,10 @@ GUID = '206a4cc7-1ff0-40ed-9a9e-df3cf99e7c4f'
 Author = 'Seth Wright'
 
 # Company or vendor of this module
-CompanyName = 'James Madison University'
+CompanyName = 'crosse productions'
 
 # Copyright statement for this module
-Copyright = 'Copyright © 2011-2015 Seth Wright <wrightst@jmu.edu>'
+Copyright = 'Copyright © 2011-2016 Seth Wright <seth@crosse.org>'
 
 # Description of the functionality provided by this module
 Description = 'Functions used to work with certificates and certificate requests.'
@@ -63,8 +63,14 @@ TypesToProcess = @()
 FormatsToProcess = @()
 
 # Modules to import as nested modules of the module specified in ModuleToProcess
-NestedModules = 'CertificateFunctions.psm1',
-                'GetCertificateChain.psm1'
+NestedModules = 'GetCertificateChain.psm1',
+                'Complete-CertificateRequest.psm1',
+                'Get-CertificateRequest.psm1',
+                'New-CertificateRequest',
+                'New-ServerCertificateRequest.psm1',
+                'New-ClientCertificateRequest.psm1',
+                'New-SmimeCertificateRequest.psm1',
+                'New-CodeSigningCertificateRequest.psm1'
 
 # Functions to export from this module
 FunctionsToExport = '*'
@@ -79,12 +85,24 @@ VariablesToExport = '*'
 AliasesToExport = '*'
 
 # List of all modules packaged with this module
-ModuleList =    'CertificateFunctions.psm1',
-                'GetCertificateChain.psm1'
+ModuleList =    'GetCertificateChain.psm1',
+                'Complete-CertificateRequest.psm1',
+                'Get-CertificateRequest.psm1',
+                'New-CertificateRequest',
+                'New-ServerCertificateRequest.psm1',
+                'New-ClientCertificateRequest.psm1',
+                'New-SmimeCertificateRequest.psm1',
+                'New-CodeSigningCertificateRequest.psm1'
 
 # List of all files packaged with this module
-FileList =      'CertificateFunctions.psm1',
-                'GetCertificateChain.psm1'
+FileList =      'GetCertificateChain.psm1',
+                'Complete-CertificateRequest.psm1',
+                'Get-CertificateRequest.psm1',
+                'New-CertificateRequest',
+                'New-ServerCertificateRequest.psm1',
+                'New-ClientCertificateRequest.psm1',
+                'New-SmimeCertificateRequest.psm1',
+                'New-CodeSigningCertificateRequest.psm1'
 
 # Private data to pass to the module specified in ModuleToProcess
 PrivateData = ''
