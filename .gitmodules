@@ -1,48 +1,48 @@
 [submodule "modules/Crosse.PowerShell.ActiveDirectory"]
 	path = modules/Crosse.PowerShell.ActiveDirectory
-	url = github:Crosse/Crosse.PowerShell.ActiveDirectory.git
+	url = git@github.com:Crosse/Crosse.PowerShell.ActiveDirectory.git
 [submodule "modules/Crosse.PowerShell.Azure"]
 	path = modules/Crosse.PowerShell.Azure
-	url = github:Crosse/Crosse.PowerShell.Azure.git
+	url = git@github.com:Crosse/Crosse.PowerShell.Azure.git
 [submodule "modules/Crosse.PowerShell.Certificates"]
 	path = modules/Crosse.PowerShell.Certificates
-	url = github:Crosse/Crosse.PowerShell.Certificates.git
+	url = git@github.com:Crosse/Crosse.PowerShell.Certificates.git
 [submodule "modules/Crosse.PowerShell.Elasticsearch"]
 	path = modules/Crosse.PowerShell.Elasticsearch
-	url = github:Crosse/Crosse.PowerShell.Elasticsearch.git
+	url = git@github.com:Crosse/Crosse.PowerShell.Elasticsearch.git
 [submodule "modules/Crosse.PowerShell.Exchange"]
 	path = modules/Crosse.PowerShell.Exchange
-	url = github:Crosse/Crosse.PowerShell.Exchange.git
+	url = git@github.com:Crosse/Crosse.PowerShell.Exchange.git
 [submodule "modules/Crosse.PowerShell.Fonts"]
 	path = modules/Crosse.PowerShell.Fonts
-	url = github:Crosse/Crosse.PowerShell.Fonts.git
+	url = git@github.com:Crosse/Crosse.PowerShell.Fonts.git
 [submodule "modules/Crosse.PowerShell.Help"]
 	path = modules/Crosse.PowerShell.Help
-	url = github:Crosse/Crosse.PowerShell.Help.git
+	url = git@github.com:Crosse/Crosse.PowerShell.Help.git
 [submodule "modules/Crosse.PowerShell.JMU"]
 	path = modules/Crosse.PowerShell.JMU
-	url = github:Crosse/Crosse.PowerShell.JMU.git
+	url = git@github.com:Crosse/Crosse.PowerShell.JMU.git
 [submodule "modules/Crosse.PowerShell.MalwareAnalysis"]
 	path = modules/Crosse.PowerShell.MalwareAnalysis
-	url = github:Crosse/Crosse.PowerShell.MalwareAnalysis.git
+	url = git@github.com:Crosse/Crosse.PowerShell.MalwareAnalysis.git
 [submodule "modules/Crosse.PowerShell.Management"]
 	path = modules/Crosse.PowerShell.Management
-	url = github:Crosse/Crosse.PowerShell.Management.git
+	url = git@github.com:Crosse/Crosse.PowerShell.Management.git
 [submodule "modules/Crosse.PowerShell.Media"]
 	path = modules/Crosse.PowerShell.Media
-	url = github:Crosse/Crosse.PowerShell.Media.git
+	url = git@github.com:Crosse/Crosse.PowerShell.Media.git
 [submodule "modules/Crosse.PowerShell.Office365"]
 	path = modules/Crosse.PowerShell.Office365
-	url = github:Crosse/Crosse.PowerShell.Office365.git
+	url = git@github.com:Crosse/Crosse.PowerShell.Office365.git
 [submodule "modules/Crosse.PowerShell.Security"]
 	path = modules/Crosse.PowerShell.Security
-	url = github:Crosse/Crosse.PowerShell.Security.git
+	url = git@github.com:Crosse/Crosse.PowerShell.Security.git
 [submodule "modules/Crosse.PowerShell.SqlServer"]
 	path = modules/Crosse.PowerShell.SqlServer
-	url = github:Crosse/Crosse.PowerShell.SqlServer.git
+	url = git@github.com:Crosse/Crosse.PowerShell.SqlServer.git
 [submodule "modules/Crosse.PowerShell.Support"]
 	path = modules/Crosse.PowerShell.Support
-	url = github:Crosse/Crosse.PowerShell.Support.git
+	url = git@github.com:Crosse/Crosse.PowerShell.Support.git
 [submodule "modules/Crosse.PowerShell.Trivial"]
 	path = modules/Crosse.PowerShell.Trivial
-	url = github:Crosse/Crosse.PowerShell.Trivial.git
+	url = git@github.com:Crosse/Crosse.PowerShell.Trivial.git
